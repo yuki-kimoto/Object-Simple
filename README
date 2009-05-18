@@ -1,0 +1,44 @@
+WHAT IS THIS?
+
+Simo is framework that simplify Object Oriented Perl.
+If you use Simo, You can write accessor very very simple way.
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+	perl Makefile.PL
+	make
+	make test
+	make install
+
+SUPPORT AND DOCUMENTATION
+
+After installing, you can find documentation for this module with the
+perldoc command.
+
+    perldoc Simo
+
+You can also look for information at:
+
+    RT, CPAN's request tracker
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Simo
+
+    AnnoCPAN, Annotated CPAN documentation
+        http://annocpan.org/dist/Simo
+
+    CPAN Ratings
+        http://cpanratings.perl.org/d/Simo
+
+    Search CPAN
+        http://search.cpan.org/dist/Simo/
+
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2008 Yuki Kimoto
+http://d.hatena.ne.jp/perlcodesample/ ( Japanese )
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+

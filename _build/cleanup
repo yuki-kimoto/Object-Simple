@@ -1,0 +1,6 @@
+do{ my $x = {
+       'Object-Simple-0.01_01' => 1,
+       'Object-Simple-*' => 1,
+       'blib' => 1
+     };
+$x; }
