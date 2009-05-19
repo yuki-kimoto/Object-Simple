@@ -44,14 +44,8 @@ use Book;
 }
 
 {
-    my $warn;
-    local $SIG{__WARN__} = sub{
-        $warn = shift;
-    };
-    
     my $book = Book->new( noexist => 1 );
-    is( $book->{ noexist }, 1, 'no exist attr set value' );
-    like( $warn, qr/'noexist' attribute is no exist in 'Book' class/, 'invalid key to new' );
+    ok( !$book->{ noexist }, 'no exist attr set value' );
 }
 
 # setter return value
@@ -385,6 +379,12 @@ use T11;
     ok( !$@, 'manual 5' );
     eval{ $t->manual( 4 ) };
     ok( $@, 'manual 4' );
+}
+
+{
+    use T12;
+    my $t = T12->new( 1, 2 );
+    is_deeply( $t, { a => 1, b => 2, c => 3 }, '_arrange_args and _init override' );
 }
 __END__
 

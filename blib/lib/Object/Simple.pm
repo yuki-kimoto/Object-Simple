@@ -68,10 +68,13 @@ sub new{
     my $class = ref $invocant || $invocant;
     
     # arrange arguments
-    my %args = $class->_arrange_args( @_ );
+    my $args = $class->_arrange_args( @_ );
     
     # create instance
-    my $self = Object::Simple::Functions::create_instance( $invocant, %args );
+    my $self = Object::Simple::Functions::create_instance( $invocant, $args );
+    
+    # initialize instance
+    $self->_init( $args );
     
     return $self;
 
@@ -80,15 +83,20 @@ sub new{
 # arrange arguments
 sub _arrange_args{
     
-    my ( $class , @args ) = @_;
+    my $class = shift;
     
     # arrange arguments
-    @args = %{ $args[0] } if ref $args[0] eq 'HASH';
-    Carp::croak "key-value pairs must be passed to ${class}::new" if @args % 2;
-    
-    return @args;
-    
+    if( ref $_[0] eq 'HASH' ){
+         return {%{$_[0]}};
+    }
+    else{
+        Carp::croak "key-value pairs must be passed to ${class}::new" if @_ % 2;
+        return {@_};
+    }
 }
+
+# initialize instance
+sub _init{ }
 
 # resist attribute infomathion at end of script
 sub end{
@@ -160,6 +168,7 @@ use Class::ISA;
 use Object::Simple::Constraint;
 
 sub inherit_base_class{
+    
     my ( $caller_pkg, $base ) = @_;
     
     return unless $base;
@@ -170,9 +179,11 @@ sub inherit_base_class{
     
     no strict 'refs';
     unshift @{ "${caller_pkg}::ISA" }, $base;
+    
 }
 
 sub import_methods_form_mixin_classes{
+    
     my ( $caller_pkg, $mixins ) = @_;
     return unless $mixins;
     # normalize mixin
@@ -180,10 +191,12 @@ sub import_methods_form_mixin_classes{
     
     # import methods
     import_methods( $caller_pkg, $method_infos );
+    
 }
 
 # get method imformation form mixin option
 sub get_method_infos{
+    
     my $mixins = shift;
     
     $mixins = [ $mixins ] unless ref $mixins eq 'ARRAY';
@@ -213,10 +226,12 @@ sub get_method_infos{
         }
     }
     return $method_infos;
+    
 }
 
 # import methods form mixin package to caller package
 sub import_methods{
+    
     my ( $caller_pkg, $mixin_info ) = @_;
     foreach my $mixin_pkg ( keys %{ $mixin_info } ){
 
@@ -239,10 +254,12 @@ sub import_methods{
             *{ "${caller_pkg}::$renamed_method" } = \&{ "${mixin_pkg}::$method" };
         }
     }
+    
 }
 
 # expand methods
 sub expand_methods{
+    
     my ( $mixin_pkg, $methods ) = @_;
     
     my %methods; # no dupulicate method list
@@ -277,11 +294,13 @@ sub expand_methods{
         }
     }
     return ( [ keys %methods ], $rename );
+    
 }
 
 # create instance
 sub create_instance{
-    my ( $invocant, %args ) = @_;
+    
+    my ( $invocant, $args ) = @_;
     
     # bless
     my $self = {};
@@ -293,7 +312,7 @@ sub create_instance{
     
     # initialize hash slot
     foreach my $attr ( keys %{ $ac_opt } ){
-        my $arg = $args{ $attr };
+        my $arg = $args->{ $attr };
         my $required = $ac_opt->{ $attr }{ required };
         
         if( $required && !defined $arg ){
@@ -309,7 +328,6 @@ sub create_instance{
         
         if( defined $arg ){
             $self->$attr( $arg );
-            delete $args{ $attr };
         }
         elsif( defined $default ){
             $self->{ $attr } = ref $default ? Storable::dclone( $default ) :
@@ -317,16 +335,13 @@ sub create_instance{
         }
     }
     
-    # attribute is no exist
-    foreach my $attr ( keys %args ){
-        $self->{ $attr } = $args{ $attr };
-        Carp::carp( "'$attr' attribute is no exist in '$pkg' class." )
-    }
     return $self;
+    
 }
 
 # marge self and super accessor option
 sub merge_self_and_super_accessor_option{
+    
     my $pkg = shift;
     
     my @self_and_super_classes = reverse Class::ISA::self_and_super_path($pkg);
@@ -337,10 +352,12 @@ sub merge_self_and_super_accessor_option{
             if defined $Object::Simple::META->{ attr }{ $class }
     }
     return $ac_opt;
+    
 }
 
 # type constraint functions
 our %TYPE_CONSTRAIMT = (
+
     Bool       => \&Object::Simple::Constraint::is_bool,
     Undef      => sub { !defined($_[0]) },
     Defined    => sub { defined($_[0]) },
@@ -359,6 +376,7 @@ our %TYPE_CONSTRAIMT = (
     GlobRef    => \&Object::Simple::Constraint::is_glob_ref,
     FileHandle => \&Object::Simple::Constraint::is_file_handle,
     Object     => \&Object::Simple::Constraint::is_object
+    
 );
 
 # valid setter return option values
@@ -366,6 +384,7 @@ my %VALID_SETTER_RETURN = map { $_ => 1 } qw( undef old current self );
 
 # create accessor.
 sub create_accessor{
+    
     my ( $pkg, $attr, $ac_opt ) = @_;
     
     my $e =
@@ -481,9 +500,11 @@ sub create_accessor{
             qq/}\n/;
     
     return $e;
+    
 }
 
 sub define_MODIFY_CODE_ATTRIBUTES{
+    
     my $caller_pkg = shift;
     my $e .=
         qq/package ${caller_pkg};\n/ .
@@ -501,6 +522,7 @@ sub define_MODIFY_CODE_ATTRIBUTES{
     
     eval $e;
     if( $@ ){ die "Cannot execute\n $e" }; # never occured.
+    
 }
 
 # accessor option
@@ -509,6 +531,7 @@ my %VALID_AC_OPT
 
 # check accessor option
 sub check_accessor_option{
+    
     # accessor info
     my ( $attr, $pkg, @ac_opt ) = @_;
     
@@ -517,6 +540,7 @@ sub check_accessor_option{
         Carp::croak "${pkg}::$attr '$key' is invalid accessor option" 
             unless $VALID_AC_OPT{ $key };
     }
+    
 }
 
 
