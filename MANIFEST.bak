@@ -1,9 +1,0 @@
-Build.PL
-Changes
-lib/Object/Simple.pm
-Makefile.PL
-MANIFEST
-META.yml
-README
-t/00-load.t
-t/01-core.t
