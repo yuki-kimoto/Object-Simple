@@ -15,6 +15,7 @@ t/01-core/Point.pm
 t/01-core/T1.pm
 t/01-core/T10.pm
 t/01-core/T11.pm
+t/01-core/T12.pm
 t/01-core/T2.pm
 t/01-core/T3.pm
 t/01-core/T4.pm

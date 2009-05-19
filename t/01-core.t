@@ -130,7 +130,7 @@ use MyTest1;
     
     eval{ $t->r( 1 ) };
     like( $@, qr/MyTest1::r Type error/ , 'type return faluse value.' );
-    is_deeply( [ $@->type, $@->pkg, $@->attr ], [ 'type_invalid', 'MyTest1', 'r' ], 'type invalid. Object::Simple::Error object' );
+    is_deeply( [ $@->type, $@->class, $@->attr ], [ 'type_invalid', 'MyTest1', 'r' ], 'type invalid. Object::Simple::Error object' );
 }
 
 
@@ -149,7 +149,7 @@ use T2;
     
     eval{ $t->x( 3 ) };
     like( $@, qr/T2::x is read only/, 'read_only die' );
-    is_deeply( [ $@->type, $@->pkg, $@->attr ], [ 'read_only', 'T2', 'x' ], 'read only error object' );
+    is_deeply( [ $@->type, $@->class, $@->attr ], [ 'read_only', 'T2', 'x' ], 'read only error object' );
 }
 
 use T3;
@@ -215,7 +215,7 @@ use T8;
 use T9;
 {
     eval{ T9->new };
-    is_deeply( [ $@->type, $@->msg, $@->pkg, $@->attr ], [ 'attr_required', "Attr 'm1' is required.", 'T9', 'm1' ], 'new required' );
+    is_deeply( [ $@->type, $@->msg, $@->class, $@->attr ], [ 'attr_required', "Attr 'm1' is required.", 'T9', 'm1' ], 'new required' );
 
 }
 
@@ -253,7 +253,7 @@ use T11;
     eval{ $t->bool( 2 ) };
     ok( $@ );
     isa_ok( $@, 'Object::Simple::Error' );
-    is_deeply( [ $@->type, $@->msg, $@->pkg, $@->attr, $@->val ],
+    is_deeply( [ $@->type, $@->msg, $@->class, $@->attr, $@->val ],
         [
              'type_invalid',
              "T11::bool Type error",
@@ -384,7 +384,7 @@ use T11;
 {
     use T12;
     my $t = T12->new( 1, 2 );
-    is_deeply( $t, { a => 1, b => 2, c => 3 }, '_arrange_args and _init override' );
+    is_deeply( $t, { a => 1, b => 2, c => 3, no_rest => 1 }, '_arrange_args and _init override' );
 }
 __END__
 
