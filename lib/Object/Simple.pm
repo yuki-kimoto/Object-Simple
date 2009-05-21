@@ -48,7 +48,7 @@ sub import{
     }
     
     # import methods form mixin class;
-    Object::Simple::Functions::import_methods_form_mixin_classes( $caller_class, $import_options->{ mixin } );
+    Object::Simple::Functions::import_methods_mixin_class( $caller_class, $import_options->{ mixin } );
     
     # auto strict and auto warnings
     strict->import;
@@ -157,6 +157,23 @@ sub end{
     
 }
 
+# convert $@ to Object::Simple::Error
+sub error{
+    shift;
+    
+    return unless $@;
+    
+    my $error = $@;
+    
+    my $is_object_simple_error = eval{ $error->isa( 'Object::Simple::Error' ) };
+    my $error_object
+        = $is_object_simple_error ? $error :
+                                    Object::Simple::Error->new( message => "$error", position => '' );
+    
+    $@ = $error;
+    return $error_object;
+}
+
 package Object::Simple::Functions;
 use strict;
 use warnings;
@@ -182,20 +199,38 @@ sub inherit_base_class{
     
 }
 
-sub import_methods_form_mixin_classes{
+sub import_methods_mixin_class{
     
     my ( $caller_class, $mixins ) = @_;
     return unless $mixins;
     # normalize mixin
-    my $method_infos = get_method_infos( $mixins );
+    my $method_infos = get_mixin_class_method_infos( $mixins );
     
     # import methods
-    import_methods( $caller_class, $method_infos );
-    
+    foreach my $mixin_class ( keys %{ $method_infos } ){
+
+        Carp::croak "Invalid class name '$mixin_class'" if $mixin_class =~ /[^\w:]/;
+        eval "require $mixin_class;";
+        Carp::croak "$@" if $@;
+
+        my $method_info = $method_infos->{ $mixin_class };
+        
+        my ( $methods, $rename ) = parse_mixin_class_method_info( $mixin_class, $method_info );
+        
+        foreach my $method ( @{ $methods } ){
+            my $renamed_method = $rename->{ $method } || $method;
+            
+            no strict 'refs';
+            Carp::croak( "Not exsits '${mixin_class}::$method'" )
+                unless *{ "${mixin_class}::$method" }{ CODE };
+            
+            *{ "${caller_class}::$renamed_method" } = \&{ "${mixin_class}::$method" };
+        }
+    }    
 }
 
 # get method imformation form mixin option
-sub get_method_infos{
+sub get_mixin_class_method_infos{
     
     my $mixins = shift;
     
@@ -228,36 +263,8 @@ sub get_method_infos{
     
 }
 
-# import methods form mixin package to caller package
-sub import_methods{
-    
-    my ( $caller_class, $mixin_info ) = @_;
-    foreach my $mixin_class ( keys %{ $mixin_info } ){
-
-        Carp::croak "Invalid class name '$mixin_class'" if $mixin_class =~ /[^\w:]/;
-        eval "require $mixin_class;";
-        Carp::croak "$@" if $@;
-
-        my $methods = $mixin_info->{ $mixin_class };
-        
-        my $rename;
-        ( $methods, $rename ) = expand_methods( $mixin_class, $methods );
-        
-        foreach my $method ( @{ $methods } ){
-            my $renamed_method = $rename->{ $method } || $method;
-            
-            no strict 'refs';
-            Carp::croak( "Not exsits '${mixin_class}::$method'" )
-                unless *{ "${mixin_class}::$method" }{ CODE };
-            
-            *{ "${caller_class}::$renamed_method" } = \&{ "${mixin_class}::$method" };
-        }
-    }
-    
-}
-
-# expand methods
-sub expand_methods{
+# parse method info
+sub parse_mixin_class_method_info{
     
     my ( $mixin_class, $methods ) = @_;
     
@@ -317,7 +324,7 @@ sub create_instance{
         if( $required && !defined $arg ){
             Object::Simple::Error->throw(
                 type => 'attr_required',
-                msg => "Attr '$attr' is required.",
+                message => "Attr '$attr' is required.",
                 class => $class,
                 attr => $attr
             );            
@@ -416,7 +423,7 @@ sub create_accessor{
             qq/    if( \@_ ){\n/ .
             qq/        Object::Simple::Error->throw(\n/ .
             qq/            type => 'read_only',\n/ .
-            qq/            msg => "${class}::$attr is read only",\n/ .
+            qq/            message => "${class}::$attr is read only",\n/ .
             qq/            class => "$class",\n/ .
             qq/            attr => "$attr"\n/ .
             qq/        );\n/ .
@@ -446,10 +453,10 @@ sub create_accessor{
             qq/        if( !\$ret ){\n/ .
             qq/            Object::Simple::Error->throw(\n/ .
             qq/                type => 'type_invalid',\n/ .
-            qq/                msg => "${class}::$attr Type error",\n/ .
+            qq/                message => "${class}::$attr Type error",\n/ .
             qq/                class => "$class",\n/ .
             qq/                attr => "$attr",\n/ .
-            qq/                val => \$_[0]\n/ .
+            qq/                value => \$_[0]\n/ .
             qq/            );\n/ .
             qq/        }\n\n/;
         }
@@ -501,6 +508,24 @@ sub create_accessor{
     
 }
 
+# accessor option
+my %VALID_ATTR_OPTIOTNS 
+    = map{ $_ => 1 } qw( default type read_only auto_build setter_return required weak );
+
+# check accessor option
+sub check_accessor_option{
+    
+    # accessor info
+    my ( $attr, $class, @attr_options ) = @_;
+    
+    my $hook_options_exist = {};
+    while( my( $key, $val ) = splice( @attr_options, 0, 2 ) ){
+        Carp::croak "${class}::$attr '$key' is invalid accessor option" 
+            unless $VALID_ATTR_OPTIOTNS{ $key };
+    }
+    
+}
+
 sub define_MODIFY_CODE_ATTRIBUTES{
     
     my $caller_class = shift;
@@ -522,26 +547,6 @@ sub define_MODIFY_CODE_ATTRIBUTES{
     if( $@ ){ die "Cannot execute\n $e" }; # never occured.
     
 }
-
-# accessor option
-my %VALID_ATTR_OPTIOTNS 
-    = map{ $_ => 1 } qw( default type read_only auto_build setter_return required weak );
-
-# check accessor option
-sub check_accessor_option{
-    
-    # accessor info
-    my ( $attr, $class, @attr_options ) = @_;
-    
-    my $hook_options_exist = {};
-    while( my( $key, $val ) = splice( @attr_options, 0, 2 ) ){
-        Carp::croak "${class}::$attr '$key' is invalid accessor option" 
-            unless $VALID_ATTR_OPTIOTNS{ $key };
-    }
-    
-}
-
-
 
 =head1 NAME
 
