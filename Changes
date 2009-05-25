@@ -1,2 +1,8 @@
+0.01_02
+rename Object::Simple::Error attribute 'pkg' to 'class' 
+delete attribute key before pass args to _init 
+remove no need files 
+_arrange_args return hash ref, not hash 
+
 0.01_01 first developer release
 
