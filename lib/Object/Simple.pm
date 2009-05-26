@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 require Carp;
-require Object::Simple::Error;
 
 our $VERSION = '0.01_02';
 
@@ -15,40 +14,34 @@ our $META = {};
 our @ATTRIBUTES_INFO;
 
 # valid import option value
-my %VALID_IMPORT_OPTIONS = map{ $_ => 1 } qw( base mixin );
+my %VALID_IMPORT_OPTIONS = map{$_ => 1} qw(base mixin);
 
 # import
-sub import{
-    
-    my ( $self, @opts ) = @_;
+sub import {
+    my ($self, %options) = @_;
     
     # shortcut
     return unless $self eq 'Object::Simple';
     
-    # arrange arguments
-    @opts = %{ $opts[0] } if ref $opts[0] eq 'HASH';
-    
     # check import option
-    my $import_options = {};
-    while( my ( $opt, $val ) = splice( @opts, 0, 2 ) ){
-        Carp::croak "Invalid import option '$opt'" unless $VALID_IMPORT_OPTIONS{ $opt };
-        $import_options->{ $opt } = $val;
+    foreach my $key (keys %options) {
+        Carp::croak "Invalid import option '$key'" unless $VALID_IMPORT_OPTIONS{ $key };
     }
     
     # get caller package name
     my $caller_class = caller;
     
     # inherit base class;
-    Object::Simple::Functions::inherit_base_class( $caller_class, $import_options->{ base } );
+    Object::Simple::Functions::inherit_base_class($caller_class, $options{base});
     
     # inherit Object::Simple;
     {
         no strict 'refs';
-        push @{ "${caller_class}::ISA" }, 'Object::Simple';
+        push @{"${caller_class}::ISA"}, 'Object::Simple';
     }
     
     # import methods form mixin class;
-    Object::Simple::Functions::import_methods_mixin_class( $caller_class, $import_options->{ mixin } );
+    Object::Simple::Functions::import_methods_mixin_class( $caller_class, $options{mixin});
     
     # auto strict and auto warnings
     strict->import;
@@ -61,7 +54,6 @@ sub import{
 
 # new
 sub new{
-    
     my $invocant = shift;
     
     # convert to class name
@@ -130,13 +122,10 @@ sub end{
         my $attr = $attr_names->{ $class }{ $ref };
         
         # get accessor option
-        my $attr_options = [ $ref->() ];
+        my $attr_options = { $ref->() };
         
         # check accessor option
-        Object::Simple::Functions::check_accessor_option( $attr, $class, @$attr_options );
-        
-        # accessor option convert to hash reference
-        $attr_options = { @$attr_options };
+        Object::Simple::Functions::check_accessor_option( $attr, $class, $attr_options );
         
         # resist accessor option to meta imformation
         $Object::Simple::META->{ attr }{ $class }{ $attr } = $attr_options;
@@ -166,6 +155,8 @@ sub error{
     my $error = $@;
     
     my $is_object_simple_error = eval{ $error->isa( 'Object::Simple::Error' ) };
+
+    require Object::Simple::Error;
     my $error_object
         = $is_object_simple_error ? $error :
                                     Object::Simple::Error->new( message => "$error", position => '' );
@@ -175,14 +166,49 @@ sub error{
 }
 
 package Object::Simple::Functions;
-use strict;
-use warnings;
-
-use Object::Simple::Error;
-use Scalar::Util;
-use Storable;
-use Class::ISA;
 use Object::Simple::Constraint;
+
+# copied from Mouse
+BEGIN {
+    my $impl;
+    if ($] >= 5.009_005) {
+        require mro;
+        $impl = \&mro::get_linear_isa;
+    } else {
+        my $loaded = do {
+            local $SIG{__DIE__} = 'DEFAULT';
+            eval { require MRO::Compat; 1 };
+        };
+        if ($loaded) {
+            $impl = \&mro::get_linear_isa;
+        } else {
+#       VVVVV   CODE TAKEN FROM MRO::COMPAT   VVVVV
+            my $code; # this recurses so it isn't pretty
+            $code = sub {
+                no strict 'refs';
+
+                my $classname = shift;
+
+                my @lin = ($classname);
+                my %stored;
+                foreach my $parent (@{"$classname\::ISA"}) {
+                    my $plin = $code->($parent);
+                    foreach (@$plin) {
+                        next if exists $stored{$_};
+                        push(@lin, $_);
+                        $stored{$_} = 1;
+                    }
+                }
+                return \@lin;
+            };
+#       ^^^^^   CODE TAKEN FROM MRO::COMPAT   ^^^^^
+            $impl = $code;
+        }
+    }
+
+    no strict 'refs';
+    *{ __PACKAGE__ . '::get_linear_isa'} = $impl;
+}
 
 sub inherit_base_class{
     
@@ -304,7 +330,7 @@ sub parse_mixin_class_method_info{
 }
 
 # create instance
-sub create_instance{
+sub create_instance {
     
     my ( $invocant, $args ) = @_;
     
@@ -314,14 +340,14 @@ sub create_instance{
     bless $self, $class;
     
     # merge self and parent accessor option
-    my $attr_options = merge_self_and_super_accessor_option( $class );
+    my $attr_options = merge_self_and_super_accessor_option($class);
     
     # initialize hash slot
-    foreach my $attr ( keys %{ $attr_options } ){
-        my $arg = delete $args->{ $attr };
-        my $required = $attr_options->{ $attr }{ required };
+    foreach my $attr (keys %{$attr_options}) {
+        my $required = $attr_options->{$attr}{required};
         
-        if( $required && !defined $arg ){
+        if($required && !exists $args->{$attr}) {
+            require Object::Simple::Error;
             Object::Simple::Error->throw(
                 type => 'attr_required',
                 message => "Attr '$attr' is required.",
@@ -330,34 +356,42 @@ sub create_instance{
             );            
         }
         
-        if( defined $arg ){
-            $self->$attr( $arg );
+        if(exists $args->{$attr}) {
+            $self->$attr($args->{$attr});
+            delete $args->{$attr}
         }
-        elsif( my $default = $attr_options->{ $attr }{ default } ){
-            
-            $self->{ $attr } = ref $default ? Storable::dclone( $default ) :
-                                              $default;
+        elsif(my $default = $attr_options->{$attr}{default} ){
+            if(ref $default) {
+                require Storable;
+                $self->{$attr} = Storable::dclone($default);
+            }
+            else {
+                $self->{$attr} = $default;
+            }
         }
     }
-    
     return $self;
-    
 }
 
 # marge self and super accessor option
-sub merge_self_and_super_accessor_option{
+sub merge_self_and_super_accessor_option {
     
     my $class = shift;
     
-    my @self_and_super_classes = reverse Class::ISA::self_and_super_path($class);
+    return $Object::Simple::META->{attr}{cached_attr_options}{$class}
+      if $Object::Simple::META->{attr}{cached_attr_options}{$class};
+    
+    my $self_and_super_classes
+      = Object::Simple::Functions::get_linear_isa($class);
     my $attr_options = {};
     
-    foreach my $class ( @self_and_super_classes ){
-        $attr_options = { %{ $attr_options }, %{ $Object::Simple::META->{ attr }{ $class } } }
+    foreach my $class ( reverse @$self_and_super_classes ){
+        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{attr}{$class}}}
             if defined $Object::Simple::META->{ attr }{ $class }
     }
-    return $attr_options;
     
+    $Object::Simple::META->{attr}{cached_attr_options}{$class} = $attr_options;
+    return $attr_options;
 }
 
 # type constraint functions
@@ -421,6 +455,7 @@ sub create_accessor{
     if ( $attr_options->{ read_only } ){
         $e .=
             qq/    if( \@_ ){\n/ .
+            qq/        require Object::Simple::Error;\n/ .
             qq/        Object::Simple::Error->throw(\n/ .
             qq/            type => 'read_only',\n/ .
             qq/            message => "${class}::$attr is read only",\n/ .
@@ -451,6 +486,7 @@ sub create_accessor{
             
             $e .=
             qq/        if( !\$ret ){\n/ .
+            qq/            require Object::Simple::Error;\n/ .
             qq/            Object::Simple::Error->throw(\n/ .
             qq/                type => 'type_invalid',\n/ .
             qq/                message => "${class}::$attr Type error",\n/ .
@@ -477,6 +513,7 @@ sub create_accessor{
             qq/        \$self->{ $attr } = \$_[0];\n\n/;
         
         if( $attr_options->{ weak } ){
+            require Scalar::Util;
             $e .=
             qq/        Scalar::Util::weaken( \$self->{ \$attr } )\n/ .
             qq/            if ref \$self->{ $attr };\n\n/;
@@ -505,7 +542,6 @@ sub create_accessor{
             qq/}\n/;
     
     return $e;
-    
 }
 
 # accessor option
@@ -516,36 +552,31 @@ my %VALID_ATTR_OPTIOTNS
 sub check_accessor_option{
     
     # accessor info
-    my ( $attr, $class, @attr_options ) = @_;
+    my ( $attr, $class, $attr_options ) = @_;
     
     my $hook_options_exist = {};
-    while( my( $key, $val ) = splice( @attr_options, 0, 2 ) ){
+    foreach my $key ( keys %$attr_options ){
         Carp::croak "${class}::$attr '$key' is invalid accessor option" 
             unless $VALID_ATTR_OPTIOTNS{ $key };
     }
-    
 }
 
 sub define_MODIFY_CODE_ATTRIBUTES{
+    my $class = shift;
     
-    my $caller_class = shift;
-    my $e .=
-        qq/package ${caller_class};\n/ .
-        qq/sub MODIFY_CODE_ATTRIBUTES {\n/ .
-        qq/\n/ .
-        qq/    my (\$class, \$ref, \@attrs) = \@_;\n/ .
-        qq/    if( \$attrs[0] eq 'Attr' ){\n/ .
-        qq/        push( \@Object::Simple::ATTRIBUTES_INFO, [\$class, \$ref ]);\n/ .
-        qq/    }\n/ .
-        qq/    else{\n/ .
-        qq/        die "'\$attrs[0]' is bad. attribute must be 'Attr'";\n/ .
-        qq/    }\n/ .
-        qq/    return;\n/ .
-        qq/}\n/;
+    my $code = sub {
+        my ($class, $ref, @attrs) = @_;
+        if( $attrs[0] eq 'Attr' ){
+            push( @Object::Simple::ATTRIBUTES_INFO, [$class, $ref ]);
+        }
+        else{
+            die "'$attrs[0]' is bad. attribute must be 'Attr'";
+        }
+        return;
+    };
     
-    eval $e;
-    if( $@ ){ die "Cannot execute\n $e" }; # never occured.
-    
+    no strict 'refs';
+    *{"${class}::MODIFY_CODE_ATTRIBUTES"} = $code;
 }
 
 =head1 NAME
@@ -656,13 +687,37 @@ new method is prepared.
 
 =head2 _arrange_args
 
-You can override this method to arrange arguments.
+This method receive hash or hash reference, and return hash ref by default.
+
+You can override this method to arrange arguments like this.
+
+    sub _arrange_args {
+        my ($self, $x, $y ) = @_;
+        return {x => $x, y => $y};
+    }
+
+This method must retrun hash ref.
+
+=head2 _init
+
+You can initialize object.
+
+You can override this method
+
+This method receive hash ref argments except attribrte by defined by Attr
+
+    sub _init {
+        my ($self, $args) = @_;
+        
+    }
 
 =head2 end
 
 resist attribute and create accessors.
 
-    Object::Simple->end
+Script must end 'Object::Simple->end;'
+
+    Object::Simple->end;
 
 =head1 SEE ALSO
 

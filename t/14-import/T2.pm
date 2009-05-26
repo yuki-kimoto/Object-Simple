@@ -1,5 +1,5 @@
 package T2;
-use Object::Simple { 
+use Object::Simple(
     base => 'B1',
     mixin => [
         'M1',
@@ -11,7 +11,7 @@ use Object::Simple {
         { 'M3' => [ qw/m3_2 m3_3/ ] },
         'M3'
     ]
-};
+);
 
 Object::Simple->end;
 
