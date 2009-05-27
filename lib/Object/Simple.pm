@@ -5,7 +5,7 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.01_02';
+our $VERSION = '0.0201';
 
 # meta imformation( accessor option of each class )
 our $META = {};
@@ -585,7 +585,7 @@ Object::Simple - Very simple framework for Object Oriented Perl.
 
 =head1 VERSION
 
-Version 0.01_02
+Version 0.0201
 
 =cut
 
@@ -610,8 +610,6 @@ The feature is that
 =item 2. new method is prepared.
 
 =item 3. You can define default value of attribute.
-
-=item 4. Error object is thrown, when error is occured.
 
 =back
 
@@ -671,8 +669,12 @@ writing new methods and accessors repeatedly.
     
     # Mixin
     package Book;
-    use Object::Simple( mixin => [ 'Object::Simple::Mixin::Meta' ] );
-    
+    use Object::Simple( 
+        mixin => [ 
+            'Object::Simple::Mixin::AttrNames',
+            'Object::Simple::Mixin::AttrOptions'
+        ]
+    );
 
 =cut
 
@@ -710,6 +712,12 @@ This method receive hash ref argments except attribrte by defined by Attr
         my ($self, $args) = @_;
         
     }
+    
+=head2 error
+
+You can get error as Object::Simple::Error object
+
+    my $error = Object::Simple->error;
 
 =head2 end
 
@@ -718,6 +726,99 @@ resist attribute and create accessors.
 Script must end 'Object::Simple->end;'
 
     Object::Simple->end;
+
+
+=head1 ACCESSOR OPTIONS
+
+=head2 default
+
+You can define attribute default value
+
+    sub title : Attr {default => 'Good news'}
+    sub author : Attr {default => ['Ken', 'Taro']}
+
+=head2 auto_build
+
+You can automaticaly set attribute value when accessor is called first.
+    
+    sub author : Attr { auto_build => 1 }
+    sub build_author{
+        my $self = shift;
+        $self->atuhor( Person->new );
+   }
+
+Builder method name is build_ATTRIBUTE_NAME by default;
+
+You can specify build method .
+
+    sub author : Attr { auto_build => 1 }
+    sub create_author{
+        my $self = shift;
+        $self->atuhor( Person->new );
+    }
+
+=head2 type
+
+You can define type of attribute value
+    
+    sub price: Attr {type => 'Int'} # must be integer
+    sub author: Attr {type => 'Person'} # must be inherit Perlson class
+
+list of default types
+
+    Bool       => \&Object::Simple::Constraint::is_bool,
+    Undef      => sub { !defined($_[0]) },
+    Defined    => sub { defined($_[0]) },
+    Value      => \&Object::Simple::Constraint::is_value,
+    Num        => \&Object::Simple::Constraint::is_num,
+    Int        => \&Object::Simple::Constraint::is_int,
+    Str        => \&Object::Simple::Constraint::is_str,
+    ClassName  => \&Object::Simple::Constraint::is_class_name,
+    Ref        => sub { ref($_[0]) },
+
+    ScalarRef  => \&Object::Simple::Constraint::is_scalar_ref,
+    ArrayRef   => \&Object::Simple::Constraint::is_array_ref,
+    HashRef    => \&Object::Simple::Constraint::is_hash_ref,
+    CodeRef    => \&Object::Simple::Constraint::is_code_ref,
+    RegexpRef  => \&Object::Simple::Constraint::is_regexp_ref,
+    GlobRef    => \&Object::Simple::Constraint::is_glob_ref,
+    FileHandle => \&Object::Simple::Constraint::is_file_handle,
+    Object     => \&Object::Simple::Constraint::is_object
+
+You can specify code reference
+
+    sub price: Attr {type => sub{ $_[0] =~ /^\d+$/ }}
+
+=head2 read_only
+
+You can create read only accessor
+    
+    sub title: Attr { read_only => 1 }
+
+=head2 setter_return
+
+You can spesicy return value when setting value
+
+    sub title : Attr { setter_return => 'old' }
+
+list of setter_return option
+
+    old
+    current
+    self
+    undef
+
+=head1 required
+
+You can specify required attribute when instance is created.
+
+    sub title : Attr {required => 1}
+
+=head1 weak
+
+attribute value is weak reference.
+
+    sub parent : Attr {weak => 1}
 
 =head1 SEE ALSO
 
@@ -740,7 +841,6 @@ automatically be notified of progress on your bug as I make changes.
 You can find documentation for this module with the perldoc command.
 
     perldoc Object::Simple
-
 
 You can also look for information at:
 
