@@ -1,3 +1,6 @@
+0.0201
+  first release
+  
 0.01_02
 rename Object::Simple::Error attribute 'pkg' to 'class' 
 delete attribute key before pass args to _init 

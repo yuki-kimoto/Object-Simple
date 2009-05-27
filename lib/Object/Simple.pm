@@ -128,7 +128,7 @@ sub end{
         Object::Simple::Functions::check_accessor_option( $attr, $class, $attr_options );
         
         # resist accessor option to meta imformation
-        $Object::Simple::META->{ attr }{ $class }{ $attr } = $attr_options;
+        $Object::Simple::META->{ attr_options }{ $class }{ $attr } = $attr_options;
         
         # create accessor
         {
@@ -378,19 +378,19 @@ sub merge_self_and_super_accessor_option {
     
     my $class = shift;
     
-    return $Object::Simple::META->{attr}{cached_attr_options}{$class}
-      if $Object::Simple::META->{attr}{cached_attr_options}{$class};
+    return $Object::Simple::META->{merged_attr_options}{$class}
+      if $Object::Simple::META->{merged_attr_options}{$class};
     
     my $self_and_super_classes
       = Object::Simple::Functions::get_linear_isa($class);
     my $attr_options = {};
     
-    foreach my $class ( reverse @$self_and_super_classes ){
-        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{attr}{$class}}}
-            if defined $Object::Simple::META->{ attr }{ $class }
+    foreach my $class (reverse @$self_and_super_classes){
+        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{attr_options}{$class}}}
+            if defined $Object::Simple::META->{attr_options}{$class};
     }
     
-    $Object::Simple::META->{attr}{cached_attr_options}{$class} = $attr_options;
+    $Object::Simple::META->{merged_attr_options}{$class} = $attr_options;
     return $attr_options;
 }
 

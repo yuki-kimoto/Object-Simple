@@ -12,8 +12,8 @@ my $builder = Module::Build->new(
     },
     requires => {
         'Storable' => 0,
-        'Object::Simple::Constraint' => 0,
-        'Object::Simple::Error' => 0,
+        'Object::Simple::Constraint' => 0.0201,
+        'Object::Simple::Error' => 0.0201,
         'Scalar::Util' => 1.14
     },
     add_to_cleanup      => [ 'Object-Simple-*' ],

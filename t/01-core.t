@@ -100,8 +100,8 @@ use Point;
 }
 {
     my $p = Point->new;
-    is_deeply( $p, { x => 1, y => 1, p => $Object::Simple::META->{ attr }{ Point }{ p }{ default } }, 'default overwrited' );
-    cmp_ok( ref $Object::Simple::META->{ attr }{ Point }{ p }{ default }, 'ne', $p->p, 'default different ref' );
+    is_deeply($p, {x => 1, y => 1, p => $Object::Simple::META->{attr_options}{Point}{p}{default}}, 'default overwrited' );
+    cmp_ok(ref $Object::Simple::META->{attr_options}{Point}{p}{default}, 'ne', $p->p, 'default different ref' );
 }
 
 use MyTest1;
