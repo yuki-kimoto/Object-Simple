@@ -44,7 +44,11 @@ eval "use T5";
 like( $@, qr/Invalid class name ';;;;'/, 'base invalid class name' );
 
 eval "use T6";
-ok( $@, 'mixin not exist class' );
+ok($@, 'mixin not exist class' );
 
 eval "use T7";
-like( $@, qr/Not exsits 'M1::noexist'/, 'method no exist' );
+like($@, qr/Not exsits 'M1::noexist'/, 'method no exist' );
+
+eval "use T8";
+like($@, qr/Invalid class name /, 'invalid mixin class name');
+

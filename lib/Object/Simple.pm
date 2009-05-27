@@ -431,23 +431,27 @@ sub create_accessor{
             # arg recieve
             qq/    my \$self = shift;\n\n/;
 
+    # automatically call build method
     if( my $auto_build = $attr_options->{ auto_build } ){
-        unless( ref $auto_build eq 'CODE' ){
-            # automatically call build method
-            my $build_method = $attr;
+        
+        $e .=
+            qq/    if( !\@_ && ! defined \$self->{ $attr } ){\n/;
+        
+        if(ref $auto_build eq 'CODE') {
+        $e .=
+            qq/        \$attr_options->{ auto_build }->( \$self );\n/;
+        }
+        else {
+            my $build_method;
             if( $attr =~ s/^(_*)// ){
                 $build_method = $1 . "build_$attr";
             }
             
-            Carp::croak( "'$build_method' must exist in '$class' when 'auto_build' option is set." )
-                unless $class->can( $build_method );
-            
-            $attr_options->{ auto_build } = \&{ "${class}::${build_method}" };
+        $e .=
+            qq/        \$self->$build_method\n;/;
         }
         
         $e .=
-            qq/    if( !\@_ && ! defined \$self->{ $attr } ){\n/ .
-            qq/        \$attr_options->{ auto_build }->( \$self );\n/ .
             qq/    }\n/ .
             qq/    \n/;
     }
