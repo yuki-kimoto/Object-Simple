@@ -2,7 +2,7 @@ Build.PL
 Changes
 lib/Object/Simple.pm
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 META.yml
 README
 t/00-load.t
@@ -15,9 +15,11 @@ t/01-core/Point.pm
 t/01-core/T1.pm
 t/01-core/T10.pm
 t/01-core/T11.pm
-t/01-core/T12.pm
 t/01-core/T13.pm
 t/01-core/T14.pm
+t/01-core/T15.pm
+t/01-core/T16.pm
+t/01-core/T17.pm
 t/01-core/T2.pm
 t/01-core/T3.pm
 t/01-core/T4.pm
@@ -57,12 +59,21 @@ t/14-import/M4.pm
 t/14-import/M5.pm
 t/14-import/M6.pm
 t/14-import/T1.pm
+t/14-import/T10.pm
+t/14-import/T11.pm
+t/14-import/T12.pm
+t/14-import/T13.pm
+t/14-import/T14.pm
 t/14-import/T2.pm
 t/14-import/T3.pm
 t/14-import/T4.pm
 t/14-import/T5.pm
 t/14-import/T6.pm
 t/14-import/T7.pm
+t/14-import/T8.pm
+t/14-import/T9.pm
 t/boilerplate.t
+t/cover.css
+t/coverage.html
 t/pod-coverage.t
 t/pod.t

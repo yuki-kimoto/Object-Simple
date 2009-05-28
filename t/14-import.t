@@ -17,21 +17,15 @@ use T2;
      ok( $t->can( 'b1' ), 'base option passed as array ref 1' );   
 
      ok( $t->can( 'm1' ), 'mixin option passed as array ref 1' );   
-     ok( $t->can( 'm2' ), 'mixin option passed as array ref 2' );
-     ok( $t->can( 'm3_1' ), 'mixin option passed as array ref 3-1' );
+     ok( !$t->can( 'm3_1' ), 'mixin option passed as array ref 3-1' );
      ok( $t->can( 'm3_2' ), 'mixin option passed as array ref 3-2' );
-     ok( $t->can( 'm3_3' ), 'mixin option passed as array ref 3-3' );
+     ok( !$t->can( 'm3_3' ), 'mixin option passed as array ref 3-3' );
      ok( $t->can( 'm3_4' ), 'mixin option passed as array ref 3-4' );
      ok( $t->can( 'm3_5' ), 'mixin option passed as array ref 3-5' );
-     ok( $t->can( 'm4_1' ), 'mixin option passed as array ref 4-1' );
      ok( !$t->can( 'm5_1' ), 'mixin option passed as array ref 5-1' );
      ok( $t->can( 'rename' ), 'mixin option passed as array ref rename' );
      ok( $t->can( 'm5_2' ), 'mixin option passed as array ref 5-2' );
      
-     ok( $t->can( 'm6_1' ), 'mixin option expand tags 1' );
-     ok( $t->can( 'm6_2' ), 'mixin option expand tags 2' );
-     ok( $t->can( 'm6_3' ), 'mixin option expand tags 3' );
-     ok( !$t->can( 'm6_4' ), 'mixin option expand tags 4' );
 }
 
 eval "use T3";
@@ -47,8 +41,25 @@ eval "use T6";
 ok($@, 'mixin not exist class' );
 
 eval "use T7";
-like($@, qr/Not exsits 'M1::noexist'/, 'method no exist' );
+like($@, qr/mixin option must be key-value pairs/, 'method no exist' );
 
 eval "use T8";
 like($@, qr/Invalid class name /, 'invalid mixin class name');
 
+eval "use T9";
+like($@, qr/mixins must be array reference/, 'mixin must be array ref');
+
+eval "use T10";
+like($@, qr/mixins item must be class name or array reference/, 'mixin item is bad');
+
+eval "use T11";
+like($@, qr/methods is not exist in \@M2::EXPORT/, 'method is not exist in @EXPORT');
+
+eval "use T12";
+like($@, qr/mixin option 'n' is invalid/, 'invalid mixin options');
+
+eval "use T13";
+like($@, qr/Not exsits 'M6::m6_1/, 'Not exsits method');
+
+eval "use T14";
+like($@, qr/Fail M5 mixin rename/, 'fail rename');

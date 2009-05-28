@@ -1,8 +1,8 @@
-package T7;
+package T12;
 use Object::Simple(
     mixins => [
-        ['M1', 'noexist']
-    ] 
+        'M6'
+    ]
 );
 
 Object::Simple->end;

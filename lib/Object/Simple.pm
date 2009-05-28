@@ -5,7 +5,7 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.0201';
+our $VERSION = '0.0202';
 
 # meta imformation( accessor option of each class )
 our $META = {};
@@ -14,7 +14,7 @@ our $META = {};
 our @ATTRIBUTES_INFO;
 
 # valid import option value
-my %VALID_IMPORT_OPTIONS = map{$_ => 1} qw(base mixin);
+my %VALID_IMPORT_OPTIONS = map{$_ => 1} qw(base mixins);
 
 # import
 sub import {
@@ -40,8 +40,8 @@ sub import {
         push @{"${caller_class}::ISA"}, 'Object::Simple';
     }
     
-    # import methods form mixin class;
-    Object::Simple::Functions::import_methods_mixin_class( $caller_class, $options{mixin});
+    # import methods form mixin classes;
+    Object::Simple::Functions::import_method_from_mixin_classes( $caller_class, $options{mixins});
     
     # auto strict and auto warnings
     strict->import;
@@ -242,108 +242,65 @@ sub inherit_base_class{
     
 }
 
-sub import_methods_mixin_class{
-    
-    my ( $caller_class, $mixins ) = @_;
-    return unless $mixins;
-    # normalize mixin
-    my $method_infos = get_mixin_class_method_infos( $mixins );
-    
+my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename/;
+sub import_method_from_mixin_classes{
+    my ( $caller_class, $mixin_infos ) = @_;
+    return unless $mixin_infos;
+
+    Carp::croak("mixins must be array reference.") if ref $mixin_infos ne 'ARRAY';
+
     # import methods
-    foreach my $mixin_class ( keys %{ $method_infos } ){
-
+    foreach my $mixin_info (@$mixin_infos) {
+        my $mixin_class;
+        my $options = {};
+        
+        if (!ref $mixin_info) {
+            $mixin_class = $mixin_info;
+        }
+        elsif (ref $mixin_info eq 'ARRAY') {
+            my @options;
+            ($mixin_class, @options) = @$mixin_info;
+            $mixin_class ||= '';
+            
+            Carp::croak("mixin option must be key-value pairs.")
+               if @options % 2;
+            $options = {@options};
+        }
+        else {
+            Carp::croak("mixins item must be class name or array reference. $mixin_info is bad.");
+        }
+        
         Carp::croak("Invalid class name '$mixin_class'") if $mixin_class =~ /[^\w:]/;
+        
         eval "require $mixin_class;";
-        Carp::croak("$@") if $@;
-
-        my $method_info = $method_infos->{ $mixin_class };
+        Carp::croak($@) if $@;
         
-        my ( $methods, $rename ) = parse_mixin_class_method_info( $mixin_class, $method_info );
+        my $methods = do {
+            no strict 'refs';
+            [@{"${mixin_class}::EXPORT"}];
+        };
         
-        foreach my $method ( @{ $methods } ){
-            my $renamed_method = $rename->{ $method } || $method;
+        Carp::croak("methods is not exist in \@${mixin_class}::EXPORT.")
+            unless @$methods;        
+        
+        foreach my $option (keys %$options) {
+            Carp::croak("mixin option '$option' is invalid")
+                unless $VALID_MIXIN_OPTIONS{$option};
+        }
+        
+        foreach my $method (@$methods) {
+            my $rename = $options->{rename} || {};
+            
+            my $renamed_method = $rename->{$method} || $method;
+            delete $rename->{$method};
             
             no strict 'refs';
             Carp::croak("Not exsits '${mixin_class}::$method'")
-                unless *{ "${mixin_class}::$method" }{ CODE };
-            
-            *{ "${caller_class}::$renamed_method" } = \&{ "${mixin_class}::$method" };
+                unless *{"${mixin_class}::$method"}{CODE};
+            *{"${caller_class}::$renamed_method"} = \&{"${mixin_class}::$method"};
         }
-    }    
-}
-
-# get method imformation form mixin option
-sub get_mixin_class_method_infos{
-    
-    my $mixins = shift;
-    
-    $mixins = [ $mixins ] unless ref $mixins eq 'ARRAY';
-    
-    my $method_infos = {};
-    foreach my $mixin ( @{ $mixins } ){
-        
-        if( ref $mixin eq 'HASH' ){
-            while( my ( $mixin_class, $methods ) = each %{ $mixin } ){
-                $methods = [ $methods ] unless ref $methods eq 'ARRAY';
-                if( $method_infos->{ $mixin_class } ){
-                    $method_infos->{ $mixin_class } = [ @{ $method_infos->{ $mixin_class } }, @{ $methods } ];
-                }
-                else{
-                    $method_infos->{ $mixin_class } = $methods;
-                }
-            }
-        }
-        else{
-            if( $method_infos->{ $mixin } ){
-                $method_infos->{ $mixin } = [ @{ $method_infos->{ $mixin } }, undef ];
-            }
-            else{
-                $method_infos->{ $mixin } = [ undef ];
-            }
-        }
+        Carp::croak("Fail $mixin_class mixin rename.") if keys %{$options->{rename}};
     }
-    return $method_infos;
-    
-}
-
-# parse method info
-sub parse_mixin_class_method_info{
-    
-    my ( $mixin_class, $methods ) = @_;
-    
-    my %methods; # no dupulicate method list
-    my $rename = {};
-    
-    foreach my $method ( @{ $methods } ){
-        
-        if( !defined $method ){
-            no strict 'refs';
-            %methods = ( %methods, map { $_ => 1 } @{ "${mixin_class}::EXPORT" } );
-        }
-        elsif( $method =~ /^:(\w+)$/ ){
-            my $tag = $1;
-            no strict 'refs';
-            my %export_tags = %{ "${mixin_class}::EXPORT_TAGS" };
-            Carp::croak("Not exists :$tag in \@${mixin_class}::EXPORT_TAGS")
-                unless exists $export_tags{ $tag };
-            
-            my $methods = ${ "${mixin_class}::EXPORT_TAGS" }{ $tag };
-            %methods = ( %methods, map { $_ => 1 } @{ $methods } );
-        }
-        elsif( $method =~ /^(\w+)=>(\w+)$/ ){
-            my $import_info = {};
-            $method = $1;
-            my $renamed_method = $2;
-            
-            $methods{ $method }++;
-            $rename->{ $method } = $renamed_method;
-        }
-        else{
-            $methods{ $method }++;
-        }
-    }
-    return ( [ keys %methods ], $rename );
-    
 }
 
 # marge self and super accessor option
@@ -558,11 +515,11 @@ sub define_MODIFY_CODE_ATTRIBUTES{
 
 =head1 NAME
 
-Object::Simple - Very simple framework for Object Oriented Perl.
+Object::Simple - Light Weight Minimal Object System
 
 =head1 VERSION
 
-Version 0.0201
+Version 0.0202
 
 =cut
 
@@ -647,7 +604,7 @@ writing new methods and accessors repeatedly.
     # Mixin
     package Book;
     use Object::Simple( 
-        mixin => [ 
+        mixins => [ 
             'Object::Simple::Mixin::AttrNames',
             'Object::Simple::Mixin::AttrOptions'
         ]
@@ -664,32 +621,6 @@ new method is prepared.
     use Book;
     my $book = Book->new( title => 'a', author => 'b', price => 1000 );
 
-=head2 _arrange_args
-
-This method receive hash or hash reference, and return hash ref by default.
-
-You can override this method to arrange arguments like this.
-
-    sub _arrange_args {
-        my ($self, $x, $y ) = @_;
-        return {x => $x, y => $y};
-    }
-
-This method must retrun hash ref.
-
-=head2 _init
-
-You can initialize object.
-
-You can override this method
-
-This method receive hash ref argments except attribrte by defined by Attr
-
-    sub _init {
-        my ($self, $args) = @_;
-        
-    }
-    
 =head2 error
 
 You can get error as Object::Simple::Error object
@@ -785,23 +716,65 @@ list of setter_return option
     self
     undef
 
-=head1 required
+=head2 required
 
 You can specify required attribute when instance is created.
 
     sub title : Attr {required => 1}
 
-=head1 weak
+=head2 weak
 
 attribute value is weak reference.
 
     sub parent : Attr {weak => 1}
+
+=head1 INHERITANCE
+
+    # Inheritance
+    package Magazine;
+    use Object::Simple( base => 'Book' );
+
+Object::Simple do not support multiple inheritance because it is dangerous.
+
+=head1 MIXIN
+
+Object::Simple support mixin syntax
+
+    # Mixin
+    package Book;
+    use Object::Simple( 
+        mixins => [ 
+            'Object::Simple::Mixin::AttrNames',
+            'Object::Simple::Mixin::AttrOptions'
+        ]
+    );
+
+This is equel to
+
+    package Book;
+    use Object::Simple;
+    
+    use Object::Simple::Mixin::AttrNames;
+    use Object::Simple::Mixin::AttrOptions;
+
+You can rename method if methods name crash each other.
+
+    use Object::Simple( 
+        mixins => [ 
+            ['Some::Mixin', rename => { 'mehtod' => 'renamed_method' }]
+        ]
+    );
+    
 
 =head1 SEE ALSO
 
 L<Object::Simple::Constraint> - Constraint methods for Object::Simple 'type' option.
 
 L<Object::Simple::Error> - Structured error system for Object::Simple.
+
+L<Object::Simple::Mixin::AttrNames> - mixin attr_names method.
+
+L<Object::Simple::Mixin::AttrOptions> - mixin attr_options method.
 
 =head1 AUTHOR
 
