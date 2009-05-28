@@ -392,13 +392,6 @@ use T11;
 }
 
 {
-    use T12;
-    my $t = T12->new( 1, 2 );
-    is_deeply( $t, { a => 1, b => 2, c => 3, no_rest => 1 }, '_arrange_args and _init override' );
-}
-
-
-{
 
     eval{
         Object::Simple::Error->throw( type => 'err_type', message => 'message', info => { a => '1' } );

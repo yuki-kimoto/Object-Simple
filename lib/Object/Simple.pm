@@ -25,7 +25,7 @@ sub import {
     
     # check import option
     foreach my $key (keys %options) {
-        Carp::croak "Invalid import option '$key'" unless $VALID_IMPORT_OPTIONS{ $key };
+        Carp::croak("Invalid import option '$key'") unless $VALID_IMPORT_OPTIONS{ $key };
     }
     
     # get caller package name
@@ -59,36 +59,53 @@ sub new{
     # convert to class name
     my $class = ref $invocant || $invocant;
     
-    # arrange arguments
-    my $args = $class->_arrange_args( @_ );
-    
-    # create instance
-    my $self = Object::Simple::Functions::create_instance( $invocant, $args );
-    
-    # initialize instance
-    $self->_init( $args );
-    
-    return $self;
-
-}
-
-# arrange arguments
-sub _arrange_args{
-    
-    my $class = shift;
-    
+    my $args;
     # arrange arguments
     if( ref $_[0] eq 'HASH' ){
-         return {%{$_[0]}};
+        $args = {%{$_[0]}};
     }
     else{
-        Carp::croak "key-value pairs must be passed to ${class}::new" if @_ % 2;
-        return {@_};
+        Carp::croak("key-value pairs must be passed to ${class}::new") if @_ % 2;
+        $args = {@_};
     }
-}
 
-# initialize instance
-sub _init{ }
+    # bless
+    my $self = {};
+    bless $self, $class;
+    
+    # merge self and parent accessor option
+    my $attr_options
+      = Object::Simple::Functions::merge_self_and_super_accessor_option($class);
+    
+    # initialize hash slot
+    foreach my $attr (keys %{$attr_options}) {
+        my $required = $attr_options->{$attr}{required};
+        
+        if($required && !exists $args->{$attr}) {
+            require Object::Simple::Error;
+            Object::Simple::Error->throw(
+                type => 'attr_required',
+                message => "Attr '$attr' is required.",
+                class => $class,
+                attr => $attr
+            );            
+        }
+        
+        if(exists $args->{$attr}) {
+            $self->$attr($args->{$attr});
+        }
+        elsif(my $default = $attr_options->{$attr}{default} ){
+            if(ref $default) {
+                require Storable;
+                $self->{$attr} = Storable::dclone($default);
+            }
+            else {
+                $self->{$attr} = $default;
+            }
+        }
+    }
+    return $self;
+}
 
 # resist attribute infomathion at end of script
 sub end{
@@ -137,7 +154,7 @@ sub end{
             no warnings qw( redefine closure );
             eval"sub ${class}::${attr} $code";
             
-            Carp::croak( "$code: $@" ) if $@; # for debug. never ocuured.
+            Carp::croak("$code: $@") if $@; # for debug. never ocuured.
         
         }
     }
@@ -216,9 +233,9 @@ sub inherit_base_class{
     
     return unless $base;
     
-    Carp::croak "Invalid class name '$base'" if $base =~ /[^\w:]/;
+    Carp::croak("Invalid class name '$base'") if $base =~ /[^\w:]/;
     eval "require $base;";
-    Carp::croak "$@" if $@;
+    Carp::croak("$@") if $@;
     
     no strict 'refs';
     unshift @{ "${caller_class}::ISA" }, $base;
@@ -235,9 +252,9 @@ sub import_methods_mixin_class{
     # import methods
     foreach my $mixin_class ( keys %{ $method_infos } ){
 
-        Carp::croak "Invalid class name '$mixin_class'" if $mixin_class =~ /[^\w:]/;
+        Carp::croak("Invalid class name '$mixin_class'") if $mixin_class =~ /[^\w:]/;
         eval "require $mixin_class;";
-        Carp::croak "$@" if $@;
+        Carp::croak("$@") if $@;
 
         my $method_info = $method_infos->{ $mixin_class };
         
@@ -247,7 +264,7 @@ sub import_methods_mixin_class{
             my $renamed_method = $rename->{ $method } || $method;
             
             no strict 'refs';
-            Carp::croak( "Not exsits '${mixin_class}::$method'" )
+            Carp::croak("Not exsits '${mixin_class}::$method'")
                 unless *{ "${mixin_class}::$method" }{ CODE };
             
             *{ "${caller_class}::$renamed_method" } = \&{ "${mixin_class}::$method" };
@@ -307,7 +324,7 @@ sub parse_mixin_class_method_info{
             my $tag = $1;
             no strict 'refs';
             my %export_tags = %{ "${mixin_class}::EXPORT_TAGS" };
-            Carp::croak( "Not exists :$tag in \@${mixin_class}::EXPORT_TAGS" )
+            Carp::croak("Not exists :$tag in \@${mixin_class}::EXPORT_TAGS")
                 unless exists $export_tags{ $tag };
             
             my $methods = ${ "${mixin_class}::EXPORT_TAGS" }{ $tag };
@@ -327,50 +344,6 @@ sub parse_mixin_class_method_info{
     }
     return ( [ keys %methods ], $rename );
     
-}
-
-# create instance
-sub create_instance {
-    
-    my ( $invocant, $args ) = @_;
-    
-    # bless
-    my $self = {};
-    my $class = ref $invocant || $invocant;
-    bless $self, $class;
-    
-    # merge self and parent accessor option
-    my $attr_options = merge_self_and_super_accessor_option($class);
-    
-    # initialize hash slot
-    foreach my $attr (keys %{$attr_options}) {
-        my $required = $attr_options->{$attr}{required};
-        
-        if($required && !exists $args->{$attr}) {
-            require Object::Simple::Error;
-            Object::Simple::Error->throw(
-                type => 'attr_required',
-                message => "Attr '$attr' is required.",
-                class => $class,
-                attr => $attr
-            );            
-        }
-        
-        if(exists $args->{$attr}) {
-            $self->$attr($args->{$attr});
-            delete $args->{$attr}
-        }
-        elsif(my $default = $attr_options->{$attr}{default} ){
-            if(ref $default) {
-                require Storable;
-                $self->{$attr} = Storable::dclone($default);
-            }
-            else {
-                $self->{$attr} = $default;
-            }
-        }
-    }
-    return $self;
 }
 
 # marge self and super accessor option
@@ -504,7 +477,7 @@ sub create_accessor{
         # setter return value;
         my $setter_return = $attr_options->{ setter_return };
         $setter_return  ||= 'undef';
-        Carp::croak( "${class}::$attr 'setter_return' option must be 'undef', 'old', 'current', or 'self'." )
+        Carp::croak("${class}::$attr 'setter_return' option must be 'undef', 'old', 'current', or 'self'.")
             unless $VALID_SETTER_RETURN{ $setter_return };
         
         if( $setter_return eq 'old' ){
@@ -560,7 +533,7 @@ sub check_accessor_option{
     
     my $hook_options_exist = {};
     foreach my $key ( keys %$attr_options ){
-        Carp::croak "${class}::$attr '$key' is invalid accessor option" 
+        Carp::croak("${class}::$attr '$key' is invalid accessor option")
             unless $VALID_ATTR_OPTIOTNS{ $key };
     }
 }
