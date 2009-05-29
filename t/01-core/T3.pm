@@ -1,5 +1,5 @@
 package T3;
 use Object::Simple;
-sub x : Attr { default => [ 1 ] }
+sub x : Attr { default => sub{[1]} }
 
 Object::Simple->end;

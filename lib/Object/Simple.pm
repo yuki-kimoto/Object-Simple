@@ -25,7 +25,7 @@ sub import {
     
     # check import option
     foreach my $key (keys %options) {
-        Carp::croak("Invalid import option '$key'") unless $VALID_IMPORT_OPTIONS{ $key };
+        Carp::croak("Invalid import option '$key'") unless $VALID_IMPORT_OPTIONS{$key};
     }
     
     # get caller package name
@@ -41,19 +41,18 @@ sub import {
     }
     
     # import methods form mixin classes;
-    Object::Simple::Functions::import_method_from_mixin_classes( $caller_class, $options{mixins});
+    Object::Simple::Functions::import_method_from_mixin_classes($caller_class, $options{mixins});
     
     # auto strict and auto warnings
     strict->import;
     warnings->import;
     
     # define MODIFY_CODE_ATTRIBUTES for caller package
-    Object::Simple::Functions::define_MODIFY_CODE_ATTRIBUTES( $caller_class );
-    
+    Object::Simple::Functions::define_MODIFY_CODE_ATTRIBUTES($caller_class);
 }
 
 # new
-sub new{
+sub new {
     my $invocant = shift;
     
     # convert to class name
@@ -61,7 +60,7 @@ sub new{
     
     my $args;
     # arrange arguments
-    if( ref $_[0] eq 'HASH' ){
+    if(ref $_[0] eq 'HASH') {
         $args = {%{$_[0]}};
     }
     else{
@@ -79,28 +78,18 @@ sub new{
     
     # initialize hash slot
     foreach my $attr (keys %{$attr_options}) {
-        my $required = $attr_options->{$attr}{required};
-        
-        if($required && !exists $args->{$attr}) {
-            require Object::Simple::Error;
-            Object::Simple::Error->throw(
-                type => 'attr_required',
-                message => "Attr '$attr' is required.",
-                class => $class,
-                attr => $attr
-            );            
-        }
-        
         if(exists $args->{$attr}) {
             $self->$attr($args->{$attr});
         }
-        elsif(my $default = $attr_options->{$attr}{default} ){
-            if(ref $default) {
-                require Storable;
-                $self->{$attr} = Storable::dclone($default);
+        elsif(my $default = $attr_options->{$attr}{default}) {
+            if(!ref $default) {
+                $self->{$attr} = $default;
+            }
+            elsif(ref $default eq 'CODE') {
+                $self->{$attr} = $default->();
             }
             else {
-                $self->{$attr} = $default;
+                Carp::croak('Default has to be a code reference or constant value');
             }
         }
     }
@@ -108,7 +97,7 @@ sub new{
 }
 
 # resist attribute infomathion at end of script
-sub end{
+sub end {
     
     my $self = shift;
     
@@ -116,120 +105,72 @@ sub end{
     my $attr_names = {};
     
     # parse symbol table and create accessors
-    while ( my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO ) {
+    while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
         
-        my ($class, $ref ) = @$class_and_ref;
+        my ($class, $ref) = @$class_and_ref;
         
         # parse symbol tabel to find code reference correspond to method names
-        unless( $attr_names->{ $class } ) {
+        unless($attr_names->{$class}) {
         
             $attr_names->{$class} = {};
             
             no strict 'refs';
-            foreach my $sym ( values %{"${class}::"} ) {
+            foreach my $sym (values %{"${class}::"}) {
             
                 next unless ref(*{$sym}{CODE}) eq 'CODE';
                 
                 $attr_names->{$class}{*{$sym}{CODE}} = *{$sym}{NAME};
-                
             }
         }
         
         # get attribute name
-        my $attr = $attr_names->{ $class }{ $ref };
+        my $attr = $attr_names->{$class}{$ref};
         
         # get accessor option
-        my $attr_options = { $ref->() };
+        my $attr_options = {$ref->()};
         
         # check accessor option
-        Object::Simple::Functions::check_accessor_option( $attr, $class, $attr_options );
+        Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options);
         
         # resist accessor option to meta imformation
-        $Object::Simple::META->{ attr_options }{ $class }{ $attr } = $attr_options;
+        $Object::Simple::META->{attr_options}{$class}{$attr} = $attr_options;
         
         # create accessor
         {
             
-            my $code = Object::Simple::Functions::create_accessor( $class, $attr, $attr_options );
-            no warnings qw( redefine closure );
-            eval"sub ${class}::${attr} $code";
+            my $code = Object::Simple::Functions::create_accessor($class, $attr, $attr_options);
+            no warnings qw(redefine closure);
+            eval $code;
             
             Carp::croak("$code: $@") if $@; # for debug. never ocuured.
-        
         }
     }
-    
     return 1;
-    
-}
-
-# convert $@ to Object::Simple::Error
-sub error{
-    shift;
-    
-    return unless $@;
-    
-    my $error = $@;
-    
-    my $is_object_simple_error = eval{ $error->isa( 'Object::Simple::Error' ) };
-
-    require Object::Simple::Error;
-    my $error_object
-        = $is_object_simple_error ? $error :
-                                    Object::Simple::Error->new( message => "$error", position => '' );
-    
-    $@ = $error;
-    return $error_object;
 }
 
 package Object::Simple::Functions;
-use Object::Simple::Constraint;
 
-# copied from Mouse
-BEGIN {
-    my $impl;
-    if ($] >= 5.009_005) {
-        require mro;
-        $impl = \&mro::get_linear_isa;
-    } else {
-        my $loaded = do {
-            local $SIG{__DIE__} = 'DEFAULT';
-            eval { require MRO::Compat; 1 };
-        };
-        if ($loaded) {
-            $impl = \&mro::get_linear_isa;
-        } else {
-#       VVVVV   CODE TAKEN FROM MRO::COMPAT   VVVVV
-            my $code; # this recurses so it isn't pretty
-            $code = sub {
-                no strict 'refs';
-
-                my $classname = shift;
-
-                my @lin = ($classname);
-                my %stored;
-                foreach my $parent (@{"$classname\::ISA"}) {
-                    my $plin = $code->($parent);
-                    foreach (@$plin) {
-                        next if exists $stored{$_};
-                        push(@lin, $_);
-                        $stored{$_} = 1;
-                    }
-                }
-                return \@lin;
-            };
-#       ^^^^^   CODE TAKEN FROM MRO::COMPAT   ^^^^^
-            $impl = $code;
+sub get_linear_isa {
+    my $classname = shift;
+    
+    my @lin = ($classname);
+    my %stored;
+    
+    no strict 'refs';
+    foreach my $parent (@{"$classname\::ISA"}) {
+        my $plin = get_linear_isa($parent);
+        foreach (@$plin) {
+            next if exists $stored{$_};
+            push(@lin, $_);
+            $stored{$_} = 1;
         }
     }
-
-    no strict 'refs';
-    *{ __PACKAGE__ . '::get_linear_isa'} = $impl;
+    return \@lin;
 }
 
 sub inherit_base_class{
     
-    my ( $caller_class, $base ) = @_;
+    my ($caller_class, $base) = @_;
     
     return unless $base;
     
@@ -238,13 +179,13 @@ sub inherit_base_class{
     Carp::croak("$@") if $@;
     
     no strict 'refs';
-    unshift @{ "${caller_class}::ISA" }, $base;
+    unshift @{"${caller_class}::ISA"}, $base;
     
 }
 
 my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename/;
-sub import_method_from_mixin_classes{
-    my ( $caller_class, $mixin_infos ) = @_;
+sub import_method_from_mixin_classes {
+    my ($caller_class, $mixin_infos) = @_;
     return unless $mixin_infos;
 
     Carp::croak("mixins must be array reference.") if ref $mixin_infos ne 'ARRAY';
@@ -315,7 +256,7 @@ sub merge_self_and_super_accessor_option {
       = Object::Simple::Functions::get_linear_isa($class);
     my $attr_options = {};
     
-    foreach my $class (reverse @$self_and_super_classes){
+    foreach my $class (reverse @$self_and_super_classes) {
         $attr_options = {%{$attr_options}, %{$Object::Simple::META->{attr_options}{$class}}}
             if defined $Object::Simple::META->{attr_options}{$class};
     }
@@ -324,52 +265,25 @@ sub merge_self_and_super_accessor_option {
     return $attr_options;
 }
 
-# type constraint functions
-our %TYPE_CONSTRAIMT = (
-
-    Bool       => \&Object::Simple::Constraint::is_bool,
-    Undef      => sub { !defined($_[0]) },
-    Defined    => sub { defined($_[0]) },
-    Value      => \&Object::Simple::Constraint::is_value,
-    Num        => \&Object::Simple::Constraint::is_num,
-    Int        => \&Object::Simple::Constraint::is_int,
-    Str        => \&Object::Simple::Constraint::is_str,
-    ClassName  => \&Object::Simple::Constraint::is_class_name,
-    Ref        => sub { ref($_[0]) },
-
-    ScalarRef  => \&Object::Simple::Constraint::is_scalar_ref,
-    ArrayRef   => \&Object::Simple::Constraint::is_array_ref,
-    HashRef    => \&Object::Simple::Constraint::is_hash_ref,
-    CodeRef    => \&Object::Simple::Constraint::is_code_ref,
-    RegexpRef  => \&Object::Simple::Constraint::is_regexp_ref,
-    GlobRef    => \&Object::Simple::Constraint::is_glob_ref,
-    FileHandle => \&Object::Simple::Constraint::is_file_handle,
-    Object     => \&Object::Simple::Constraint::is_object
-    
-);
-
-# valid setter return option values
-my %VALID_SETTER_RETURN = map { $_ => 1 } qw( undef old current self );
-
 # create accessor.
 sub create_accessor{
     
-    my ( $class, $attr, $attr_options ) = @_;
+    my ($class, $attr, $attr_options) = @_;
     
-    my $e =
-            qq/{\n/ .
-            # arg recieve
-            qq/    my \$self = shift;\n\n/;
-
+    my ($auto_build, $read_only, $chained, $weak)
+      = @{$attr_options}{qw/auto_build read_only chained weak/};
+    
+    my $code =  qq/sub ${class}::$attr {\n/;
+    
     # automatically call build method
-    if( my $auto_build = $attr_options->{ auto_build } ){
+    if($auto_build){
         
-        $e .=
-            qq/    if( !\@_ && ! defined \$self->{ $attr } ){\n/;
+        $code .=
+                qq/    if(\@_ == 1 && ! exists \$_[0]->{'$attr'}) {\n/;
         
         if(ref $auto_build eq 'CODE') {
-        $e .=
-            qq/        \$attr_options->{ auto_build }->( \$self );\n/;
+        $code .=
+                qq/        \$attr_options->{auto_build}->(\$_[0]);\n/;
         }
         else {
             my $build_method;
@@ -377,134 +291,88 @@ sub create_accessor{
                 $build_method = $1 . "build_$attr";
             }
             
-        $e .=
-            qq/        \$self->$build_method\n;/;
+            $code .=
+                qq/        \$_[0]->$build_method\n;/;
         }
         
-        $e .=
-            qq/    }\n/ .
-            qq/    \n/;
+        $code .=
+                qq/    }\n\n/;
     }
     
-    if ( $attr_options->{ read_only } ){
-        $e .=
-            qq/    if( \@_ ){\n/ .
-            qq/        require Object::Simple::Error;\n/ .
-            qq/        Object::Simple::Error->throw(\n/ .
-            qq/            type => 'read_only',\n/ .
-            qq/            message => "${class}::$attr is read only",\n/ .
-            qq/            class => "$class",\n/ .
-            qq/            attr => "$attr"\n/ .
-            qq/        );\n/ .
-            qq/    }\n\n/;
+    if ($read_only){
+        $code .=
+                qq/    if(\@_ > 1) {\n/ .
+                qq/        Carp::croak("${class}::$attr is read only")\n/ .
+                qq/    }\n\n/;
     }
-    else{
-            
-        $e .=
-            qq/    if( \@_ ){\n/;
-        
-        if( my $type = $attr_options->{ type }){
-            
-            if( ref $type eq 'CODE' ){
-            $e .=
-            qq/        my \$ret = \$attr_options->{ type }->( \$_[0] );\n\n/;
-            }
-            elsif( $Object::Simple::Functions::TYPE_CONSTRAIMT{ $type } ){
-            $e .=
-            qq/        my \$ret = \$Object::Simple::Functions::TYPE_CONSTRAIMT{ $type }->( \$_[0] );\n\n/;
-            }
-            else{
-            $e .=
-            qq/        my \$ret = Object::Simple::Constraint::isa( \$_[0], '$type' );\n\n/;
-            }
-            
-            $e .=
-            qq/        if( !\$ret ){\n/ .
-            qq/            require Object::Simple::Error;\n/ .
-            qq/            Object::Simple::Error->throw(\n/ .
-            qq/                type => 'type_invalid',\n/ .
-            qq/                message => "${class}::$attr Type error",\n/ .
-            qq/                class => "$class",\n/ .
-            qq/                attr => "$attr",\n/ .
-            qq/                value => \$_[0]\n/ .
-            qq/            );\n/ .
-            qq/        }\n\n/;
+    else {
+        $code .=
+                qq/    if(\@_ > 1) {\n/;
+
+        # Store argument optimized
+        if (!$weak && !$chained) {
+            $code .=
+                qq/        return \$_[0]->{'$attr'} = \$_[1];\n/;
+        }
+
+        # Store argument the old way
+        else {
+            $code .=
+                qq/        \$_[0]->{'$attr'} = \$_[1];\n\n/;
         }
         
-        # setter return value;
-        my $setter_return = $attr_options->{ setter_return };
-        $setter_return  ||= 'undef';
-        Carp::croak("${class}::$attr 'setter_return' option must be 'undef', 'old', 'current', or 'self'.")
-            unless $VALID_SETTER_RETURN{ $setter_return };
-        
-        if( $setter_return eq 'old' ){
-            $e .=
-            qq/        my \$old = \$self->{ $attr };\n\n/;
-        }
-        
-        # set value
-        $e .=
-            qq/        \$self->{ $attr } = \$_[0];\n\n/;
-        
-        if( $attr_options->{ weak } ){
+        # Weaken
+        if ($weak) {
             require Scalar::Util;
-            $e .=
-            qq/        Scalar::Util::weaken( \$self->{ \$attr } )\n/ .
-            qq/            if ref \$self->{ $attr };\n\n/;
+            $code .=
+                qq/        Scalar::Util::weaken(\$_[0]->{'$attr'});\n\n/;
         }
         
-        # setter return value
-        $e .= 
-            $setter_return eq 'old'     ?
-            qq/        return \$old;\n/ :
-            
-            $setter_return eq 'current' ? 
-            qq/        return \$self->{ $attr };\n/ :
-            
-            $setter_return eq 'self'    ?
-            qq/        return \$self;\n/ :
-            
-            qq/        return;\n/;
+        # Return value or instance for chained/weak
+        if ($chained) {
+            $code .=
+                qq/        return \$_[0];\n/;
+        }
+        elsif ($weak) {
+            $code .=
+                qq/        return \$_[0]->{'$attr'}\n/;
+        }
         
-        $e .=
-            qq/    }\n/;
+        $code .=
+                qq/    }\n/;
     }
     
     # getter return value
-    $e .=
-            qq/    return \$self->{ $attr };\n/ .
-            qq/}\n/;
+    $code .=    qq/    return \$_[0]->{$attr};\n/ .
+                qq/}\n/;
     
-    return $e;
+    return $code;
 }
 
-# accessor option
+# valid accessor options
 my %VALID_ATTR_OPTIOTNS 
-    = map{ $_ => 1 } qw( default type read_only auto_build setter_return required weak );
+    = map {$_ => 1} qw(default chained weak read_only auto_build);
 
-# check accessor option
-sub check_accessor_option{
-    
-    # accessor info
+# check accessor options
+sub check_accessor_option {
     my ( $attr, $class, $attr_options ) = @_;
     
-    my $hook_options_exist = {};
     foreach my $key ( keys %$attr_options ){
         Carp::croak("${class}::$attr '$key' is invalid accessor option")
             unless $VALID_ATTR_OPTIOTNS{ $key };
     }
 }
 
-sub define_MODIFY_CODE_ATTRIBUTES{
+sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
     my $code = sub {
         my ($class, $ref, @attrs) = @_;
-        if( $attrs[0] eq 'Attr' ){
-            push( @Object::Simple::ATTRIBUTES_INFO, [$class, $ref ]);
+        if($attrs[0] eq 'Attr') {
+            push(@Object::Simple::ATTRIBUTES_INFO, [$class, $ref ]);
         }
-        else{
-            die "'$attrs[0]' is bad. attribute must be 'Attr'";
+        else {
+            Carp::croak("'$attrs[0]' is bad. attribute must be 'Attr'");
         }
         return;
     };
