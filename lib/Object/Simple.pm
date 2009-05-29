@@ -5,7 +5,7 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.0202';
+our $VERSION = '0.0203';
 
 # meta imformation( accessor option of each class )
 our $META = {};
@@ -32,7 +32,9 @@ sub import {
     my $caller_class = caller;
     
     # inherit base class;
-    Object::Simple::Functions::inherit_base_class($caller_class, $options{base});
+    if ($options{base}) {
+        Object::Simple::Functions::inherit_base_class($caller_class, $options{base});
+    }
     
     # inherit Object::Simple;
     {
@@ -41,7 +43,9 @@ sub import {
     }
     
     # import methods form mixin classes;
-    Object::Simple::Functions::import_method_from_mixin_classes($caller_class, $options{mixins});
+    if($options{mixins}) {
+        Object::Simple::Functions::import_method_from_mixin_classes($caller_class, $options{mixins});
+    }
     
     # auto strict and auto warnings
     strict->import;
@@ -104,6 +108,9 @@ sub end {
     # attribute names
     my $attr_names = {};
     
+    # accessor code
+    my $code = '';
+    
     # parse symbol table and create accessors
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
         
@@ -126,25 +133,26 @@ sub end {
         # get attribute name
         my $attr = $attr_names->{$class}{$ref};
         
-        # get accessor option
+        # get attr options
         my $attr_options = {$ref->()};
         
         # check accessor option
         Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options);
         
         # resist accessor option to meta imformation
-        $Object::Simple::META->{attr_options}{$class}{$attr} = $attr_options;
+        $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
         
-        # create accessor
-        {
-            
-            my $code = Object::Simple::Functions::create_accessor($class, $attr, $attr_options);
-            no warnings qw(redefine closure);
-            eval $code;
-            
-            Carp::croak("$code: $@") if $@; # for debug. never ocuured.
-        }
+        $code .= Object::Simple::Functions::create_accessor($class, $attr);
     }
+    
+    # create accessor
+    {
+        no warnings qw(redefine);
+        eval $code;
+        
+        Carp::croak("$code: $@") if $@; # for debug. never ocuured.
+    }
+    
     return 1;
 }
 
@@ -172,8 +180,6 @@ sub inherit_base_class{
     
     my ($caller_class, $base) = @_;
     
-    return unless $base;
-    
     Carp::croak("Invalid class name '$base'") if $base =~ /[^\w:]/;
     eval "require $base;";
     Carp::croak("$@") if $@;
@@ -186,10 +192,9 @@ sub inherit_base_class{
 my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename/;
 sub import_method_from_mixin_classes {
     my ($caller_class, $mixin_infos) = @_;
-    return unless $mixin_infos;
-
+    
     Carp::croak("mixins must be array reference.") if ref $mixin_infos ne 'ARRAY';
-
+    
     # import methods
     foreach my $mixin_info (@$mixin_infos) {
         my $mixin_class;
@@ -249,29 +254,30 @@ sub merge_self_and_super_accessor_option {
     
     my $class = shift;
     
-    return $Object::Simple::META->{merged_attr_options}{$class}
-      if $Object::Simple::META->{merged_attr_options}{$class};
+    return $Object::Simple::META->{$class}{merged_attr_options}
+      if $Object::Simple::META->{$class}{merged_attr_options};
     
     my $self_and_super_classes
       = Object::Simple::Functions::get_linear_isa($class);
+    
     my $attr_options = {};
     
     foreach my $class (reverse @$self_and_super_classes) {
-        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{attr_options}{$class}}}
-            if defined $Object::Simple::META->{attr_options}{$class};
+        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{$class}{attr_options}}}
+            if defined $Object::Simple::META->{$class}{attr_options};
     }
     
-    $Object::Simple::META->{merged_attr_options}{$class} = $attr_options;
+    $Object::Simple::META->{$class}{merged_attr_options} = $attr_options;
     return $attr_options;
 }
 
 # create accessor.
-sub create_accessor{
+sub create_accessor {
     
-    my ($class, $attr, $attr_options) = @_;
+    my ($class, $attr) = @_;
     
     my ($auto_build, $read_only, $chained, $weak)
-      = @{$attr_options}{qw/auto_build read_only chained weak/};
+      = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{qw/auto_build read_only chained weak/};
     
     my $code =  qq/sub ${class}::$attr {\n/;
     
@@ -283,7 +289,7 @@ sub create_accessor{
         
         if(ref $auto_build eq 'CODE') {
         $code .=
-                qq/        \$attr_options->{auto_build}->(\$_[0]);\n/;
+                qq/        \$Object::Simple::META->{$class}{attr_options}{$attr}{auto_build}->(\$_[0]);\n/;
         }
         else {
             my $build_method;
@@ -303,7 +309,7 @@ sub create_accessor{
         $code .=
                 qq/    if(\@_ > 1) {\n/ .
                 qq/        Carp::croak("${class}::$attr is read only")\n/ .
-                qq/    }\n\n/;
+                qq/    }\n/;
     }
     else {
         $code .=
@@ -344,7 +350,7 @@ sub create_accessor{
     
     # getter return value
     $code .=    qq/    return \$_[0]->{$attr};\n/ .
-                qq/}\n/;
+                qq/}\n\n/;
     
     return $code;
 }
@@ -387,7 +393,7 @@ Object::Simple - Light Weight Minimal Object System
 
 =head1 VERSION
 
-Version 0.0202
+Version 0.0203
 
 =cut
 
@@ -401,10 +407,6 @@ Please wait until Object::Simple will be stable.
 
 =head1 FEATURES
 
-Object::Simple is framework that simplify Object Oriented Perl.
-
-The feature is that
-
 =over 4
 
 =item 1. You can define accessors in very simple way.
@@ -416,7 +418,7 @@ The feature is that
 =back
 
 If you use Object::Simple, you are free from bitter work 
-writing new methods and accessors repeatedly.
+writing new and accessors repeatedly.
 
 =cut
 
@@ -446,24 +448,14 @@ writing new methods and accessors repeatedly.
         $self->author( $self->title . "b" );
     }
     
-    # Constraint of attribute setting
-    sub price : Attr { type => 'Int' }
-    sub author : Attr { type => 'Person' }
-    
     # Read only accessor
     sub year : Attr { read_only => 1 }
-    
-    # Required attributes
-    sub width : Attr { required => 1 }
     
     # weak reference
     sub parent : Attr { weak => 1 }
     
-    # setter retur value
-    sub title : Attr { setter_return => 'old' }
-    sub title : Attr { setter_return => 'current' }
-    sub title : Attr { setter_return => 'self' }
-    sub title : Attr { setter_return => 'undef' }
+    # method chane
+    sub title : Attr { chained => 1 }
     
     # Inheritance
     package Magazine;
@@ -484,16 +476,10 @@ writing new methods and accessors repeatedly.
 
 =head2 new
 
-new method is prepared.
+new is prepared.
 
     use Book;
     my $book = Book->new( title => 'a', author => 'b', price => 1000 );
-
-=head2 error
-
-You can get error as Object::Simple::Error object
-
-    my $error = Object::Simple->error;
 
 =head2 end
 
@@ -508,10 +494,14 @@ Script must end 'Object::Simple->end;'
 
 =head2 default
 
-You can define attribute default value
+You can define attribute default value.
 
     sub title : Attr {default => 'Good news'}
-    sub author : Attr {default => ['Ken', 'Taro']}
+
+If you define default values using reference or Object,
+you need wrapping sub{}.
+
+    sub authors : Attr { default => sub{['Ken', 'Taro']} }
 
 =head2 auto_build
 
@@ -533,63 +523,21 @@ You can specify build method .
         $self->atuhor( Person->new );
     }
 
-=head2 type
-
-You can define type of attribute value
-    
-    sub price: Attr {type => 'Int'} # must be integer
-    sub author: Attr {type => 'Person'} # must be inherit Perlson class
-
-list of default types
-
-    Bool       => \&Object::Simple::Constraint::is_bool,
-    Undef      => sub { !defined($_[0]) },
-    Defined    => sub { defined($_[0]) },
-    Value      => \&Object::Simple::Constraint::is_value,
-    Num        => \&Object::Simple::Constraint::is_num,
-    Int        => \&Object::Simple::Constraint::is_int,
-    Str        => \&Object::Simple::Constraint::is_str,
-    ClassName  => \&Object::Simple::Constraint::is_class_name,
-    Ref        => sub { ref($_[0]) },
-
-    ScalarRef  => \&Object::Simple::Constraint::is_scalar_ref,
-    ArrayRef   => \&Object::Simple::Constraint::is_array_ref,
-    HashRef    => \&Object::Simple::Constraint::is_hash_ref,
-    CodeRef    => \&Object::Simple::Constraint::is_code_ref,
-    RegexpRef  => \&Object::Simple::Constraint::is_regexp_ref,
-    GlobRef    => \&Object::Simple::Constraint::is_glob_ref,
-    FileHandle => \&Object::Simple::Constraint::is_file_handle,
-    Object     => \&Object::Simple::Constraint::is_object
-
-You can specify code reference
-
-    sub price: Attr {type => sub{ $_[0] =~ /^\d+$/ }}
-
 =head2 read_only
 
 You can create read only accessor
     
     sub title: Attr { read_only => 1 }
 
-=head2 setter_return
+=head2 chained
 
-You can spesicy return value when setting value
+You can chain method 
 
-    sub title : Attr { setter_return => 'old' }
-
-list of setter_return option
-
-    old
-    current
-    self
-    undef
-
-=head2 required
-
-You can specify required attribute when instance is created.
-
-    sub title : Attr {required => 1}
-
+    sub title  : Attr { chained => 1 }
+    sub author : Attr { chained => 1 }
+    
+    $book->title('aaa')->author('bbb')->...
+    
 =head2 weak
 
 attribute value is weak reference.
@@ -636,10 +584,6 @@ You can rename method if methods name crash each other.
 
 =head1 SEE ALSO
 
-L<Object::Simple::Constraint> - Constraint methods for Object::Simple 'type' option.
-
-L<Object::Simple::Error> - Structured error system for Object::Simple.
-
 L<Object::Simple::Mixin::AttrNames> - mixin attr_names method.
 
 L<Object::Simple::Mixin::AttrOptions> - mixin attr_options method.
@@ -684,7 +628,7 @@ L<http://search.cpan.org/dist/Object::Simple/>
 
 =head1 SIMILAR MODULES
 
-L<Class::Accessor>,L<Class::Accessor::Fast>, L<Moose>, L<Mouse>.
+L<Class::Accessor>,L<Class::Accessor::Fast>, L<Moose>, L<Mouse>, L<Mojo::Base>
 
 =head1 COPYRIGHT & LICENSE
 

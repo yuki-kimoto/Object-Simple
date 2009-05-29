@@ -104,8 +104,8 @@ use Point;
 }
 {
     my $p = Point->new;
-    is_deeply($p, {x => 1, y => 1, p => $Object::Simple::META->{attr_options}{Point}{p}{default}->()}, 'default overwrited' );
-    cmp_ok(ref $Object::Simple::META->{attr_options}{Point}{p}{default}, 'ne', $p->p, 'default different ref' );
+    is_deeply($p, {x => 1, y => 1, p => $Object::Simple::META->{Point}{attr_options}{p}{default}->()}, 'default overwrited' );
+    cmp_ok(ref $Object::Simple::META->{Point}{attr_options}{p}{default}, 'ne', $p->p, 'default different ref' );
 }
 
 use T1;
@@ -183,9 +183,11 @@ use T10;
     ok( Scalar::Util::isweak( $t->{ m1 } ), 'weak ref' );
     ok( !Scalar::Util::isweak( $t->{ m2 } ), 'not weak ref' );
     
+    is_deeply($t->m1, {a => 1}, 'weak get');
+    
     $o = undef;
     ok( !$t->m1, 'ref is removed' );
-    1;
+    
 }
 
 {
@@ -204,6 +206,16 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     my $r = $t->m1('1');
     is($t->m1, '1', 'set');
     is($t, $r, 'chained');
+    
+    my $d = [3];
+    $t->m2($d);
+    is_deeply($t->m2, [3], 'weak and chained get value');
+    
+    my $d2 = [5];
+    my $r2 = $t->m2($d2);
+    is($r2, $t, 'weak and chained set value ret');
+    is_deeply($t->m2, $d2, 'weak and chained set value');
+    
 }
 __END__
 
