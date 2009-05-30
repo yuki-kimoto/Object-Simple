@@ -5,9 +5,9 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.0203';
+our $VERSION = '0.0204';
 
-# meta imformation( accessor option of each class )
+# meta imformation
 our $META = {};
 
 # attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
@@ -103,6 +103,9 @@ sub new {
 # resist attribute infomathion at end of script
 sub end {
     
+    # shortcut 
+    return 1 unless @Object::Simple::ATTRIBUTES_INFO;
+    
     my $self = shift;
     
     # attribute names
@@ -142,6 +145,7 @@ sub end {
         # resist accessor option to meta imformation
         $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
         
+        # create accessor source code
         $code .= Object::Simple::Functions::create_accessor($class, $attr);
     }
     
@@ -158,6 +162,7 @@ sub end {
 
 package Object::Simple::Functions;
 
+# get self and parent classes
 sub get_linear_isa {
     my $classname = shift;
     
@@ -176,8 +181,8 @@ sub get_linear_isa {
     return \@lin;
 }
 
+# inherit base class
 sub inherit_base_class{
-    
     my ($caller_class, $base) = @_;
     
     Carp::croak("Invalid class name '$base'") if $base =~ /[^\w:]/;
@@ -186,9 +191,9 @@ sub inherit_base_class{
     
     no strict 'refs';
     unshift @{"${caller_class}::ISA"}, $base;
-    
 }
 
+# import mixin class' methods
 my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename/;
 sub import_method_from_mixin_classes {
     my ($caller_class, $mixin_infos) = @_;
@@ -369,6 +374,7 @@ sub check_accessor_option {
     }
 }
 
+# define MODIFY_CODE_ATTRIBUTRS
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
@@ -393,7 +399,7 @@ Object::Simple - Light Weight Minimal Object System
 
 =head1 VERSION
 
-Version 0.0203
+Version 0.0204
 
 =cut
 
@@ -428,20 +434,20 @@ writing new and accessors repeatedly.
     package Book;
     use Object::Simple;
     
-    sub title : Attr {}
+    sub title  : Attr {}
     sub author : Attr {}
-    sub price : Attr {}
+    sub price  : Attr {}
     
     Object::Simple->end; # End of module. Don't forget to call 'end' method
     
     # Using class
     use Book;
-    my $book = Book->new( title => 'a', author => 'b', price => 1000 );
+    my $book = Book->new(title => 'a', author => 'b', price => 1000);
     
-    # Default value of attribute
+    # Default value
     sub author : Attr { default => 'Kimoto' }
     
-    #Automatically build of attribute
+    #Automatically build
     sub author : Attr { auto_build => 1 }
     sub build_author{ 
         my $self = shift;
@@ -454,7 +460,7 @@ writing new and accessors repeatedly.
     # weak reference
     sub parent : Attr { weak => 1 }
     
-    # method chane
+    # method chaine
     sub title : Attr { chained => 1 }
     
     # Inheritance
@@ -481,14 +487,33 @@ new is prepared.
     use Book;
     my $book = Book->new( title => 'a', author => 'b', price => 1000 );
 
+This new can be overided.
+
+    # initialize object
+    sub new {
+        my $self = shift->SUPER::new(@_);
+        
+        # initialize object
+        
+        return $self;
+    }
+    
+    # arrange arguments
+    sub new {
+        my ($self, @args) = @_;
+        
+        my $self = $self->SUPER::new(title => $_[0], author => $_[1]);
+        
+        return $self;
+    }
+
 =head2 end
 
 resist attribute and create accessors.
 
 Script must end 'Object::Simple->end;'
 
-    Object::Simple->end;
-
+    Object::Simple->end; # End of Object::Simple!
 
 =head1 ACCESSOR OPTIONS
 
@@ -499,19 +524,19 @@ You can define attribute default value.
     sub title : Attr {default => 'Good news'}
 
 If you define default values using reference or Object,
-you need wrapping sub{}.
+you need wrapping it by sub{}.
 
     sub authors : Attr { default => sub{['Ken', 'Taro']} }
 
 =head2 auto_build
 
-You can automaticaly set attribute value when accessor is called first.
-    
+When accessor is called first,a methods is called to build attribute.
+
     sub author : Attr { auto_build => 1 }
     sub build_author{
         my $self = shift;
         $self->atuhor( Person->new );
-   }
+    }
 
 Builder method name is build_ATTRIBUTE_NAME by default;
 
@@ -531,7 +556,7 @@ You can create read only accessor
 
 =head2 chained
 
-You can chain method 
+You can chain method
 
     sub title  : Attr { chained => 1 }
     sub author : Attr { chained => 1 }
@@ -550,7 +575,7 @@ attribute value is weak reference.
     package Magazine;
     use Object::Simple( base => 'Book' );
 
-Object::Simple do not support multiple inheritance because it is dangerous.
+Object::Simple do not support multiple inheritance because it is so dangerous.
 
 =head1 MIXIN
 
@@ -565,7 +590,7 @@ Object::Simple support mixin syntax
         ]
     );
 
-This is equel to
+This is nearly equel to
 
     package Book;
     use Object::Simple;
@@ -573,7 +598,9 @@ This is equel to
     use Object::Simple::Mixin::AttrNames;
     use Object::Simple::Mixin::AttrOptions;
 
-You can rename method if methods name crash each other.
+Methods in @EXPORT is imported.
+
+You can rename method if methods name crash.
 
     use Object::Simple( 
         mixins => [ 
@@ -584,13 +611,19 @@ You can rename method if methods name crash each other.
 
 =head1 SEE ALSO
 
-L<Object::Simple::Mixin::AttrNames> - mixin attr_names method.
+L<Object::Simple::Mixin::AttrNames> - mixin to get attribute names.
 
-L<Object::Simple::Mixin::AttrOptions> - mixin attr_options method.
+L<Object::Simple::Mixin::AttrOptions> - mixin to get Object::Simple attribute options.
 
+L<Object::Simple::Mixin::Meta> - mixin to get Object::Simple meta information.
+            
 =head1 AUTHOR
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
+
+I develope some module the following
+
+L<http://github.com/yuki-kimoto/>
 
 =head1 BUGS
 
