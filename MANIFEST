@@ -57,6 +57,8 @@ t/14-import/T11.pm
 t/14-import/T12.pm
 t/14-import/T13.pm
 t/14-import/T14.pm
+t/14-import/T15.pm
+t/14-import/T16.pm
 t/14-import/T2.pm
 t/14-import/T3.pm
 t/14-import/T4.pm

@@ -63,3 +63,13 @@ like($@, qr/Not exsits 'M6::m6_1/, 'Not exsits method');
 
 eval "use T14";
 like($@, qr/Fail M5 mixin rename/, 'fail rename');
+
+{
+    use T15;
+    my $t = T15->new;
+    can_ok($t, qw/m3_1 r3_2/);
+}
+
+eval "use T16";
+like($@, qr/mixins select options must be array reference/, 'mixin select not array ref');
+

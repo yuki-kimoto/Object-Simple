@@ -5,7 +5,7 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.0204';
+our $VERSION = '0.0205';
 
 # meta imformation
 our $META = {};
@@ -194,7 +194,7 @@ sub inherit_base_class{
 }
 
 # import mixin class' methods
-my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename/;
+my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename select/;
 sub import_method_from_mixin_classes {
     my ($caller_class, $mixin_infos) = @_;
     
@@ -226,9 +226,15 @@ sub import_method_from_mixin_classes {
         eval "require $mixin_class;";
         Carp::croak($@) if $@;
         
-        my $methods = do {
+        my $methods;
+        if (my $select = $options->{select}) {
+            Carp::croak("mixins select options must be array reference.")
+                unless ref $select eq 'ARRAY';
+            $methods = $select;
+        }
+        else {
             no strict 'refs';
-            [@{"${mixin_class}::EXPORT"}];
+            $methods = [@{"${mixin_class}::EXPORT"}];
         };
         
         Carp::croak("methods is not exist in \@${mixin_class}::EXPORT.")
@@ -399,7 +405,7 @@ Object::Simple - Light Weight Minimal Object System
 
 =head1 VERSION
 
-Version 0.0204
+Version 0.0205
 
 =cut
 
