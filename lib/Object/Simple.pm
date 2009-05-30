@@ -5,7 +5,7 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.0205';
+our $VERSION = '0.0206';
 
 # meta imformation
 our $META = {};
@@ -62,39 +62,49 @@ sub new {
     # convert to class name
     my $class = ref $invocant || $invocant;
     
-    my $args;
+    my $self;
     # arrange arguments
     if(ref $_[0] eq 'HASH') {
-        $args = {%{$_[0]}};
+        $self = {%{$_[0]}};
     }
     else{
         Carp::croak("key-value pairs must be passed to ${class}::new") if @_ % 2;
-        $args = {@_};
+        $self = {@_};
     }
-
+    
     # bless
-    my $self = {};
     bless $self, $class;
     
     # merge self and parent accessor option
-    my $attr_options
-      = Object::Simple::Functions::merge_self_and_super_accessor_option($class);
+    my $attr_options = $Object::Simple::META->{$class}{merged_attr_options} ||
+                       Object::Simple::Functions::merge_self_and_super_accessor_option($class);
     
-    # initialize hash slot
-    foreach my $attr (keys %{$attr_options}) {
-        if(exists $args->{$attr}) {
-            $self->$attr($args->{$attr});
-        }
-        elsif(my $default = $attr_options->{$attr}{default}) {
-            if(!ref $default) {
-                $self->{$attr} = $default;
+    my $attrs_having_default = $Object::Simple::META->{$class}{attrs_having_default} ||
+                               Object::Simple::Functions::get_attrs_having_default($class);
+    
+    my $attrs_having_weak = $Object::Simple::META->{$class}{weak_attrs} ||
+                            Object::Simple::Functions::get_weak_attrs($class);
+    
+    # set default value
+    foreach my $attr (@$attrs_having_default) {
+        if(!exists $self->{$attr} && $attr_options->{$attr}{default}) {
+            if(!ref $attr_options->{$attr}{default}) {
+                $self->{$attr} = $attr_options->{$attr}{default}
             }
-            elsif(ref $default eq 'CODE') {
-                $self->{$attr} = $default->();
+            elsif(ref $attr_options->{$attr}{default} eq 'CODE') {
+                $self->{$attr} = $attr_options->{$attr}{default}->();
             }
             else {
                 Carp::croak('Default has to be a code reference or constant value');
             }
+        }
+    }
+    
+    # weak reference
+    foreach my $attr (@$attrs_having_weak) {
+        require Scalar::Util;
+        if($self->{$attr}) {
+            Scalar::Util::weaken($self->{$attr});
         }
     }
     return $self;
@@ -260,7 +270,7 @@ sub import_method_from_mixin_classes {
     }
 }
 
-# marge self and super accessor option
+# merge self and super accessor option
 sub merge_self_and_super_accessor_option {
     
     my $class = shift;
@@ -280,6 +290,45 @@ sub merge_self_and_super_accessor_option {
     
     $Object::Simple::META->{$class}{merged_attr_options} = $attr_options;
     return $attr_options;
+}
+# get attributes having default value
+sub get_attrs_having_default {
+    my $class = shift;
+    
+    if($Object::Simple::META->{$class}{attrs_having_default}) {
+        return $Object::Simple::META->{$class}{attrs_having_default}
+    }
+    
+    my $merged_attr_options = merge_self_and_super_accessor_option($class);
+    my $attrs_having_default = [];
+    
+    foreach my $attr (keys %$merged_attr_options) {
+        if(exists $merged_attr_options->{$attr}{default}) {
+            push @$attrs_having_default, $attr;
+        }
+    }
+    $Object::Simple::META->{$class}{attrs_having_default} = $attrs_having_default;
+    return $attrs_having_default;
+}
+
+# get weaken attributes
+sub get_weak_attrs {
+    my $class = shift;
+    
+    if($Object::Simple::META->{$class}{weak_attrs}) {
+        return $Object::Simple::META->{$class}{weak_attrs}
+    }
+    
+    my $merged_attr_options = merge_self_and_super_accessor_option($class);
+    my $weak_attrs = [];
+    
+    foreach my $attr (keys %$merged_attr_options) {
+        if($merged_attr_options->{$attr}{weak}) {
+            push @$weak_attrs, $attr;
+        }
+    }
+    $Object::Simple::META->{$class}{weak_attrs} = $weak_attrs;
+    return $weak_attrs;
 }
 
 # create accessor.
@@ -375,7 +424,7 @@ sub check_accessor_option {
     my ( $attr, $class, $attr_options ) = @_;
     
     foreach my $key ( keys %$attr_options ){
-        Carp::croak("${class}::$attr '$key' is invalid accessor option")
+        Carp::croak("${class}::$attr '$key' is invalid accessor option.")
             unless $VALID_ATTR_OPTIOTNS{ $key };
     }
 }
@@ -405,7 +454,7 @@ Object::Simple - Light Weight Minimal Object System
 
 =head1 VERSION
 
-Version 0.0205
+Version 0.0206
 
 =cut
 

@@ -45,7 +45,7 @@ use Book;
 
 {
     my $book = Book->new( noexist => 1 );
-    ok( !$book->{ noexist }, 'no exist attr set value' );
+    is($book->{ noexist }, 1, 'no exist attr set value' );
 }
 
 {
@@ -180,7 +180,9 @@ use T10;
     
     require Scalar::Util;
     
-    ok( Scalar::Util::isweak( $t->{ m1 } ), 'weak ref' );
+    ok( Scalar::Util::isweak($t->{m1}), 'weak ref' );
+    #ok( Scalar::Util::isweak($t->m1), 'weak ref' );
+
     ok( !Scalar::Util::isweak( $t->{ m2 } ), 'not weak ref' );
     
     is_deeply($t->m1, {a => 1}, 'weak get');
@@ -217,6 +219,52 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     is_deeply($t->m2, $d2, 'weak and chained set value');
     
 }
+
+{
+    my $t = Book->new;
+    is($t->price, 1, 'default value not setting' );
+}
+{
+    my $t = Book->new(price => 100);
+    is($t->price, 100, 'default value setting');
+}
+{
+    my $t = Book->new(title => 1);
+    is($t->title, 1, 'no default value');
+}
+
+{
+    my $t = T3->new;
+    is_deeply($t->x, [1], 'new default value reference');
+}
+
+{
+    my $d = [1];
+    my $t = T10->new(m1 => $d);
+    is_deeply($t->m1, [1], 'new weak data');
+    ok(Scalar::Util::isweak($t->{m1}), 'new weak');
+}
+
+{
+    use T17;
+    eval{T17->new};
+    like($@, qr/Default has to be a code reference or constant value/, 'defalt error');
+}
+
+{
+    my $d = Object::Simple::Functions::get_attrs_having_default('Book');
+    is_deeply($d, ['price'], 'cached attrs having default');
+}
+{
+    my $d = Object::Simple::Functions::get_weak_attrs('T10');
+    is_deeply($d, ['m1'], 'cached weak attrs');
+}
+{
+    eval "use T18";
+    like($@, qr/T18::m1 'aaa' is invalid accessor option/);
+}
+
+
 __END__
 
 

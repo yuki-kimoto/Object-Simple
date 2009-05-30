@@ -15,6 +15,8 @@ t/01-core/T13.pm
 t/01-core/T14.pm
 t/01-core/T15.pm
 t/01-core/T16.pm
+t/01-core/T17.pm
+t/01-core/T18.pm
 t/01-core/T2.pm
 t/01-core/T3.pm
 t/01-core/T4.pm
