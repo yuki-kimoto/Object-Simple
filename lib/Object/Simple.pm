@@ -613,7 +613,14 @@ You can rename method if methods name crash.
             ['Some::Mixin', rename => { 'mehtod' => 'renamed_method' }]
         ]
     );
-    
+
+You can select methods if you want to import some methods 
+
+    use Object::Simple( 
+        mixins => [ 
+            ['Some::Mixin', select => ['method1', 'method2']]
+        ]
+    );
 
 =head1 SEE ALSO
 
