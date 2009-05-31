@@ -264,6 +264,10 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     like($@, qr/T18::m1 'aaa' is invalid accessor option/);
 }
 
+{
+    use T19;
+    ok($T19::OK, 'unimport MODIFY_CODE_ATTRIBUTES');
+}
 
 __END__
 

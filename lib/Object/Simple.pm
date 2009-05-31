@@ -5,7 +5,7 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.0207';
+our $VERSION = '0.0208';
 
 # meta imformation
 our $META = {};
@@ -53,6 +53,14 @@ sub import {
     
     # define MODIFY_CODE_ATTRIBUTES for caller package
     Object::Simple::Functions::define_MODIFY_CODE_ATTRIBUTES($caller_class);
+}
+
+# unimport to use MODIFY_CODE_ATTRIBUTES
+sub unimport {
+    my $caller = caller;
+    
+    no strict 'refs';
+    delete ${ $caller . '::' }{MODIFY_CODE_ATTRIBUTES};
 }
 
 # new
@@ -454,7 +462,7 @@ Object::Simple - Light Weight Minimal Object System
 
 =head1 VERSION
 
-Version 0.0207
+Version 0.0208
 
 =cut
 
@@ -670,6 +678,29 @@ You can select methods if you want to import some methods
             ['Some::Mixin', select => ['method1', 'method2']]
         ]
     );
+
+=head1 using your MODIFY_CODE_ATTRIBUTES subroutine
+
+Object::Simple define own MODIFY_CODE_ATTRIBUTES subroutine.
+If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
+
+    package T19;
+    use Object::Simple;
+    
+    sub m1 : Attr {}
+    
+    no Object::Simple; # unimport MODIFY_CODE_ATTRIBUTES
+    
+    # defined MODIFY_CODE_ATTRIBUTES
+    sub MODIFY_CODE_ATTRIBUTES {
+        my ($class, $ref, @attrs) = @_;
+        # do what you want
+        return;
+    }
+    
+    sub m2 : YourAttribute {}
+    
+    Object::Simple->end;
 
 =head1 SEE ALSO
 
