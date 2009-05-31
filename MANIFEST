@@ -26,6 +26,9 @@ t/01-core/T7.pm
 t/03-extend1.t
 t/03-extend1/Book.pm
 t/03-extend1/PBook.pm
+t/03-extend1/T1.pm
+t/03-extend1/T2.pm
+t/03-extend1/T3.pm
 t/04-extend2.t
 t/04-extend2/Book.pm
 t/04-extend2/PBook.pm

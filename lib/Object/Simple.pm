@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '0.0208';
+our $VERSION = '0.0209';
  
 # meta imformation
 our $META = {};
@@ -70,44 +70,21 @@ sub new {
     # convert to class name
     my $class = ref $invocant || $invocant;
     
-    my $self = !(@_ % 2)           ? {@_}       :
-               ref $_[0] eq 'HASH' ? {%{$_[0]}} :
-                                     {@_, undef};
+    return $META->{$class}{constructor}->($class,@_)
+        if $META->{$class}{constructor};
     
-    # bless
-    bless $self, $class;
-    
-    # merge self and parent accessor option
-    my $attr_options = $META->{$class}{cache}{merged_attr_options} ||
-                       Object::Simple::Functions::merge_self_and_super_accessor_option($class);
-    
-    my $attrs_having_default = $META->{$class}{cache}{attrs_having_default} ||
-                               Object::Simple::Functions::get_attrs_having_default($class);
-    
-    my $attrs_having_weak = $META->{$class}{cache}{weak_attrs} ||
-                            Object::Simple::Functions::get_weak_attrs($class);
-    
-    # set default value
-    foreach my $attr (@$attrs_having_default) {
-        next if exists $self->{$attr};
-        $self->{$attr} = !ref $attr_options->{$attr}{default} ?
-                         $attr_options->{$attr}{default} :
-                         $attr_options->{$attr}{default}->();
+    foreach my $super_class (@{Object::Simple::Functions::get_linear_isa($class)}) {
+        if($META->{$super_class}{constructor}) {
+            $META->{$class}{constructor} = $META->{$super_class}{constructor};
+            return $META->{$class}{constructor}->($class,@_);
+        }
     }
-    
-    # weak reference
-    foreach my $attr (@$attrs_having_weak) {
-        require Scalar::Util;
-        Scalar::Util::weaken($self->{$attr}) if $self->{$attr};
-    }
-    return $self;
 }
  
 # resist attribute infomathion at end of script
 sub end {
     
-    # shortcut 
-    return 1 unless @Object::Simple::ATTRIBUTES_INFO;
+    my $caller_class = caller;
     
     my $self = shift;
     
@@ -115,7 +92,7 @@ sub end {
     my $attr_names = {};
     
     # accessor code
-    my $code = '';
+    my $accessor_code = '';
     
     # parse symbol table and create accessors
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
@@ -150,16 +127,18 @@ sub end {
         $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
         
         # create accessor source code
-        $code .= Object::Simple::Functions::create_accessor($class, $attr);
+        $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr);
     }
     
     # create accessor
-    {
+    if($accessor_code){
         no warnings qw(redefine);
-        eval $code;
-        
-        Carp::croak("$code: $@") if $@; # for debug. never ocuured.
+        eval $accessor_code;
     }
+    
+    # create constructor
+    my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
+    $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
     
     return 1;
 }
@@ -269,8 +248,8 @@ sub merge_self_and_super_accessor_option {
     
     my $class = shift;
     
-    return $Object::Simple::META->{$class}{cache}{merged_attr_options}
-      if $Object::Simple::META->{$class}{cache}{merged_attr_options};
+    return $Object::Simple::META->{$class}{merged_attr_options}
+      if $Object::Simple::META->{$class}{merged_attr_options};
     
     my $self_and_super_classes
       = Object::Simple::Functions::get_linear_isa($class);
@@ -282,49 +261,45 @@ sub merge_self_and_super_accessor_option {
             if defined $Object::Simple::META->{$class}{attr_options};
     }
     
-    $Object::Simple::META->{$class}{cache}{merged_attr_options} = $attr_options;
+    $Object::Simple::META->{$class}{merged_attr_options} = $attr_options;
     return $attr_options;
 }
-# get attributes having default value
-sub get_attrs_having_default {
+
+# create constructor
+sub create_constructor {
     my $class = shift;
+    my $attr_options = merge_self_and_super_accessor_option($class);
     
-    if($Object::Simple::META->{$class}{cache}{attrs_having_default}) {
-        return $Object::Simple::META->{$class}{cache}{attrs_having_default}
-    }
-    
-    my $merged_attr_options = merge_self_and_super_accessor_option($class);
-    my $attrs_having_default = [];
-    
-    foreach my $attr (keys %$merged_attr_options) {
-        if(exists $merged_attr_options->{$attr}{default}) {
-            push @$attrs_having_default, $attr;
+    my $code =      qq/sub{\n/ .
+                    qq/    my \$class = shift;\n/ .
+                    qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
+                    qq/               ref \$_[0] eq 'HASH' ? {\%{\$_[0]}} :\n/ .
+                    qq/                                     {\@_, undef};\n/ .
+                    qq/    bless \$self, \$class;\n/;
+            
+    foreach my $attr (keys %$attr_options) {
+        if(exists $attr_options->{$attr}{default}) {
+            if(ref $attr_options->{$attr}{default}) {
+                $code .=
+                    qq/    \$self->{$attr} ||= \$META->{$class}{merged_attr_options}{$attr}{default}->();\n/;
+            }
+            else{
+                $code .=
+                    qq/    \$self->{$attr} ||= \$META->{$class}{merged_attr_options}{$attr}{default};\n/;
+            }
+        }
+        
+        if($attr_options->{$attr}{weak}) {
+            require Scalar::Util;
+            $code .=
+                    qq/    Scalar::Util::weaken(\$self->{$attr}) if \$self->{$attr};\n/;
         }
     }
-    $Object::Simple::META->{$class}{cache}{attrs_having_default} = $attrs_having_default;
-    return $attrs_having_default;
+    
+    $code .=        qq/    return \$self;\n/ .
+                    qq/}\n/;
 }
- 
-# get weaken attributes
-sub get_weak_attrs {
-    my $class = shift;
-    
-    if($Object::Simple::META->{$class}{cache}{weak_attrs}) {
-        return $Object::Simple::META->{$class}{cache}{weak_attrs}
-    }
-    
-    my $merged_attr_options = merge_self_and_super_accessor_option($class);
-    my $weak_attrs = [];
-    
-    foreach my $attr (keys %$merged_attr_options) {
-        if($merged_attr_options->{$attr}{weak}) {
-            push @$weak_attrs, $attr;
-        }
-    }
-    $Object::Simple::META->{$class}{cache}{weak_attrs} = $weak_attrs;
-    return $weak_attrs;
-}
- 
+
 # create accessor.
 sub create_accessor {
     
@@ -454,7 +429,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 0.0208
+Version 0.0209
  
 =cut
  

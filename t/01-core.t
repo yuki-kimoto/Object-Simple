@@ -192,7 +192,6 @@ use T10;
     use T13;
     my $t = T13->new;
     is_deeply($t, {title => 1, author => 3}, 'override');
-    
 }
  
 eval "use T15";
@@ -246,14 +245,6 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     like($@, qr/T17::m1 'default' has to be a code reference or constant value/, 'defalt error');
 }
  
-{
-    my $d = Object::Simple::Functions::get_attrs_having_default('Book');
-    is_deeply($d, ['price'], 'cached attrs having default');
-}
-{
-    my $d = Object::Simple::Functions::get_weak_attrs('T10');
-    is_deeply($d, ['m1'], 'cached weak attrs');
-}
 {
     eval "use T18";
     like($@, qr/T18::m1 'aaa' is invalid accessor option/);
