@@ -2,20 +2,20 @@ package Object::Simple;
 use 5.008_001;
 use strict;
 use warnings;
-
+ 
 require Carp;
-
+ 
 our $VERSION = '0.0208';
-
+ 
 # meta imformation
 our $META = {};
-
+ 
 # attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
 our @ATTRIBUTES_INFO;
-
+ 
 # valid import option value
 my %VALID_IMPORT_OPTIONS = map{$_ => 1} qw(base mixins);
-
+ 
 # import
 sub import {
     my ($self, %options) = @_;
@@ -54,7 +54,7 @@ sub import {
     # define MODIFY_CODE_ATTRIBUTES for caller package
     Object::Simple::Functions::define_MODIFY_CODE_ATTRIBUTES($caller_class);
 }
-
+ 
 # unimport to use MODIFY_CODE_ATTRIBUTES
 sub unimport {
     my $caller = caller;
@@ -62,7 +62,7 @@ sub unimport {
     no strict 'refs';
     delete ${ $caller . '::' }{MODIFY_CODE_ATTRIBUTES};
 }
-
+ 
 # new
 sub new {
     my $invocant = shift;
@@ -70,15 +70,9 @@ sub new {
     # convert to class name
     my $class = ref $invocant || $invocant;
     
-    my $self;
-    # arrange arguments
-    if(ref $_[0] eq 'HASH') {
-        $self = {%{$_[0]}};
-    }
-    else{
-        Carp::croak("key-value pairs must be passed to ${class}::new") if @_ % 2;
-        $self = {@_};
-    }
+    my $self = !(@_ % 2)           ? {@_}       :
+               ref $_[0] eq 'HASH' ? {%{$_[0]}} :
+                                     {@_, undef};
     
     # bless
     bless $self, $class;
@@ -95,29 +89,20 @@ sub new {
     
     # set default value
     foreach my $attr (@$attrs_having_default) {
-        if(!exists $self->{$attr} && $attr_options->{$attr}{default}) {
-            if(!ref $attr_options->{$attr}{default}) {
-                $self->{$attr} = $attr_options->{$attr}{default}
-            }
-            elsif(ref $attr_options->{$attr}{default} eq 'CODE') {
-                $self->{$attr} = $attr_options->{$attr}{default}->();
-            }
-            else {
-                Carp::croak('Default has to be a code reference or constant value');
-            }
-        }
+        next if exists $self->{$attr};
+        $self->{$attr} = !ref $attr_options->{$attr}{default} ?
+                         $attr_options->{$attr}{default} :
+                         $attr_options->{$attr}{default}->();
     }
     
     # weak reference
     foreach my $attr (@$attrs_having_weak) {
         require Scalar::Util;
-        if($self->{$attr}) {
-            Scalar::Util::weaken($self->{$attr});
-        }
+        Scalar::Util::weaken($self->{$attr}) if $self->{$attr};
     }
     return $self;
 }
-
+ 
 # resist attribute infomathion at end of script
 sub end {
     
@@ -161,6 +146,7 @@ sub end {
         Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options);
         
         # resist accessor option to meta imformation
+        $attr_options->{name} = $attr;
         $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
         
         # create accessor source code
@@ -177,9 +163,9 @@ sub end {
     
     return 1;
 }
-
+ 
 package Object::Simple::Functions;
-
+ 
 # get self and parent classes
 sub get_linear_isa {
     my $classname = shift;
@@ -198,7 +184,7 @@ sub get_linear_isa {
     }
     return \@lin;
 }
-
+ 
 # inherit base class
 sub inherit_base_class{
     my ($caller_class, $base) = @_;
@@ -210,7 +196,7 @@ sub inherit_base_class{
     no strict 'refs';
     unshift @{"${caller_class}::ISA"}, $base;
 }
-
+ 
 # import mixin class' methods
 my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename select/;
 sub import_method_from_mixin_classes {
@@ -277,7 +263,7 @@ sub import_method_from_mixin_classes {
         Carp::croak("Fail $mixin_class mixin rename.") if keys %{$options->{rename}};
     }
 }
-
+ 
 # merge self and super accessor option
 sub merge_self_and_super_accessor_option {
     
@@ -318,7 +304,7 @@ sub get_attrs_having_default {
     $Object::Simple::META->{$class}{cache}{attrs_having_default} = $attrs_having_default;
     return $attrs_having_default;
 }
-
+ 
 # get weaken attributes
 sub get_weak_attrs {
     my $class = shift;
@@ -338,7 +324,7 @@ sub get_weak_attrs {
     $Object::Simple::META->{$class}{cache}{weak_attrs} = $weak_attrs;
     return $weak_attrs;
 }
-
+ 
 # create accessor.
 sub create_accessor {
     
@@ -382,13 +368,13 @@ sub create_accessor {
     else {
         $code .=
                 qq/    if(\@_ > 1) {\n/;
-
+ 
         # Store argument optimized
         if (!$weak && !$chained) {
             $code .=
                 qq/        return \$_[0]->{'$attr'} = \$_[1];\n/;
         }
-
+ 
         # Store argument the old way
         else {
             $code .=
@@ -422,11 +408,11 @@ sub create_accessor {
     
     return $code;
 }
-
+ 
 # valid accessor options
 my %VALID_ATTR_OPTIOTNS 
     = map {$_ => 1} qw(default chained weak read_only auto_build);
-
+ 
 # check accessor options
 sub check_accessor_option {
     my ( $attr, $class, $attr_options ) = @_;
@@ -434,9 +420,15 @@ sub check_accessor_option {
     foreach my $key ( keys %$attr_options ){
         Carp::croak("${class}::$attr '$key' is invalid accessor option.")
             unless $VALID_ATTR_OPTIOTNS{ $key };
+        if($key eq 'default' &&
+           !(!ref $attr_options->{default} ||
+             ref $attr_options->{default} eq 'CODE'))
+        {
+            Carp::croak("${class}::$attr 'default' has to be a code reference or constant value.");
+        }
     }
 }
-
+ 
 # define MODIFY_CODE_ATTRIBUTRS
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
@@ -455,44 +447,44 @@ sub define_MODIFY_CODE_ATTRIBUTES {
     no strict 'refs';
     *{"${class}::MODIFY_CODE_ATTRIBUTES"} = $code;
 }
-
+ 
 =head1 NAME
-
+ 
 Object::Simple - Light Weight Minimal Object System
-
+ 
 =head1 VERSION
-
+ 
 Version 0.0208
-
+ 
 =cut
-
+ 
 =head1 CAUTION
-
+ 
 Object::Simple is yet experimenta stage.
-
+ 
 Please wait until Object::Simple will be stable.
-
+ 
 =cut
-
+ 
 =head1 FEATURES
-
+ 
 =over 4
-
+ 
 =item 1. You can define accessors in very simple way.
-
+ 
 =item 2. new method is prepared.
-
+ 
 =item 3. You can define default value of attribute.
-
+ 
 =back
-
+ 
 If you use Object::Simple, you are free from bitter work 
 writing new and accessors repeatedly.
-
+ 
 =cut
-
+ 
 =head1 SYNOPSIS
-
+ 
     # Class definition( Book.pm )
     package Book;
     use Object::Simple;
@@ -538,20 +530,20 @@ writing new and accessors repeatedly.
             'Object::Simple::Mixin::AttrOptions'
         ]
     );
-
+ 
 =cut
-
+ 
 =head1 METHODS
-
+ 
 =head2 new
-
+ 
 new is prepared.
-
+ 
     use Book;
     my $book = Book->new( title => 'a', author => 'b', price => 1000 );
-
+ 
 This new can be overided.
-
+ 
     # initialize object
     sub new {
         my $self = shift->SUPER::new(@_);
@@ -569,81 +561,81 @@ This new can be overided.
         
         return $self;
     }
-
+ 
 =head2 end
-
+ 
 resist attribute and create accessors.
-
+ 
 Script must end 'Object::Simple->end;'
-
+ 
     Object::Simple->end; # End of Object::Simple!
-
+ 
 =head1 ACCESSOR OPTIONS
-
+ 
 =head2 default
-
+ 
 You can define attribute default value.
-
+ 
     sub title : Attr {default => 'Good news'}
-
+ 
 If you define default values using reference or Object,
 you need wrapping it by sub{}.
-
+ 
     sub authors : Attr { default => sub{['Ken', 'Taro']} }
-
+ 
 =head2 auto_build
-
+ 
 When accessor is called first,a methods is called to build attribute.
-
+ 
     sub author : Attr { auto_build => 1 }
     sub build_author{
         my $self = shift;
         $self->atuhor( Person->new );
     }
-
+ 
 Builder method name is build_ATTRIBUTE_NAME by default;
-
+ 
 You can specify build method .
-
+ 
     sub author : Attr { auto_build => 1 }
     sub create_author{
         my $self = shift;
         $self->atuhor( Person->new );
     }
-
+ 
 =head2 read_only
-
+ 
 You can create read only accessor
     
     sub title: Attr { read_only => 1 }
-
+ 
 =head2 chained
-
+ 
 You can chain method
-
+ 
     sub title  : Attr { chained => 1 }
     sub author : Attr { chained => 1 }
     
     $book->title('aaa')->author('bbb')->...
     
 =head2 weak
-
+ 
 attribute value is weak reference.
-
+ 
     sub parent : Attr {weak => 1}
-
+ 
 =head1 INHERITANCE
-
+ 
     # Inheritance
     package Magazine;
     use Object::Simple( base => 'Book' );
-
+ 
 Object::Simple do not support multiple inheritance because it is so dangerous.
-
+ 
 =head1 MIXIN
-
+ 
 Object::Simple support mixin syntax
-
+ 
     # Mixin
     package Book;
     use Object::Simple( 
@@ -652,38 +644,38 @@ Object::Simple support mixin syntax
             'Object::Simple::Mixin::AttrOptions'
         ]
     );
-
+ 
 This is nearly equel to
-
+ 
     package Book;
     use Object::Simple;
     
     use Object::Simple::Mixin::AttrNames;
     use Object::Simple::Mixin::AttrOptions;
-
+ 
 Methods in @EXPORT is imported.
-
+ 
 You can rename method if methods name crash.
-
+ 
     use Object::Simple( 
         mixins => [ 
             ['Some::Mixin', rename => { 'mehtod' => 'renamed_method' }]
         ]
     );
-
+ 
 You can select methods if you want to import some methods 
-
+ 
     use Object::Simple( 
         mixins => [ 
             ['Some::Mixin', select => ['method1', 'method2']]
         ]
     );
-
+ 
 =head1 using your MODIFY_CODE_ATTRIBUTES subroutine
-
+ 
 Object::Simple define own MODIFY_CODE_ATTRIBUTES subroutine.
 If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
-
+ 
     package T19;
     use Object::Simple;
     
@@ -701,69 +693,69 @@ If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
     sub m2 : YourAttribute {}
     
     Object::Simple->end;
-
+ 
 =head1 SEE ALSO
-
+ 
 L<Object::Simple::Mixin::AttrNames> - mixin to get attribute names.
-
+ 
 L<Object::Simple::Mixin::AttrOptions> - mixin to get Object::Simple attribute options.
-
+ 
 L<Object::Simple::Mixin::Meta> - mixin to get Object::Simple meta information.
             
 =head1 AUTHOR
-
+ 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
-
+ 
 I develope some module the following
-
+ 
 L<http://github.com/yuki-kimoto/>
-
+ 
 =head1 BUGS
-
+ 
 Please report any bugs or feature requests to C<bug-simo at rt.cpan.org>, or through
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Object::Simple>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
-
+ 
 =head1 SUPPORT
-
+ 
 You can find documentation for this module with the perldoc command.
-
+ 
     perldoc Object::Simple
-
+ 
 You can also look for information at:
-
+ 
 =over 4
-
+ 
 =item * RT: CPAN's request tracker
-
+ 
 L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Object::Simple>
-
+ 
 =item * AnnoCPAN: Annotated CPAN documentation
-
+ 
 L<http://annocpan.org/dist/Object::Simple>
-
+ 
 =item * CPAN Ratings
-
+ 
 L<http://cpanratings.perl.org/d/Object::Simple>
-
+ 
 =item * Search CPAN
-
+ 
 L<http://search.cpan.org/dist/Object::Simple/>
-
+ 
 =back
-
+ 
 =head1 SIMILAR MODULES
-
+ 
 L<Class::Accessor>,L<Class::Accessor::Fast>, L<Moose>, L<Mouse>, L<Mojo::Base>
-
+ 
 =head1 COPYRIGHT & LICENSE
-
+ 
 Copyright 2008 Yuki Kimoto, all rights reserved.
-
+ 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
-
-
+ 
+ 
 =cut
-
+ 
 1; # End of Object::Simple
