@@ -25,8 +25,8 @@ is( $pbook->title, 1, 'method invoked atfter super class dose' );
 
 {
     use T3;
-    my $t = T3->new;
-    is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, title => 1}, 'use base');
+    my $t = T3->new(m4 => 4);
+    is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4, title => 1}, 'use base');
 }
 
 
