@@ -5,7 +5,7 @@ use warnings;
 
 require Carp;
 
-our $VERSION = '0.0206';
+our $VERSION = '0.0207';
 
 # meta imformation
 our $META = {};
@@ -76,13 +76,13 @@ sub new {
     bless $self, $class;
     
     # merge self and parent accessor option
-    my $attr_options = $Object::Simple::META->{$class}{merged_attr_options} ||
+    my $attr_options = $META->{$class}{cache}{merged_attr_options} ||
                        Object::Simple::Functions::merge_self_and_super_accessor_option($class);
     
-    my $attrs_having_default = $Object::Simple::META->{$class}{attrs_having_default} ||
+    my $attrs_having_default = $META->{$class}{cache}{attrs_having_default} ||
                                Object::Simple::Functions::get_attrs_having_default($class);
     
-    my $attrs_having_weak = $Object::Simple::META->{$class}{weak_attrs} ||
+    my $attrs_having_weak = $META->{$class}{cache}{weak_attrs} ||
                             Object::Simple::Functions::get_weak_attrs($class);
     
     # set default value
@@ -275,8 +275,8 @@ sub merge_self_and_super_accessor_option {
     
     my $class = shift;
     
-    return $Object::Simple::META->{$class}{merged_attr_options}
-      if $Object::Simple::META->{$class}{merged_attr_options};
+    return $Object::Simple::META->{$class}{cache}{merged_attr_options}
+      if $Object::Simple::META->{$class}{cache}{merged_attr_options};
     
     my $self_and_super_classes
       = Object::Simple::Functions::get_linear_isa($class);
@@ -288,15 +288,15 @@ sub merge_self_and_super_accessor_option {
             if defined $Object::Simple::META->{$class}{attr_options};
     }
     
-    $Object::Simple::META->{$class}{merged_attr_options} = $attr_options;
+    $Object::Simple::META->{$class}{cache}{merged_attr_options} = $attr_options;
     return $attr_options;
 }
 # get attributes having default value
 sub get_attrs_having_default {
     my $class = shift;
     
-    if($Object::Simple::META->{$class}{attrs_having_default}) {
-        return $Object::Simple::META->{$class}{attrs_having_default}
+    if($Object::Simple::META->{$class}{cache}{attrs_having_default}) {
+        return $Object::Simple::META->{$class}{cache}{attrs_having_default}
     }
     
     my $merged_attr_options = merge_self_and_super_accessor_option($class);
@@ -307,7 +307,7 @@ sub get_attrs_having_default {
             push @$attrs_having_default, $attr;
         }
     }
-    $Object::Simple::META->{$class}{attrs_having_default} = $attrs_having_default;
+    $Object::Simple::META->{$class}{cache}{attrs_having_default} = $attrs_having_default;
     return $attrs_having_default;
 }
 
@@ -315,8 +315,8 @@ sub get_attrs_having_default {
 sub get_weak_attrs {
     my $class = shift;
     
-    if($Object::Simple::META->{$class}{weak_attrs}) {
-        return $Object::Simple::META->{$class}{weak_attrs}
+    if($Object::Simple::META->{$class}{cache}{weak_attrs}) {
+        return $Object::Simple::META->{$class}{cache}{weak_attrs}
     }
     
     my $merged_attr_options = merge_self_and_super_accessor_option($class);
@@ -327,7 +327,7 @@ sub get_weak_attrs {
             push @$weak_attrs, $attr;
         }
     }
-    $Object::Simple::META->{$class}{weak_attrs} = $weak_attrs;
+    $Object::Simple::META->{$class}{cache}{weak_attrs} = $weak_attrs;
     return $weak_attrs;
 }
 
@@ -454,7 +454,7 @@ Object::Simple - Light Weight Minimal Object System
 
 =head1 VERSION
 
-Version 0.0206
+Version 0.0207
 
 =cut
 
