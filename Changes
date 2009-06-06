@@ -1,3 +1,10 @@
+1.0002
+  remove attroption name
+  bag fix: not resist constructor if class name contain ::
+
+1.0001
+  first stabule release
+
 0.0209
   add create_constructor.
   

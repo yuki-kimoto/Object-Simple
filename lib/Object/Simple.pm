@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '1.0001';
+our $VERSION = '1.0002';
  
 # meta imformation
 our $META = {};
@@ -121,7 +121,6 @@ sub end {
         Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options);
         
         # resist accessor option to meta imformation
-        $attr_options->{name} = $attr;
         $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
         
         # create accessor source code
@@ -135,6 +134,8 @@ sub end {
     }
     
     # create constructor
+    if($caller_class eq 'Validator::Custom'){ $DB::single = 1 }
+    $DB::single = 1;
     my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
     $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
     
@@ -268,7 +269,7 @@ sub create_constructor {
     my $class = shift;
     my $attr_options = merge_self_and_super_accessor_option($class);
     
-    my $code =      qq/sub{\n/ .
+    my $code =      qq/sub {\n/ .
                     qq/    my \$class = shift;\n/ .
                     qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
                     qq/               ref \$_[0] eq 'HASH' ? {\%{\$_[0]}} :\n/ .
@@ -279,18 +280,18 @@ sub create_constructor {
         if(exists $attr_options->{$attr}{default}) {
             if(ref $attr_options->{$attr}{default}) {
                 $code .=
-                    qq/    \$self->{$attr} ||= \$META->{$class}{merged_attr_options}{$attr}{default}->();\n/;
+                    qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default}->();\n/;
             }
             else{
                 $code .=
-                    qq/    \$self->{$attr} ||= \$META->{$class}{merged_attr_options}{$attr}{default};\n/;
+                    qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default};\n/;
             }
         }
         
         if($attr_options->{$attr}{weak}) {
             require Scalar::Util;
             $code .=
-                    qq/    Scalar::Util::weaken(\$self->{$attr}) if \$self->{$attr};\n/;
+                    qq/    Scalar::Util::weaken(\$self->{'$attr'}) if \$self->{$attr};\n/;
         }
     }
     
@@ -316,7 +317,7 @@ sub create_accessor {
         
         if(ref $auto_build eq 'CODE') {
         $code .=
-                qq/        \$Object::Simple::META->{$class}{attr_options}{$attr}{auto_build}->(\$_[0]);\n/;
+                qq/        \$Object::Simple::META->{$class}{attr_options}{'$attr'}{auto_build}->(\$_[0]);\n/;
         }
         else {
             my $build_method;
@@ -376,7 +377,7 @@ sub create_accessor {
     }
     
     # getter return value
-    $code .=    qq/    return \$_[0]->{$attr};\n/ .
+    $code .=    qq/    return \$_[0]->{'$attr'};\n/ .
                 qq/}\n\n/;
     
     return $code;
@@ -427,7 +428,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 1.0001
+Version 1.0002
  
 =head1 FEATURES
  

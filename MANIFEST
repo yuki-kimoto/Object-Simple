@@ -18,6 +18,7 @@ t/01-core/T16.pm
 t/01-core/T17.pm
 t/01-core/T18.pm
 t/01-core/T19.pm
+t/01-core/T19/AAA.pm
 t/01-core/T2.pm
 t/01-core/T3.pm
 t/01-core/T4.pm

@@ -254,6 +254,12 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     use T19;
     ok($T19::OK, 'unimport MODIFY_CODE_ATTRIBUTES');
 }
+
+{
+    use T19::AAA;
+    my $t = T19::AAA->new;
+    is_deeply($t, {m1 => 1}, 'class name contain ::');
+}
  
 __END__
  
