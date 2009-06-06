@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '1.0002';
+our $VERSION = '1.0003';
  
 # meta imformation
 our $META = {};
@@ -126,18 +126,19 @@ sub end {
         # create accessor source code
         $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr);
     }
+    if($caller_class eq 'T19::AAA'){ $DB::single = 1 }
     
     # create accessor
     if($accessor_code){
         no warnings qw(redefine);
         eval $accessor_code;
+        Carp::croak("$accessor_code\n:$@") if $@;
     }
     
     # create constructor
-    if($caller_class eq 'Validator::Custom'){ $DB::single = 1 }
-    $DB::single = 1;
     my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
     $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
+    Carp::croak("$constructor_code\n:$@") if $@;
     
     return 1;
 }
@@ -317,7 +318,7 @@ sub create_accessor {
         
         if(ref $auto_build eq 'CODE') {
         $code .=
-                qq/        \$Object::Simple::META->{$class}{attr_options}{'$attr'}{auto_build}->(\$_[0]);\n/;
+                qq/        \$Object::Simple::META->{'$class'}{attr_options}{'$attr'}{auto_build}->(\$_[0]);\n/;
         }
         else {
             my $build_method;
@@ -428,7 +429,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 1.0002
+Version 1.0003
  
 =head1 FEATURES
  

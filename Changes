@@ -1,3 +1,6 @@
+1.0003
+  bag fix: occur compile error if a class having auto_build option and its name contain :: is loaded,
+  
 1.0002
   remove attroption name
   bag fix: not resist constructor if class name contain ::

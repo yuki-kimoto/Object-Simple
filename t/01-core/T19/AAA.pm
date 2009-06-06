@@ -4,4 +4,13 @@ use Object::Simple;
 
 sub m1 : Attr { default => 1 }
 
+sub m2 : Attr { auto_build => \&create_m2 }
+sub create_m2 {
+    my $self = shift;
+    $self->m2(2);
+}
+
+
+
+
 Object::Simple->end;

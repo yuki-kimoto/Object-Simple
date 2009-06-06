@@ -260,6 +260,11 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     my $t = T19::AAA->new;
     is_deeply($t, {m1 => 1}, 'class name contain ::');
 }
+
+{
+    my $t = T19::AAA->new;
+    is($t->m2, 2, 'auto build class name contain ::');
+}
  
 __END__
  
