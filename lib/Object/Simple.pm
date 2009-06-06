@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '0.0209';
+our $VERSION = '1.0001';
  
 # meta imformation
 our $META = {};
@@ -14,7 +14,7 @@ our $META = {};
 our @ATTRIBUTES_INFO;
  
 # valid import option value
-my %VALID_IMPORT_OPTIONS = map{$_ => 1} qw(base mixins);
+my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins);
  
 # import
 sub import {
@@ -32,9 +32,8 @@ sub import {
     my $caller_class = caller;
     
     # inherit base class;
-    if ($options{base}) {
-        Object::Simple::Functions::inherit_base_class($caller_class, $options{base});
-    }
+    Object::Simple::Functions::inherit_base_class($caller_class, $options{base})
+        if $options{base};
     
     # inherit Object::Simple;
     {
@@ -43,9 +42,8 @@ sub import {
     }
     
     # import methods form mixin classes;
-    if($options{mixins}) {
-        Object::Simple::Functions::import_method_from_mixin_classes($caller_class, $options{mixins});
-    }
+    Object::Simple::Functions::import_method_from_mixin_classes($caller_class, $options{mixins})
+        if $options{mixins};
     
     # auto strict and auto warnings
     strict->import;
@@ -83,10 +81,10 @@ sub new {
  
 # resist attribute infomathion at end of script
 sub end {
-    
-    my $caller_class = caller;
-    
     my $self = shift;
+    
+    # caller class
+    my $caller_class = caller;
     
     # attribute names
     my $attr_names = {};
@@ -429,17 +427,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 0.0209
- 
-=cut
- 
-=head1 CAUTION
- 
-Object::Simple is yet experimenta stage.
- 
-Please wait until Object::Simple will be stable.
- 
-=cut
+Version 1.0001
  
 =head1 FEATURES
  
@@ -455,7 +443,7 @@ Please wait until Object::Simple will be stable.
  
 If you use Object::Simple, you are free from bitter work 
 writing new and accessors repeatedly.
- 
+
 =cut
  
 =head1 SYNOPSIS

@@ -1,16 +1,16 @@
 WHAT IS THIS?
 
-Simo is framework that simplify Object Oriented Perl.
-If you use Simo, You can write accessor very very simple way.
+Object::Simple is framework that simplify Object Oriented Perl.
+If you use Object::Simple, You can write accessor very very simple way.
 
 INSTALLATION
 
 To install this module, run the following commands:
 
-	perl Makefile.PL
-	make
-	make test
-	make install
+	perl Build.PL
+	perl Build
+	perl Build test
+	perl Build install
 
 SUPPORT AND DOCUMENTATION
 
