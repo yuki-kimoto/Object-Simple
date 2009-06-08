@@ -1,3 +1,6 @@
+2.0001
+  add option 'type', 'convert', 'deref'
+  
 1.0003
   bag fix: occur compile error if a class having auto_build option and its name contain :: is loaded,
   

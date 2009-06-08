@@ -242,7 +242,7 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
  
 {
     eval"use T17";
-    like($@, qr/T17::m1 'default' has to be a code reference or constant value/, 'defalt error');
+    like($@, qr/Value of 'default' option must be a code reference or constant value\(T17::m1\)/, 'defalt error');
 }
  
 {
@@ -264,6 +264,70 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
 {
     my $t = T19::AAA->new;
     is($t->m2, 2, 'auto build class name contain ::');
+}
+
+{
+    use T20;
+    my $t = T20->new;
+    $t->m1(1);
+    is_deeply($t->m1, [1], 'type array set a value');
+    
+    $t->m1(1,2);
+    is_deeply($t->m1, [1, 2], 'type array set two valus');
+    
+    $t->m1([2,3]);
+    is_deeply($t->m1, [2, 3], 'type attry set array ref');
+
+    
+    $t->m2(k1 => 1, k2 => 1);
+    is_deeply($t->m2, {k1 => 1, k2 => 1}, 'type hash set four valus');
+    
+    $t->m2({k => 1});
+    is_deeply($t->m2, {k => 1}, 'type hash set hash ref');
+    
+}
+
+{
+    eval "use T21";
+    like($@, qr/'type' option must be 'array' or 'hash'\(T21::m1\)/, 'type is invalid');
+}
+
+{
+    use T22;
+    
+    my $t = T22->new;
+    $t->m1({ m1 => 1});
+    isa_ok($t->m1, 'T23');
+    is($t->m1->m1, 1, 'convert');
+    
+    $t->m1(T23->new(m1 => 2));
+    isa_ok($t->m1, 'T23');
+    is($t->m1->m1, 2, 'no convert');
+    
+    $t->m2(2);
+    is($t->m2, 4, 'convert sub');
+}
+
+{
+    use T24;
+    my $t = T24->new( m1 => [1,2], m2 => { k => 1 }, m3 => [2,3] );
+    my $array = $t->m1;
+    my @array = $t->m1;
+    
+    is_deeply($array, [1, 2], 'deref array 1');
+    is_deeply([@array], [1, 2], 'deref array 2');
+    
+    my $hash = $t->m2;
+    my %hash = $t->m2;
+    
+    is_deeply($hash, {k => 1}, 'deref hash 1');
+    is_deeply({%hash}, {k => 1}, 'deref hash 2');
+    
+    my $scalar = $t->m3;
+    my @scalar = $t->m3;
+    
+    is_deeply($scalar, [2,3], 'no deref 1');
+    is_deeply($scalar[0], [2, 3], 'no deref 2');
 }
  
 __END__

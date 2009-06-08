@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '1.0003';
+our $VERSION = '2.0001';
  
 # meta imformation
 our $META = {};
@@ -126,7 +126,6 @@ sub end {
         # create accessor source code
         $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr);
     }
-    if($caller_class eq 'T19::AAA'){ $DB::single = 1 }
     
     # create accessor
     if($accessor_code){
@@ -279,13 +278,16 @@ sub create_constructor {
             
     foreach my $attr (keys %$attr_options) {
         if(exists $attr_options->{$attr}{default}) {
-            if(ref $attr_options->{$attr}{default}) {
+            if(ref $attr_options->{$attr}{default} eq 'CODE') {
                 $code .=
                     qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default}->();\n/;
             }
-            else{
+            elsif(!ref $attr_options->{$attr}{default}) {
                 $code .=
                     qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default};\n/;
+            }
+            else {
+                Carp::croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
             }
         }
         
@@ -305,10 +307,38 @@ sub create_accessor {
     
     my ($class, $attr) = @_;
     
-    my ($auto_build, $read_only, $chained, $weak)
-      = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{qw/auto_build read_only chained weak/};
+    my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref)
+      = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{qw/auto_build read_only chained weak type convert deref/};
     
     my $code =  qq/sub ${class}::$attr {\n/;
+
+    my $value;
+
+    # argument type
+    if ($type || $convert || $deref) {
+        $value = '$value';
+        
+        if( $type ) {
+            if($type eq 'array') {
+                $code .=
+                    qq/    my \$value = ref \$_[1] eq 'ARRAY' ? \$_[1] : [\@_[1 .. \$#_]];\n/;
+            }
+            elsif($type eq 'hash') {
+                $code .=
+                    qq/    my \$value = ref \$_[1] eq 'HASH' ? \$_[1] : {\@_[1 .. \$#_]};\n/;
+            }
+            else{
+                Carp::croak("'type' option must be 'array' or 'hash'(${class}::$attr)"); 
+            }
+        }
+        else{
+            $code .=
+                    qq/    my \$value = \$_[1];/;
+        }
+    }
+    else {
+        $value = '$_[1]';
+    }
     
     # automatically call build method
     if($auto_build){
@@ -343,17 +373,30 @@ sub create_accessor {
     else {
         $code .=
                 qq/    if(\@_ > 1) {\n/;
- 
+        
+        # convert to object;
+        if ($convert) {
+            if (ref $convert eq 'CODE') {
+                $code .=
+                qq/        $value = \$Object::Simple::META->{'$class'}{attr_options}{'$attr'}{convert}->($value);\n/;
+            }
+            else {
+                $code .=
+                qq/        require $convert;\n/ .
+                qq/        $value = $convert->new($value) unless eval{$value->isa('$convert')};\n/;
+            }
+        }
+        
         # Store argument optimized
         if (!$weak && !$chained) {
             $code .=
-                qq/        return \$_[0]->{'$attr'} = \$_[1];\n/;
+                qq/        return \$_[0]->{'$attr'} = $value;\n/;
         }
- 
+        
         # Store argument the old way
         else {
             $code .=
-                qq/        \$_[0]->{'$attr'} = \$_[1];\n\n/;
+                qq/        \$_[0]->{'$attr'} = $value;\n\n/;
         }
         
         # Weaken
@@ -368,25 +411,35 @@ sub create_accessor {
             $code .=
                 qq/        return \$_[0];\n/;
         }
-        elsif ($weak) {
-            $code .=
-                qq/        return \$_[0]->{'$attr'}\n/;
-        }
-        
+
         $code .=
                 qq/    }\n/;
     }
     
-    # getter return value
-    $code .=    qq/    return \$_[0]->{'$attr'};\n/ .
-                qq/}\n\n/;
+    # derifference
+    if ($type && $deref) {
+        if ($type eq 'array') {
+            $code .=
+                qq/    return wantarray ? \@{\$_[0]->{'$attr'}} : \$_[0]->{'$attr'};/;
+        }
+        elsif ($type eq 'hash') {
+            $code .=
+                qq/    return wantarray ? \%{\$_[0]->{'$attr'}} : \$_[0]->{'$attr'};/;
+        }
+    }
+    else {
+        $code .=
+                qq/    return \$_[0]->{'$attr'};\n/;
+    }
+    
+    $code .=    qq/}\n\n/;
     
     return $code;
 }
  
 # valid accessor options
 my %VALID_ATTR_OPTIOTNS 
-    = map {$_ => 1} qw(default chained weak read_only auto_build);
+    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref);
  
 # check accessor options
 sub check_accessor_option {
@@ -395,12 +448,6 @@ sub check_accessor_option {
     foreach my $key ( keys %$attr_options ){
         Carp::croak("${class}::$attr '$key' is invalid accessor option.")
             unless $VALID_ATTR_OPTIOTNS{ $key };
-        if($key eq 'default' &&
-           !(!ref $attr_options->{default} ||
-             ref $attr_options->{default} eq 'CODE'))
-        {
-            Carp::croak("${class}::$attr 'default' has to be a code reference or constant value.");
-        }
     }
 }
  
@@ -429,7 +476,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 1.0003
+Version 2.0001
  
 =head1 FEATURES
  
