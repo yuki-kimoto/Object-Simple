@@ -289,7 +289,7 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
 
 {
     eval "use T21";
-    like($@, qr/'type' option must be 'array' or 'hash'\(T21::m1\)/, 'type is invalid');
+    like($@, qr/'type' option must be 'array' or 'hash' \(T21::m1\)/, 'type is invalid');
 }
 
 {
@@ -304,8 +304,32 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     isa_ok($t->m1, 'T23');
     is($t->m1->m1, 2, 'no convert');
     
+    $t->m1(undef);
+    ok(!$t->m1, 'no convert undef');
+    
     $t->m2(2);
     is($t->m2, 4, 'convert sub');
+}
+
+{
+    my $t = T22->new(m1 => { m1 => 1 });
+    isa_ok($t->m1, 'T23');
+    is($t->m1->m1, 1, 'convert');
+}
+    
+{
+    my $t = T22->new(m1 => T23->new(m1 => 2));
+    isa_ok($t->m1, 'T23');
+    is($t->m1->m1, 2, 'no convert');
+}
+{
+    my $t = T22->new(m2 => 2);
+    is($t->m2, 4, 'convert sub');
+}
+
+{
+    my $t = T22->new(m1 => undef);
+    ok(!$t->m1, 'no convert undef');
 }
 
 {
@@ -322,12 +346,11 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     
     is_deeply($hash, {k => 1}, 'deref hash 1');
     is_deeply({%hash}, {k => 1}, 'deref hash 2');
-    
-    my $scalar = $t->m3;
-    my @scalar = $t->m3;
-    
-    is_deeply($scalar, [2,3], 'no deref 1');
-    is_deeply($scalar[0], [2, 3], 'no deref 2');
+}
+
+{
+    eval"use T25";
+    like($@, qr/\Q'deref' option must be specified with 'type' option (T25::m1)/, 'type is invalid');
 }
  
 __END__

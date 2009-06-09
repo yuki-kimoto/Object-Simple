@@ -277,6 +277,20 @@ sub create_constructor {
                     qq/    bless \$self, \$class;\n/;
             
     foreach my $attr (keys %$attr_options) {
+        if (my $convert = $attr_options->{$attr}{convert}) {
+            if(ref $convert eq 'CODE') {
+                $code .=
+                qq/        \$self->{$attr} = \$Object::Simple::META->{'$class'}{merged_attr_options}{'$attr'}{convert}->(\$self->{$attr});\n/;
+            }
+            else {
+                require Scalar::Util;
+                
+                $code .=
+                qq/        require $convert;\n/ .
+                qq/        \$self->{$attr} = $convert->new(\$self->{$attr}) if defined \$self->{$attr} && !Scalar::Util::blessed(\$self->{$attr});\n/;
+            }
+        }
+        
         if(exists $attr_options->{$attr}{default}) {
             if(ref $attr_options->{$attr}{default} eq 'CODE') {
                 $code .=
@@ -302,6 +316,9 @@ sub create_constructor {
                     qq/}\n/;
 }
 
+# valid type
+my %VALID_TYPE = map {$_ => 1} qw/array hash/;
+
 # create accessor.
 sub create_accessor {
     
@@ -310,34 +327,31 @@ sub create_accessor {
     my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref)
       = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{qw/auto_build read_only chained weak type convert deref/};
     
+    my $value = '$_[1]';
+    
+    # check type
+    Carp::croak("'type' option must be 'array' or 'hash' (${class}::$attr)")
+        if $type && !$VALID_TYPE{$type};
+    
+    # check deref
+    Carp::croak("'deref' option must be specified with 'type' option (${class}::$attr)")
+        if $deref && !$type;
+
     my $code =  qq/sub ${class}::$attr {\n/;
-
-    my $value;
-
+    
+    $code .=    qq/my \$value;\n/ if $type || $convert;
+    
     # argument type
-    if ($type || $convert || $deref) {
-        $value = '$value';
-        
-        if( $type ) {
-            if($type eq 'array') {
-                $code .=
-                    qq/    my \$value = ref \$_[1] eq 'ARRAY' ? \$_[1] : [\@_[1 .. \$#_]];\n/;
-            }
-            elsif($type eq 'hash') {
-                $code .=
-                    qq/    my \$value = ref \$_[1] eq 'HASH' ? \$_[1] : {\@_[1 .. \$#_]};\n/;
-            }
-            else{
-                Carp::croak("'type' option must be 'array' or 'hash'(${class}::$attr)"); 
-            }
-        }
-        else{
+    if($type) {
+        if($type eq 'array') {
             $code .=
-                    qq/    my \$value = \$_[1];/;
+                qq/    \$value = ref \$_[1] eq 'ARRAY' ? \$_[1] : [\@_[1 .. \$#_]];\n/;
         }
-    }
-    else {
-        $value = '$_[1]';
+        else {
+            $code .=
+                qq/    \$value = ref \$_[1] eq 'HASH' ? \$_[1] : {\@_[1 .. \$#_]};\n/;
+        }
+        $value = '$value';
     }
     
     # automatically call build method
@@ -347,7 +361,7 @@ sub create_accessor {
                 qq/    if(\@_ == 1 && ! exists \$_[0]->{'$attr'}) {\n/;
         
         if(ref $auto_build eq 'CODE') {
-        $code .=
+            $code .=
                 qq/        \$Object::Simple::META->{'$class'}{attr_options}{'$attr'}{auto_build}->(\$_[0]);\n/;
         }
         else {
@@ -361,7 +375,7 @@ sub create_accessor {
         }
         
         $code .=
-                qq/    }\n\n/;
+                qq/    }\n/;
     }
     
     if ($read_only){
@@ -376,15 +390,18 @@ sub create_accessor {
         
         # convert to object;
         if ($convert) {
-            if (ref $convert eq 'CODE') {
+            if(ref $convert eq 'CODE') {
                 $code .=
-                qq/        $value = \$Object::Simple::META->{'$class'}{attr_options}{'$attr'}{convert}->($value);\n/;
+                qq/        \$value = \$Object::Simple::META->{'$class'}{attr_options}{'$attr'}{convert}->($value);\n/;
             }
             else {
+                require Scalar::Util;
+                
                 $code .=
                 qq/        require $convert;\n/ .
-                qq/        $value = $convert->new($value) unless eval{$value->isa('$convert')};\n/;
+                qq/        \$value = defined $value && !Scalar::Util::blessed($value) ? $convert->new($value) : $value ;\n/;
             }
+            $value = '$value';
         }
         
         # Store argument optimized
@@ -396,14 +413,14 @@ sub create_accessor {
         # Store argument the old way
         else {
             $code .=
-                qq/        \$_[0]->{'$attr'} = $value;\n\n/;
+                qq/        \$_[0]->{'$attr'} = $value;\n/;
         }
         
         # Weaken
         if ($weak) {
             require Scalar::Util;
             $code .=
-                qq/        Scalar::Util::weaken(\$_[0]->{'$attr'});\n\n/;
+                qq/        Scalar::Util::weaken(\$_[0]->{'$attr'});\n/;
         }
         
         # Return value or instance for chained/weak
@@ -411,20 +428,20 @@ sub create_accessor {
             $code .=
                 qq/        return \$_[0];\n/;
         }
-
+        
         $code .=
                 qq/    }\n/;
     }
     
     # derifference
-    if ($type && $deref) {
+    if ($deref) {
         if ($type eq 'array') {
             $code .=
-                qq/    return wantarray ? \@{\$_[0]->{'$attr'}} : \$_[0]->{'$attr'};/;
+                qq/    return wantarray ? \@{\$_[0]->{'$attr'}} : \$_[0]->{'$attr'};\n/;
         }
-        elsif ($type eq 'hash') {
+        else {
             $code .=
-                qq/    return wantarray ? \%{\$_[0]->{'$attr'}} : \$_[0]->{'$attr'};/;
+                qq/    return wantarray ? \%{\$_[0]->{'$attr'}} : \$_[0]->{'$attr'};\n/;
         }
     }
     else {
@@ -529,6 +546,18 @@ writing new and accessors repeatedly.
     
     # method chaine
     sub title : Attr { chained => 1 }
+    
+    # variable type
+    sub authors : Attr { type => 'array' }
+    sub country : Attr { type => 'hash' }
+    
+    # convert to object
+    sub url : Attr { convert => 'URI' }
+    sub url : Attr { convert => sub{ ref $_[0] ? $_[0] : URI->new($_[0]) } }
+    
+    # derefference of returned value
+    sub authors : Attr { type => 'array', deref => 1 }
+    sub country_id : Attr { type => 'hash',  deref => 1 }
     
     # Inheritance
     package Magazine;
@@ -635,7 +664,47 @@ You can chain method
 attribute value is weak reference.
  
     sub parent : Attr {weak => 1}
- 
+
+=head2 type
+
+You can specify variable type( array, hash );
+
+    # variable type
+    sub authors : Attr { type => 'array' }
+    sub country_id : Attr { type => 'hash' }
+
+If you specity 'array', arguments is automatically converted to array reference
+
+     $book->authors('ken', 'taro'); # ('ken', 'taro') -> ['ken', 'taro']
+     $book->authors('ken');         # ('ken')         -> ['ken']
+
+If you specity 'hash', arguments is automatically converted to hash reference
+
+     $book->country_id(Japan => 1); # (Japan => 1)    -> {Japan => 1}
+
+=head2 convert
+
+You can convert a non blessed scalar value to object.
+
+    sub url : Attr { convert => 'URI' }
+    
+    $book->url('http://somehost'); # convert to URI->new('http://somehost')
+
+You can also convert a scalar value using your convert function.
+
+    sub url : Attr { convert => sub{ ref $_[0] ? $_[0] : URI->new($_[0]) } }
+
+
+=head2 deref
+
+You can derefference returned value.You must specify it with 'type' option.
+    
+    sub authors : Attr { type => 'array', deref => 1 }
+    sub country_id : Attr { type => 'hash',  deref => 1 }
+
+    my @authors = $book->authors;
+    my %country_id = $book->country_id;
+
 =head1 INHERITANCE
  
     # Inheritance
