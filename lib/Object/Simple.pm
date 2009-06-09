@@ -41,9 +41,8 @@ sub import {
         push @{"${caller_class}::ISA"}, 'Object::Simple';
     }
     
-    # import methods form mixin classes;
-    Object::Simple::Functions::import_method_from_mixin_classes($caller_class, $options{mixins})
-        if $options{mixins};
+    # mixin classes
+    $Object::Simple::META->{$caller_class}{mixin_classes} = $options{mixins};
     
     # auto strict and auto warnings
     strict->import;
@@ -134,6 +133,10 @@ sub end {
         Carp::croak("$accessor_code\n:$@") if $@;
     }
     
+    # include mixin classes
+    Object::Simple::Functions::include_mixin_classes($caller_class)
+        if $Object::Simple::META->{$caller_class}{mixin_classes};
+    
     # create constructor
     my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
     $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
@@ -162,83 +165,56 @@ sub get_linear_isa {
     }
     return \@lin;
 }
- 
+
 # inherit base class
 sub inherit_base_class{
     my ($caller_class, $base) = @_;
     
     Carp::croak("Invalid class name '$base'") if $base =~ /[^\w:]/;
-    eval "require $base;";
-    Carp::croak("$@") if $@;
+    
+    unless($base->can('isa')) {
+        eval "require $base;";
+        Carp::croak("$@") if $@;
+    }
     
     no strict 'refs';
     unshift @{"${caller_class}::ISA"}, $base;
 }
- 
-# import mixin class' methods
-my %VALID_MIXIN_OPTIONS = map {$_ => 1} qw/rename select/;
-sub import_method_from_mixin_classes {
-    my ($caller_class, $mixin_infos) = @_;
+
+# include mixin classes
+sub include_mixin_classes {
+    my $caller_class = shift;
     
-    Carp::croak("mixins must be array reference.") if ref $mixin_infos ne 'ARRAY';
+    my $mixin_classes = $Object::Simple::META->{$caller_class}{mixin_classes};
+    Carp::croak("mixins must be array reference.") unless ref $mixin_classes eq 'ARRAY';
     
-    # import methods
-    foreach my $mixin_info (@$mixin_infos) {
-        my $mixin_class;
-        my $options = {};
-        
-        if (!ref $mixin_info) {
-            $mixin_class = $mixin_info;
-        }
-        elsif (ref $mixin_info eq 'ARRAY') {
-            my @options;
-            ($mixin_class, @options) = @$mixin_info;
-            $mixin_class ||= '';
-            
-            Carp::croak("mixin option must be key-value pairs.")
-               if @options % 2;
-            $options = {@options};
-        }
-        else {
-            Carp::croak("mixins item must be class name or array reference. $mixin_info is bad.");
-        }
-        
+    # include mixin classes
+    no strict 'refs';
+    no warnings 'redefine';
+    
+    foreach my $mixin_class (@$mixin_classes) {
         Carp::croak("Invalid class name '$mixin_class'") if $mixin_class =~ /[^\w:]/;
         
-        eval "require $mixin_class;";
-        Carp::croak($@) if $@;
         
-        my $methods;
-        if (my $select = $options->{select}) {
-            Carp::croak("mixins select options must be array reference.")
-                unless ref $select eq 'ARRAY';
-            $methods = $select;
-        }
-        else {
-            no strict 'refs';
-            $methods = [@{"${mixin_class}::EXPORT"}];
-        };
-        
-        Carp::croak("methods is not exist in \@${mixin_class}::EXPORT.")
-            unless @$methods;        
-        
-        foreach my $option (keys %$options) {
-            Carp::croak("mixin option '$option' is invalid")
-                unless $VALID_MIXIN_OPTIONS{$option};
+        unless($mixin_class->can('isa')) {
+            eval "require $mixin_class;";
+            Carp::croak("$@") if $@;
         }
         
-        foreach my $method (@$methods) {
-            my $rename = $options->{rename} || {};
+        # import all methods
+        foreach my $method ( keys %{"${mixin_class}::"} ) {
+            next unless defined &{"${mixin_class}::$method"};
+            next if $method eq 'new';
             
-            my $renamed_method = $rename->{$method} || $method;
-            delete $rename->{$method};
-            
-            no strict 'refs';
-            Carp::croak("Not exsits '${mixin_class}::$method'")
-                unless *{"${mixin_class}::$method"}{CODE};
-            *{"${caller_class}::$renamed_method"} = \&{"${mixin_class}::$method"};
+            *{"${caller_class}::$method"} = \&{"${mixin_class}::$method"};
         }
-        Carp::croak("Fail $mixin_class mixin rename.") if keys %{$options->{rename}};
+        
+        # mearge attr options to caller class
+        if($Object::Simple::META->{$mixin_class}{attr_options}) {
+            $Object::Simple::META->{$caller_class}{attr_options}
+                = { %{$Object::Simple::META->{$caller_class}{attr_options}}, 
+                    %{$Object::Simple::META->{$mixin_class}{attr_options}}    }
+        } 
     }
 }
  
@@ -267,6 +243,7 @@ sub merge_self_and_super_accessor_option {
 # create constructor
 sub create_constructor {
     my $class = shift;
+    
     my $attr_options = merge_self_and_super_accessor_option($class);
     
     my $code =      qq/sub {\n/ .
