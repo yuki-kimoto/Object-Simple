@@ -194,13 +194,13 @@ sub include_mixin_classes {
     my $mixin_classes = $Object::Simple::META->{$caller_class}{mixins};
     Carp::croak("mixins must be array reference.") unless ref $mixin_classes eq 'ARRAY';
     
-    # include mixin classes
-    no strict 'refs';
-    no warnings 'redefine';
-    
     # check mixins_rename
     my $mixins_rename = $Object::Simple::META->{$caller_class}{mixins_rename} || {};
     Carp::croak("'mixins_rename' must be hash reference") unless ref $mixins_rename eq 'HASH';
+    
+    # include mixin classes
+    no strict 'refs';
+    no warnings 'redefine';
     
     foreach my $mixin_class (@$mixin_classes) {
         Carp::croak("Invalid class name '$mixin_class'") if $mixin_class =~ /[^\w:]/;
@@ -719,32 +719,35 @@ Object::Simple support mixin syntax
         ]
     );
  
-This is nearly equel to
- 
-    package Book;
-    use Object::Simple;
-    
-    use Object::Simple::Mixin::AttrNames;
-    use Object::Simple::Mixin::AttrOptions;
- 
-Methods in @EXPORT is imported.
- 
+All methods is imported to Book.If a same named methods is exist, the method is overwrited by mixin method.
+
 You can rename method if methods name crash.
  
     use Object::Simple( 
-        mixins => [ 
-            ['Some::Mixin', rename => { 'mehtod' => 'renamed_method' }]
-        ]
+        mixins => [ 'Some::Mixin' ]
+        mixins_rename => { 'Somo::Mixin::mehtod' => 'renamed_method' }
     );
- 
-You can select methods if you want to import some methods 
- 
-    use Object::Simple( 
-        mixins => [ 
-            ['Some::Mixin', select => ['method1', 'method2']]
-        ]
-    );
- 
+
+Object::Simple mixin merge mixin class attribute.
+    
+    # mixin class
+    package Some::Mixin;
+    use Object::Simple;
+    
+    sub m2 : Attr {}
+    
+    Object::Simple->end;
+
+    # using mixin class
+    package Some::Class;
+    use Object::Simple( mixins => [ 'Some::Mixin' ] );
+    
+    sub m1 : Attr {}
+    
+    Object::Simple->end;
+
+Because Some::Mixin is mixined, Some::Class has two attribute m1 and m2.
+
 =head1 using your MODIFY_CODE_ATTRIBUTES subroutine
  
 Object::Simple define own MODIFY_CODE_ATTRIBUTES subroutine.

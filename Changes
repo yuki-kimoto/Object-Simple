@@ -1,7 +1,7 @@
 2.0001
   add accessor option 'type', 'convert', 'deref'
   mixins option change like Moose role
-  add 'mixins_alias' option
+  add 'mixins_rename' option
   
 1.0003
   bag fix: occur compile error if a class having auto_build option and its name contain :: is loaded,
