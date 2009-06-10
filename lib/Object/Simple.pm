@@ -14,8 +14,8 @@ our $META = {};
 our @ATTRIBUTES_INFO;
  
 # valid import option value
-my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins);
- 
+my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins mixins_alias );
+
 # import
 sub import {
     my ($self, %options) = @_;
@@ -42,7 +42,10 @@ sub import {
     }
     
     # mixin classes
-    $Object::Simple::META->{$caller_class}{mixin_classes} = $options{mixins};
+    $Object::Simple::META->{$caller_class}{mixins} = $options{mixins};
+    
+    # mixin methods alias
+    $Object::Simple::META->{$caller_class}{mixins_alias} = $options{mixins_alias};
     
     # auto strict and auto warnings
     strict->import;
@@ -126,6 +129,9 @@ sub end {
         $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr);
     }
     
+    $Object::Simple::META->{$caller_class}{attr_options} = {}
+        unless $Object::Simple::META->{$caller_class}{attr_options};
+    
     # create accessor
     if($accessor_code){
         no warnings qw(redefine);
@@ -135,7 +141,7 @@ sub end {
     
     # include mixin classes
     Object::Simple::Functions::include_mixin_classes($caller_class)
-        if $Object::Simple::META->{$caller_class}{mixin_classes};
+        if $Object::Simple::META->{$caller_class}{mixins};
     
     # create constructor
     my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
@@ -185,7 +191,7 @@ sub inherit_base_class{
 sub include_mixin_classes {
     my $caller_class = shift;
     
-    my $mixin_classes = $Object::Simple::META->{$caller_class}{mixin_classes};
+    my $mixin_classes = $Object::Simple::META->{$caller_class}{mixins};
     Carp::croak("mixins must be array reference.") unless ref $mixin_classes eq 'ARRAY';
     
     # include mixin classes
@@ -211,10 +217,26 @@ sub include_mixin_classes {
         
         # mearge attr options to caller class
         if($Object::Simple::META->{$mixin_class}{attr_options}) {
+            if($caller_class eq 'T12') { $DB::single = 1 }
+            
             $Object::Simple::META->{$caller_class}{attr_options}
                 = { %{$Object::Simple::META->{$caller_class}{attr_options}}, 
                     %{$Object::Simple::META->{$mixin_class}{attr_options}}    }
-        } 
+        }
+    }
+    
+    # create alias 
+    if(my $mixins_alias = $Object::Simple::META->{$caller_class}{mixins_alias}) {
+        Carp::croak("'mixins_alias' must be hash reference") unless ref $mixins_alias eq 'HASH';
+        if(${caller_class} eq 'T13') { $DB::single = 1 }
+        no strict 'refs';
+        foreach my $method ( keys %$mixins_alias) {
+            my $alias = $mixins_alias->{$method};
+            Carp::croak("'$method' is undefined") unless defined &{"$method"};
+            Carp::croak("alias '$alias' must be method_name") if $alias =~ /[^\w_]/;
+            
+            *{"${caller_class}::$alias"} = \&{"$method"};
+        }
     }
 }
  

@@ -45,4 +45,23 @@ like($@, qr/mixins must be array reference/, 'mixin must be array ref');
     use T11;
     my $t = T11->new;
     is_deeply( $t, {m1 => 3, m2 => 4, m3 => 5, m4 => 10}, 'mixins attr');
+    
+    is($t->m4, 2, 'override method');
+    is($t->r4, 1, 'alias method');
 }
+
+{
+    eval"use T12";
+    like($@, qr/\Q'mixins_alias' must be hash reference/, 'mixins_alias is not hash ref');
+}
+
+{
+    eval"use T13";
+    like($@, qr/\Q'M8::m5' is undefined/, 'method is not defined');
+}
+
+{
+    eval"use T14";
+    like($@, qr/\Qalias '^^^' must be method_name/, 'method is not valid name');
+}
+
