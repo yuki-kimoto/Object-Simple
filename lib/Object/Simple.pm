@@ -14,7 +14,7 @@ our $META = {};
 our @ATTRIBUTES_INFO;
  
 # valid import option value
-my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins mixins_alias );
+my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins mixins_rename );
 
 # import
 sub import {
@@ -44,8 +44,8 @@ sub import {
     # mixin classes
     $Object::Simple::META->{$caller_class}{mixins} = $options{mixins};
     
-    # mixin methods alias
-    $Object::Simple::META->{$caller_class}{mixins_alias} = $options{mixins_alias};
+    # mixin methods rename
+    $Object::Simple::META->{$caller_class}{mixins_rename} = $options{mixins_rename};
     
     # auto strict and auto warnings
     strict->import;
@@ -73,7 +73,7 @@ sub new {
     return $META->{$class}{constructor}->($class,@_)
         if $META->{$class}{constructor};
     
-    foreach my $super_class (@{Object::Simple::Functions::get_linear_isa($class)}) {
+    foreach my $super_class (@{Object::Simple::Functions::get_leftmost_isa($class)}) {
         if($META->{$super_class}{constructor}) {
             $META->{$class}{constructor} = $META->{$super_class}{constructor};
             return $META->{$class}{constructor}->($class,@_);
@@ -152,24 +152,24 @@ sub end {
 }
  
 package Object::Simple::Functions;
- 
-# get self and parent classes
-sub get_linear_isa {
-    my $classname = shift;
+
+# get leftmost self and parent classes
+sub get_leftmost_isa {
+    my $class = shift;
+    my @leftmost_isa;
     
-    my @lin = ($classname);
-    my %stored;
+    # sortcut
+    return unless $class;
+    
+    my $leftmost_parent = $class;
+    push @leftmost_isa, $leftmost_parent;
     
     no strict 'refs';
-    foreach my $parent (@{"$classname\::ISA"}) {
-        my $plin = get_linear_isa($parent);
-        foreach (@$plin) {
-            next if exists $stored{$_};
-            push(@lin, $_);
-            $stored{$_} = 1;
-        }
+    while( $leftmost_parent = ${"${leftmost_parent}::ISA"}[0] ) {
+        push @leftmost_isa, $leftmost_parent;
     }
-    return \@lin;
+    
+    return \@leftmost_isa;
 }
 
 # inherit base class
@@ -198,6 +198,10 @@ sub include_mixin_classes {
     no strict 'refs';
     no warnings 'redefine';
     
+    # check mixins_rename
+    my $mixins_rename = $Object::Simple::META->{$caller_class}{mixins_rename} || {};
+    Carp::croak("'mixins_rename' must be hash reference") unless ref $mixins_rename eq 'HASH';
+    
     foreach my $mixin_class (@$mixin_classes) {
         Carp::croak("Invalid class name '$mixin_class'") if $mixin_class =~ /[^\w:]/;
         
@@ -212,30 +216,20 @@ sub include_mixin_classes {
             next unless defined &{"${mixin_class}::$method"};
             next if $method eq 'new';
             
-            *{"${caller_class}::$method"} = \&{"${mixin_class}::$method"};
+            if(my $rename = $mixins_rename->{"${mixin_class}::$method"}) {
+                Carp::croak("rename '$rename' must be method_name") if $rename =~ /[^\w_]/;
+                *{"${caller_class}::$rename"} = \&{"${mixin_class}::$method"};
+            }
+            else {
+                *{"${caller_class}::$method"} = \&{"${mixin_class}::$method"};
+            }
         }
         
         # mearge attr options to caller class
         if($Object::Simple::META->{$mixin_class}{attr_options}) {
-            if($caller_class eq 'T12') { $DB::single = 1 }
-            
             $Object::Simple::META->{$caller_class}{attr_options}
                 = { %{$Object::Simple::META->{$caller_class}{attr_options}}, 
                     %{$Object::Simple::META->{$mixin_class}{attr_options}}    }
-        }
-    }
-    
-    # create alias 
-    if(my $mixins_alias = $Object::Simple::META->{$caller_class}{mixins_alias}) {
-        Carp::croak("'mixins_alias' must be hash reference") unless ref $mixins_alias eq 'HASH';
-        if(${caller_class} eq 'T13') { $DB::single = 1 }
-        no strict 'refs';
-        foreach my $method ( keys %$mixins_alias) {
-            my $alias = $mixins_alias->{$method};
-            Carp::croak("'$method' is undefined") unless defined &{"$method"};
-            Carp::croak("alias '$alias' must be method_name") if $alias =~ /[^\w_]/;
-            
-            *{"${caller_class}::$alias"} = \&{"$method"};
         }
     }
 }
@@ -249,7 +243,7 @@ sub merge_self_and_super_accessor_option {
       if $Object::Simple::META->{$class}{merged_attr_options};
     
     my $self_and_super_classes
-      = Object::Simple::Functions::get_linear_isa($class);
+      = Object::Simple::Functions::get_leftmost_isa($class);
     
     my $attr_options = {};
     

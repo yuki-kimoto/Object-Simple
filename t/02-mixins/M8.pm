@@ -8,5 +8,9 @@ sub m4 {
     return 1;
 }
 
+sub m5 {
+    return 3;
+}
+
 Object::Simple->end;
 
