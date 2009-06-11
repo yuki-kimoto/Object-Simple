@@ -269,21 +269,28 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
 {
     use T20;
     my $t = T20->new;
-    $t->m1(1);
-    is_deeply($t->m1, [1], 'type array set a value');
+    $t->m1(0);
+    is_deeply($t->m1, [0], 'type array set a value');
     
     $t->m1(1,2);
     is_deeply($t->m1, [1, 2], 'type array set two valus');
     
     $t->m1([2,3]);
     is_deeply($t->m1, [2, 3], 'type attry set array ref');
-
+    
+    $t->m1(undef);
+    ok(!defined $t->m1, 'type attry set undef');
+    
+    
     
     $t->m2(k1 => 1, k2 => 1);
     is_deeply($t->m2, {k1 => 1, k2 => 1}, 'type hash set four valus');
     
     $t->m2({k => 1});
     is_deeply($t->m2, {k => 1}, 'type hash set hash ref');
+
+    $t->m2(undef);
+    ok(!defined $t->m2, 'type hash set undef');
     
 }
 
@@ -352,7 +359,18 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     eval"use T25";
     like($@, qr/\Q'deref' option must be specified with 'type' option (T25::m1)/, 'type is invalid');
 }
- 
+
+{
+    use T26;
+    my $t = T26->new;
+    is($t->m1, 3, 'alias default value 1');
+    is($t->m2, 3, 'alias default value 2');
+    
+    $t->m2(1);
+    is($t->m2, 1, 'alias set value 1');
+    is($t->m1, 1, 'alias set value 2');
+}
+
 __END__
  
  

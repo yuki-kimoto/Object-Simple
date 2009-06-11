@@ -44,7 +44,7 @@ like($@, qr/mixins must be array reference/, 'mixin must be array ref');
 {
     use T11;
     my $t = T11->new;
-    is_deeply( $t, {m1 => 3, m2 => 4, m3 => 5, m4 => 10}, 'mixins attr');
+    is_deeply( $t, {m1 => 1, m2 => 4, m3 => 2, m4 => 10}, 'mixins attr');
     
     is($t->m4, 2, 'override method');
     is($t->r4, 1, 'rename method');

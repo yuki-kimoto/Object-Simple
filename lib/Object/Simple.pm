@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0001';
+our $VERSION = '2.0002';
  
 # meta imformation
 our $META = {};
@@ -94,6 +94,9 @@ sub end {
     # accessor code
     my $accessor_code = '';
     
+    # alias code
+    my $alias_code = '';
+    
     # parse symbol table and create accessors
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
         
@@ -125,12 +128,23 @@ sub end {
         # resist accessor option to meta imformation
         $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
         
-        # create accessor source code
-        $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr);
+        if (my $alias = $attr_options->{alias}) {
+            Carp::croak("Cannot alias ${$class}::$attr to $alias,because ${class}::$attr is not defined")
+                unless defined &{"${class}::$attr"};
+            $alias_code .= qq/*${class}::$attr= \\&${class}::$alias\n/;
+        }
+        else{
+            # create accessor source code
+            $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr);
+        }
     }
     
+    # initialize attr_options if it is not set
     $Object::Simple::META->{$caller_class}{attr_options} = {}
         unless $Object::Simple::META->{$caller_class}{attr_options};
+    
+    # join alias code to accessor code
+    $accessor_code .= $alias_code;
     
     # create accessor
     if($accessor_code){
@@ -198,13 +212,18 @@ sub include_mixin_classes {
     my $mixins_rename = $Object::Simple::META->{$caller_class}{mixins_rename} || {};
     Carp::croak("'mixins_rename' must be hash reference") unless ref $mixins_rename eq 'HASH';
     
+    # mixin class attr options
+    my $mixins_attr_options = {};
+    
+    # method mixined to caller class
+    my $mixined_methods = {};
+    
     # include mixin classes
     no strict 'refs';
     no warnings 'redefine';
     
     foreach my $mixin_class (@$mixin_classes) {
         Carp::croak("Invalid class name '$mixin_class'") if $mixin_class =~ /[^\w:]/;
-        
         
         unless($mixin_class->can('isa')) {
             eval "require $mixin_class;";
@@ -216,21 +235,27 @@ sub include_mixin_classes {
             next unless defined &{"${mixin_class}::$method"};
             next if $method eq 'new';
             
-            if(my $rename = $mixins_rename->{"${mixin_class}::$method"}) {
-                Carp::croak("rename '$rename' must be method_name") if $rename =~ /[^\w_]/;
-                *{"${caller_class}::$rename"} = \&{"${mixin_class}::$method"};
-            }
-            else {
-                *{"${caller_class}::$method"} = \&{"${mixin_class}::$method"};
-            }
+            my $rename = $mixins_rename->{"${mixin_class}::$method"} || $method;
+            next if defined &{"${caller_class}::$rename"} && !$mixined_methods->{$rename};
+            
+            Carp::croak("rename '$rename' must be method_name") if $rename =~ /[^\w_]/;
+            *{"${caller_class}::$rename"} = \&{"${mixin_class}::$method"};
+            $mixined_methods->{$rename} = 1;
         }
         
-        # mearge attr options to caller class
+        # merge mixin class attr options
         if($Object::Simple::META->{$mixin_class}{attr_options}) {
-            $Object::Simple::META->{$caller_class}{attr_options}
-                = { %{$Object::Simple::META->{$caller_class}{attr_options}}, 
-                    %{$Object::Simple::META->{$mixin_class}{attr_options}}    }
+            $mixins_attr_options = {
+                %{$mixins_attr_options}, 
+                %{$Object::Simple::META->{$mixin_class}{attr_options}}
+            }
         }
+    }
+    
+    # merge mixin class attr options to caller class
+    $Object::Simple::META->{$caller_class}{attr_options} = {
+        %{$mixins_attr_options},
+        %{$Object::Simple::META->{$caller_class}{attr_options}}
     }
 }
  
@@ -334,19 +359,6 @@ sub create_accessor {
     
     $code .=    qq/my \$value;\n/ if $type || $convert;
     
-    # argument type
-    if($type) {
-        if($type eq 'array') {
-            $code .=
-                qq/    \$value = ref \$_[1] eq 'ARRAY' ? \$_[1] : [\@_[1 .. \$#_]];\n/;
-        }
-        else {
-            $code .=
-                qq/    \$value = ref \$_[1] eq 'HASH' ? \$_[1] : {\@_[1 .. \$#_]};\n/;
-        }
-        $value = '$value';
-    }
-    
     # automatically call build method
     if($auto_build){
         
@@ -380,6 +392,19 @@ sub create_accessor {
     else {
         $code .=
                 qq/    if(\@_ > 1) {\n/;
+        
+        # argument type
+        if($type) {
+            if($type eq 'array') {
+                $code .=
+                qq/    \$value = ref \$_[1] eq 'ARRAY' ? \$_[1] : !defined \$_[1] ? undef : [\@_[1 .. \$#_]];\n/;
+            }
+            else {
+                $code .=
+                qq/    \$value = ref \$_[1] eq 'HASH' ? \$_[1] : !defined \$_[1] ? undef : {\@_[1 .. \$#_]};\n/;
+            }
+            $value = '$value';
+        }
         
         # convert to object;
         if ($convert) {
@@ -449,7 +474,7 @@ sub create_accessor {
  
 # valid accessor options
 my %VALID_ATTR_OPTIOTNS 
-    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref);
+    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref alias);
  
 # check accessor options
 sub check_accessor_option {
@@ -486,7 +511,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0001
+Version 2.0002
  
 =head1 FEATURES
  
@@ -747,6 +772,32 @@ Object::Simple mixin merge mixin class attribute.
     Object::Simple->end;
 
 Because Some::Mixin is mixined, Some::Class has two attribute m1 and m2.
+
+=head1 METHODS SEARCHING ORDER
+
+Method searching order is like Ruby.
+
+If method names is crashed, method search order is the following
+
+1. This class
+
+2. Mixin class2
+
+3. Mixin class1
+
+4. Thit class
+
+     +------------+
+   4 | Base class |
+     +------------+
+           |
+     +------------+        +--------------+
+   1 | This class |--+---3 | Mixin class1 |
+     +------------+  |     +--------------+
+                     |
+                     |     +--------------+
+                     +---2 | Mixin class2 |
+                           +--------------+
 
 =head1 using your MODIFY_CODE_ATTRIBUTES subroutine
  
