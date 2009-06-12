@@ -7,6 +7,6 @@ sub new {
 sub m3 : Attr {default => 3}
 sub m4 : Attr {}
 
-Object::Simple->end;
+Object::Simple->build_class;
 
 1;

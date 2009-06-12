@@ -13,4 +13,4 @@ sub create_m2 {
 
 
 
-Object::Simple->end;
+Object::Simple->build_class;

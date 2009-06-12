@@ -4,4 +4,4 @@ use Object::Simple;
 sub m1 : Attr { type => 'array'}
 sub m2 : Attr { type => 'hash'}
 
-Object::Simple->end;
+Object::Simple->build_class;

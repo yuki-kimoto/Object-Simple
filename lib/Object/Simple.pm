@@ -5,74 +5,79 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0002';
- 
-# meta imformation
+our $VERSION = '2.0003';
+
+# Meta imformation
 our $META = {};
  
-# attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
+# Attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
 our @ATTRIBUTES_INFO;
  
-# valid import option value
-my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins mixins_rename );
+# Valid import option
+my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins mixins_rename);
 
-# import
+# Import
 sub import {
     my ($self, %options) = @_;
     
-    # shortcut
+    # Shortcut
     return unless $self eq 'Object::Simple';
     
-    # check import option
-    foreach my $key (keys %options) {
-        Carp::croak("Invalid import option '$key'") unless $VALID_IMPORT_OPTIONS{$key};
-    }
-    
-    # get caller package name
+    # Get caller class
     my $caller_class = caller;
     
-    # inherit base class;
+    # Check import option
+    foreach my $key (keys %options) {
+        Carp::croak("'$key' is invalid import option ($caller_class)") unless $VALID_IMPORT_OPTIONS{$key};
+    }
+    
+    # Inherit base class;
     Object::Simple::Functions::inherit_base_class($caller_class, $options{base})
         if $options{base};
     
-    # inherit Object::Simple;
+    # Inherit Object::Simple;
     {
         no strict 'refs';
         push @{"${caller_class}::ISA"}, 'Object::Simple';
     }
     
-    # mixin classes
+    # Regist mixin classes to meta information
     $Object::Simple::META->{$caller_class}{mixins} = $options{mixins};
     
-    # mixin methods rename
+    # Regist methods which need rename to meta information
     $Object::Simple::META->{$caller_class}{mixins_rename} = $options{mixins_rename};
     
-    # auto strict and auto warnings
+    # Adapt strict and warnings pragma to caller class
     strict->import;
     warnings->import;
     
-    # define MODIFY_CODE_ATTRIBUTES for caller package
+    # Define MODIFY_CODE_ATTRIBUTES subroutine of caller class
     Object::Simple::Functions::define_MODIFY_CODE_ATTRIBUTES($caller_class);
 }
  
-# unimport to use MODIFY_CODE_ATTRIBUTES
+# Unimport
 sub unimport {
-    my $caller = caller;
     
+    # Get caller class
+    my $caller_class = caller;
+    
+    # Delete MODIFY_CODE_ATTRIBUTES subroutine of caller class
     no strict 'refs';
-    delete ${ $caller . '::' }{MODIFY_CODE_ATTRIBUTES};
+    delete ${$caller_class . '::'}{MODIFY_CODE_ATTRIBUTES};
 }
  
-# new
+# New
 sub new {
     my $invocant = shift;
     
-    # convert to class name
+    # Convert to class name
     my $class = ref $invocant || $invocant;
     
+    # Call constructor
     return $META->{$class}{constructor}->($class,@_)
         if $META->{$class}{constructor};
     
+    # Search super class constructor  if constructor is not resited to meta information
     foreach my $super_class (@{Object::Simple::Functions::get_leftmost_isa($class)}) {
         if($META->{$super_class}{constructor}) {
             $META->{$class}{constructor} = $META->{$super_class}{constructor};
@@ -81,28 +86,28 @@ sub new {
     }
 }
  
-# resist attribute infomathion at end of script
-sub end {
+# Build class(create accessor, include mixin class, and create constructor)
+sub build_class {
     my $self = shift;
     
-    # caller class
+    # Get caller class
     my $caller_class = caller;
     
-    # attribute names
+    # Attribute names
     my $attr_names = {};
     
-    # accessor code
+    # Accessor code
     my $accessor_code = '';
     
-    # alias code
+    # Alias code
     my $alias_code = '';
     
-    # parse symbol table and create accessors
+    # Parse symbol table and create accessors code
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
         
         my ($class, $ref) = @$class_and_ref;
         
-        # parse symbol tabel to find code reference correspond to method names
+        # Parse symbol tabel to find code reference correspond to method names
         unless($attr_names->{$class}) {
         
             $attr_names->{$class} = {};
@@ -116,48 +121,50 @@ sub end {
             }
         }
         
-        # get attribute name
+        # Get attribute name
         my $attr = $attr_names->{$class}{$ref};
         
-        # get attr options
+        # Get attr options
         my $attr_options = {$ref->()};
         
-        # check accessor option
+        # Check accessor option
         Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options);
         
-        # resist accessor option to meta imformation
+        # Resist accessor option to meta imformation
         $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
         
+        # Create alias source code if accessor option contain 'alias'
         if (my $alias = $attr_options->{alias}) {
             Carp::croak("Cannot alias ${$class}::$attr to $alias,because ${class}::$attr is not defined")
                 unless defined &{"${class}::$attr"};
             $alias_code .= qq/*${class}::$attr= \\&${class}::$alias\n/;
         }
+        
+        # Create accessor source code
         else{
-            # create accessor source code
             $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr);
         }
     }
     
-    # initialize attr_options if it is not set
+    # Initialize attr_options if it is not set
     $Object::Simple::META->{$caller_class}{attr_options} = {}
         unless $Object::Simple::META->{$caller_class}{attr_options};
     
-    # join alias code to accessor code
+    # Join alias source code to accessor source code
     $accessor_code .= $alias_code;
     
-    # create accessor
+    # Create accessor and alias
     if($accessor_code){
         no warnings qw(redefine);
         eval $accessor_code;
         Carp::croak("$accessor_code\n:$@") if $@;
     }
     
-    # include mixin classes
+    # Include mixin classes
     Object::Simple::Functions::include_mixin_classes($caller_class)
         if $Object::Simple::META->{$caller_class}{mixins};
     
-    # create constructor
+    # Create constructor
     my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
     $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
     Carp::croak("$constructor_code\n:$@") if $@;
@@ -167,18 +174,17 @@ sub end {
  
 package Object::Simple::Functions;
 
-# get leftmost self and parent classes
+# Get leftmost self and parent classes
 sub get_leftmost_isa {
     my $class = shift;
     my @leftmost_isa;
     
-    # sortcut
+    # Sortcut
     return unless $class;
     
+    no strict 'refs';
     my $leftmost_parent = $class;
     push @leftmost_isa, $leftmost_parent;
-    
-    no strict 'refs';
     while( $leftmost_parent = ${"${leftmost_parent}::ISA"}[0] ) {
         push @leftmost_isa, $leftmost_parent;
     }
@@ -186,51 +192,53 @@ sub get_leftmost_isa {
     return \@leftmost_isa;
 }
 
-# inherit base class
+# Inherit base class
 sub inherit_base_class{
-    my ($caller_class, $base) = @_;
+    my ($caller_class, $base_class) = @_;
     
-    Carp::croak("Invalid class name '$base'") if $base =~ /[^\w:]/;
+    Carp::croak("Base class '$base_class' is invalid class name ($caller_class)")
+        if $base_class =~ /[^\w:]/;
     
-    unless($base->can('isa')) {
-        eval "require $base;";
+    unless($base_class->can('isa')) {
+        eval "require $base_class;";
         Carp::croak("$@") if $@;
     }
     
     no strict 'refs';
-    unshift @{"${caller_class}::ISA"}, $base;
+    @{"${caller_class}::ISA"} = ($base_class);
 }
 
-# include mixin classes
+# Include mixin classes
 sub include_mixin_classes {
     my $caller_class = shift;
     
+    # Get mixin classes
     my $mixin_classes = $Object::Simple::META->{$caller_class}{mixins};
-    Carp::croak("mixins must be array reference.") unless ref $mixin_classes eq 'ARRAY';
+    Carp::croak("mixins must be array reference ($caller_class)") unless ref $mixin_classes eq 'ARRAY';
     
-    # check mixins_rename
+    # Check mixins_rename
     my $mixins_rename = $Object::Simple::META->{$caller_class}{mixins_rename} || {};
-    Carp::croak("'mixins_rename' must be hash reference") unless ref $mixins_rename eq 'HASH';
+    Carp::croak("'mixins_rename' must be hash reference ($caller_class)") unless ref $mixins_rename eq 'HASH';
     
-    # mixin class attr options
+    # Mixin class attr options
     my $mixins_attr_options = {};
     
-    # method mixined to caller class
+    # Method mixined to caller class
     my $mixined_methods = {};
     
-    # include mixin classes
+    # Include mixin classes
     no strict 'refs';
     no warnings 'redefine';
-    
     foreach my $mixin_class (@$mixin_classes) {
-        Carp::croak("Invalid class name '$mixin_class'") if $mixin_class =~ /[^\w:]/;
+        Carp::croak("Mixin class '$mixin_class' is invalid class name ($caller_class)")
+            if $mixin_class =~ /[^\w:]/;
         
         unless($mixin_class->can('isa')) {
             eval "require $mixin_class;";
             Carp::croak("$@") if $@;
         }
         
-        # import all methods
+        # Import all methods
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
             next if $method eq 'new';
@@ -243,7 +251,7 @@ sub include_mixin_classes {
             $mixined_methods->{$rename} = 1;
         }
         
-        # merge mixin class attr options
+        # Merge mixin class attr options
         if($Object::Simple::META->{$mixin_class}{attr_options}) {
             $mixins_attr_options = {
                 %{$mixins_attr_options}, 
@@ -252,49 +260,58 @@ sub include_mixin_classes {
         }
     }
     
-    # merge mixin class attr options to caller class
+    # Merge mixin class attr options to caller class
     $Object::Simple::META->{$caller_class}{attr_options} = {
         %{$mixins_attr_options},
         %{$Object::Simple::META->{$caller_class}{attr_options}}
     }
 }
  
-# merge self and super accessor option
+# Merge self and super accessor option
 sub merge_self_and_super_accessor_option {
     
     my $class = shift;
     
+    # Return cache if cached 
     return $Object::Simple::META->{$class}{merged_attr_options}
       if $Object::Simple::META->{$class}{merged_attr_options};
     
+    # Get self and super classed
     my $self_and_super_classes
       = Object::Simple::Functions::get_leftmost_isa($class);
     
+    # Get merged accessor options 
     my $attr_options = {};
-    
     foreach my $class (reverse @$self_and_super_classes) {
         $attr_options = {%{$attr_options}, %{$Object::Simple::META->{$class}{attr_options}}}
             if defined $Object::Simple::META->{$class}{attr_options};
     }
     
+    # Cached
     $Object::Simple::META->{$class}{merged_attr_options} = $attr_options;
+    
     return $attr_options;
 }
 
-# create constructor
+# Create constructor
 sub create_constructor {
     my $class = shift;
     
+    # Get merged attr options
     my $attr_options = merge_self_and_super_accessor_option($class);
     
+    # Create instance
     my $code =      qq/sub {\n/ .
                     qq/    my \$class = shift;\n/ .
                     qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
                     qq/               ref \$_[0] eq 'HASH' ? {\%{\$_[0]}} :\n/ .
                     qq/                                     {\@_, undef};\n/ .
                     qq/    bless \$self, \$class;\n/;
-            
+    
+    # Customize initialization
     foreach my $attr (keys %$attr_options) {
+        
+        # Convert option
         if (my $convert = $attr_options->{$attr}{convert}) {
             if(ref $convert eq 'CODE') {
                 $code .=
@@ -309,6 +326,7 @@ sub create_constructor {
             }
         }
         
+        # Default option
         if(exists $attr_options->{$attr}{default}) {
             if(ref $attr_options->{$attr}{default} eq 'CODE') {
                 $code .=
@@ -323,6 +341,7 @@ sub create_constructor {
             }
         }
         
+        # Weak option
         if($attr_options->{$attr}{weak}) {
             require Scalar::Util;
             $code .=
@@ -330,36 +349,41 @@ sub create_constructor {
         }
     }
     
+    # Return
     $code .=        qq/    return \$self;\n/ .
                     qq/}\n/;
 }
 
-# valid type
+# Valid type
 my %VALID_TYPE = map {$_ => 1} qw/array hash/;
 
-# create accessor.
+# Create accessor.
 sub create_accessor {
     
     my ($class, $attr) = @_;
     
+    # Get accessor options
     my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref)
       = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{qw/auto_build read_only chained weak type convert deref/};
     
+    # Passed value expression
     my $value = '$_[1]';
     
-    # check type
+    # Check type
     Carp::croak("'type' option must be 'array' or 'hash' (${class}::$attr)")
         if $type && !$VALID_TYPE{$type};
     
-    # check deref
+    # Check deref
     Carp::croak("'deref' option must be specified with 'type' option (${class}::$attr)")
         if $deref && !$type;
-
+    
+    # Beginning of accessor source code
     my $code =  qq/sub ${class}::$attr {\n/;
     
+    # Create temporary variable if there is type or convert option
     $code .=    qq/my \$value;\n/ if $type || $convert;
     
-    # automatically call build method
+    # Automatically call build method
     if($auto_build){
         
         $code .=
@@ -383,17 +407,20 @@ sub create_accessor {
                 qq/    }\n/;
     }
     
+    # Read only accesor
     if ($read_only){
         $code .=
                 qq/    if(\@_ > 1) {\n/ .
                 qq/        Carp::croak("${class}::$attr is read only")\n/ .
                 qq/    }\n/;
     }
+    
+    # Read and write accessor
     else {
         $code .=
                 qq/    if(\@_ > 1) {\n/;
         
-        # argument type
+        # Variable type
         if($type) {
             if($type eq 'array') {
                 $code .=
@@ -406,7 +433,7 @@ sub create_accessor {
             $value = '$value';
         }
         
-        # convert to object;
+        # Convert to object;
         if ($convert) {
             if(ref $convert eq 'CODE') {
                 $code .=
@@ -451,7 +478,7 @@ sub create_accessor {
                 qq/    }\n/;
     }
     
-    # derifference
+    # Dereference
     if ($deref) {
         if ($type eq 'array') {
             $code .=
@@ -462,21 +489,24 @@ sub create_accessor {
                 qq/    return wantarray ? \%{\$_[0]->{'$attr'}} : \$_[0]->{'$attr'};\n/;
         }
     }
+    
+    # No dereference
     else {
         $code .=
                 qq/    return \$_[0]->{'$attr'};\n/;
     }
     
+    # End of accessor source code
     $code .=    qq/}\n\n/;
     
     return $code;
 }
  
-# valid accessor options
+# Valid accessor options
 my %VALID_ATTR_OPTIOTNS 
     = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref alias);
  
-# check accessor options
+# Check accessor options
 sub check_accessor_option {
     my ( $attr, $class, $attr_options ) = @_;
     
@@ -486,7 +516,7 @@ sub check_accessor_option {
     }
 }
  
-# define MODIFY_CODE_ATTRIBUTRS
+# Define MODIFY_CODE_ATTRIBUTRS subroutine
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
@@ -511,7 +541,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0002
+Version 2.0003
  
 =head1 FEATURES
  
@@ -521,7 +551,9 @@ Version 2.0002
  
 =item 2. new method is prepared.
  
-=item 3. You can define default value of attribute.
+=item 3. You can define variouse accessor option(default, type, chained, weak)
+
+=item 4. you can use Mixin system like Ruby
  
 =back
  
@@ -540,7 +572,7 @@ writing new and accessors repeatedly.
     sub author : Attr {}
     sub price  : Attr {}
     
-    Object::Simple->end; # End of module. Don't forget to call 'end' method
+    Object::Simple->build_class; # End of module. Don't forget to call 'build_class' method
     
     # Using class
     use Book;
@@ -621,13 +653,13 @@ This new can be overided.
         return $self;
     }
  
-=head2 end
+=head2 build_class
  
 resist attribute and create accessors.
  
-Script must end 'Object::Simple->end;'
+Script must build_class 'Object::Simple->build_class;'
  
-    Object::Simple->end; # End of Object::Simple!
+    Object::Simple->build_class; # End of Object::Simple!
  
 =head1 ACCESSOR OPTIONS
  
@@ -722,6 +754,13 @@ You can derefference returned value.You must specify it with 'type' option.
 
     my @authors = $book->authors;
     my %country_id = $book->country_id;
+    
+=head2 alias
+
+You can create alias of attribute.
+
+    sub title          : Attr {}
+    sub alias_of_title : Attr { alias => 'title' }
 
 =head1 INHERITANCE
  
@@ -729,7 +768,7 @@ You can derefference returned value.You must specify it with 'type' option.
     package Magazine;
     use Object::Simple( base => 'Book' );
  
-Object::Simple do not support multiple inheritance because it is so dangerous.
+Object::Simple do not support multiple inheritance because it is so complex.
  
 =head1 MIXIN
  
@@ -761,7 +800,7 @@ Object::Simple mixin merge mixin class attribute.
     
     sub m2 : Attr {}
     
-    Object::Simple->end;
+    Object::Simple->build_class;
 
     # using mixin class
     package Some::Class;
@@ -769,7 +808,7 @@ Object::Simple mixin merge mixin class attribute.
     
     sub m1 : Attr {}
     
-    Object::Simple->end;
+    Object::Simple->build_class;
 
 Because Some::Mixin is mixined, Some::Class has two attribute m1 and m2.
 
@@ -820,16 +859,16 @@ If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
     
     sub m2 : YourAttribute {}
     
-    Object::Simple->end;
+    Object::Simple->build_class;
  
 =head1 SEE ALSO
  
-L<Object::Simple::Mixin::AttrNames> - mixin to get attribute names.
+L<Object::Simple::Mixin::AttrNames> - Mixin to get attribute names.
  
-L<Object::Simple::Mixin::AttrOptions> - mixin to get Object::Simple attribute options.
+L<Object::Simple::Mixin::AttrOptions> - Mixin to get Object::Simple attribute options.
  
-L<Object::Simple::Mixin::Meta> - mixin to get Object::Simple meta information.
-            
+L<Object::Simple::Mixin::Meta> - Mixin to get Object::Simple meta information.
+
 =head1 AUTHOR
  
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>

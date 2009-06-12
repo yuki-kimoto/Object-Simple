@@ -24,19 +24,19 @@ use T2;
 }
 
 eval "use T3";
-like( $@, qr/Invalid import option 'a'/, 'Invalid import option' );
+like( $@, qr/\Q'a' is invalid import option (T3)/, 'Invalid import option' );
 
 eval "use T4";
 ok( $@, 'base not exist class' );
 
 eval "use T5";
-like( $@, qr/Invalid class name ';;;;'/, 'base invalid class name' );
+like( $@, qr/\QBase class ';;;;' is invalid class name (T5)/, 'base invalid class name' );
 
 eval "use T6";
 ok($@, 'mixin not exist class' );
 
 eval "use T8";
-like($@, qr/Invalid class name /, 'invalid mixin class name');
+like($@, qr/\QMixin class '()()(' is invalid class name (T8)/, 'invalid mixin class name');
 
 eval "use T9";
 like($@, qr/mixins must be array reference/, 'mixin must be array ref');

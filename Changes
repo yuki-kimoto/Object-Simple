@@ -1,3 +1,6 @@
+2.0003
+  change method name 'end' to 'build_class'
+  
 2.0002
   change: when attribute value having 'array' or 'hash' option is set undef value, undef value is set.
   change: mixin method search order is like Ruby.  1. this class, 2. Mixin class last 3. Mixin class first, 4 Base class

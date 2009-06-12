@@ -13,4 +13,4 @@ sub a2 : Attr {
     }, 
 }
 
-Object::Simple->end;
+Object::Simple->build_class;

@@ -13,5 +13,5 @@ sub m5 {
     return 3;
 }
 
-Object::Simple->end;
+Object::Simple->build_class;
 

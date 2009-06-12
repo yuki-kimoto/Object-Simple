@@ -7,4 +7,4 @@ sub m3 : Attr { default => 5 }
 
 
 
-Object::Simple->end;
+Object::Simple->build_class;

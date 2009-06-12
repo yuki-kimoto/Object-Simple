@@ -3,4 +3,4 @@ use Object::Simple;
 
 sub m1 : Attr {default => {}}
 
-Object::Simple->end;
+Object::Simple->build_class;

@@ -17,4 +17,4 @@ sub MODIFY_CODE_ATTRIBUTES {
 
 sub m2 : X {}
 
-Object::Simple->end;
+Object::Simple->build_class;

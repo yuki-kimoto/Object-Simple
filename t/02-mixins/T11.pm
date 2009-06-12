@@ -4,4 +4,4 @@ use Object::Simple( base => 'B2', mixins => ['M8', 'M9'], mixins_rename => {'M8:
 sub m1 : Attr { default => 1 }
 
 
-Object::Simple->end;
+Object::Simple->build_class;

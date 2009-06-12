@@ -6,5 +6,5 @@ use Object::Simple(
     ]
 );
 
-Object::Simple->end;
+Object::Simple->build_class;
 

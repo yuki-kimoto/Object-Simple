@@ -11,4 +11,4 @@ sub new{
 
 sub author : Attr { }
 
-Object::Simple->end;
+Object::Simple->build_class;

@@ -1,4 +1,4 @@
-package T4;
+package T5;
 use Object::Simple( base => ';;;;' );
 
-Object::Simple->end;
+Object::Simple->build_class;

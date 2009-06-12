@@ -15,4 +15,4 @@ sub m4 {
 sub m5 {
     return 5;
 }
-Object::Simple->end;
+Object::Simple->build_class;

@@ -6,4 +6,4 @@ sub y : Attr { default => 1 }
 sub z : Attr {}
 sub p : Attr {default => sub{[1,2,3]}}
 
-Object::Simple->end;
+Object::Simple->build_class;
