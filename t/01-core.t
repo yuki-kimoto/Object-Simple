@@ -329,14 +329,37 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     isa_ok($t->m1, 'T23');
     is($t->m1->m1, 2, 'no convert');
 }
+
 {
-    my $t = T22->new(m2 => 2);
-    is($t->m2, 4, 'convert sub');
+    my $t = T22->new;
+    ok(!defined $t->m1, 'constructor no convert');
 }
 
 {
     my $t = T22->new(m1 => undef);
-    ok(!$t->m1, 'no convert undef');
+    ok(!defined $t->m1, 'constructor no convert undef');
+}
+
+{
+    my $t = T22->new;
+    $t->m2(2);
+    is($t->m2, 4, 'convert sub');
+
+}
+
+{
+    my $t = T22->new(m2 => 2);
+    is($t->m2, 4, 'convert sub from constructor');
+}
+
+{
+    my $t = T22->new;
+    ok(!defined $t->m2, 'convert sub constructor no convert');
+}
+
+{
+    my $t = T22->new(m2 => undef);
+    is($t->m2, 0, 'convert undef from constructor');
 }
 
 {
@@ -360,6 +383,7 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     like($@, qr/\Q'deref' option must be specified with 'type' option (T25::m1)/, 'type is invalid');
 }
 
+# Alias
 {
     use T26;
     my $t = T26->new;
@@ -371,6 +395,52 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     is($t->m1, 1, 'alias set value 2');
 }
 
+# Trigger
+
+use T27;
+{
+
+    my $t = T27->new;
+    ok(!defined $t->m2, 'check not trigger');
+    $t->m1(1);
+    is($t->m2, 2, 'trigger set value');
+}
+
+{
+    my $t = T27->new(m1 => 1);
+    is($t->m2, 2, 'trigger set value from constructor');
+}
+
+{
+    my $t = T27->new;
+    $t->m3(undef);
+    is($t->m4, 1, 'trigger shen set undef');
+}
+
+{
+    my $t = T27->new(m3 => undef);
+    is($t->m4, 1, 'trigger when set undef from constructor');
+}
+
+{
+    eval "use T28";
+    like($@, qr/\Q'trigger' option must be code reference (T28::m1)/, 'trigger is not code ref');
+    
+}
+
+# Variouse test
+use T29;
+{
+    my $t = T29->new;
+    is_deeply($t->m1, { m1 => 1}, 'default');
+    
+    delete $t->{'m1'};
+    $t->m1; # auto_build;
+    is($t->m2, 3, 'various test ok');
+    
+    my $self = $t->m1(m1 => 1);
+    is($t, $self, 'chained');
+    
+}
+
 __END__
- 
- 

@@ -5,10 +5,11 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0003';
+our $VERSION = '2.0004';
 
 # Meta imformation
 our $META = {};
+our @BUILD_NEED_CLASSES;
  
 # Attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
 our @ATTRIBUTES_INFO;
@@ -31,13 +32,11 @@ sub import {
         Carp::croak("'$key' is invalid import option ($caller_class)") unless $VALID_IMPORT_OPTIONS{$key};
     }
     
-    # Inherit base class;
-    Object::Simple::Functions::inherit_base_class($caller_class, $options{base})
-        if $options{base};
-    
-    # Inherit Object::Simple;
+    # Inherit base class and Object::Simple
     {
         no strict 'refs';
+        @{"${caller_class}::ISA"} = ();
+        push @{"${caller_class}::ISA"}, $options{base} if $options{base};
         push @{"${caller_class}::ISA"}, 'Object::Simple';
     }
     
@@ -53,6 +52,9 @@ sub import {
     
     # Define MODIFY_CODE_ATTRIBUTES subroutine of caller class
     Object::Simple::Functions::define_MODIFY_CODE_ATTRIBUTES($caller_class);
+    
+    # Push classes which need build
+    push @BUILD_NEED_CLASSES, $caller_class;
 }
  
 # Unimport
@@ -91,7 +93,7 @@ sub build_class {
     my $self = shift;
     
     # Get caller class
-    my $caller_class = caller;
+    #my $caller_class = caller;
     
     # Attribute names
     my $attr_names = {};
@@ -146,10 +148,6 @@ sub build_class {
         }
     }
     
-    # Initialize attr_options if it is not set
-    $Object::Simple::META->{$caller_class}{attr_options} = {}
-        unless $Object::Simple::META->{$caller_class}{attr_options};
-    
     # Join alias source code to accessor source code
     $accessor_code .= $alias_code;
     
@@ -160,14 +158,33 @@ sub build_class {
         Carp::croak("$accessor_code\n:$@") if $@;
     }
     
-    # Include mixin classes
-    Object::Simple::Functions::include_mixin_classes($caller_class)
-        if $Object::Simple::META->{$caller_class}{mixins};
-    
-    # Create constructor
-    my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
-    $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
-    Carp::croak("$constructor_code\n:$@") if $@;
+    no strict 'refs';
+    while(my $caller_class = shift @Object::Simple::BUILD_NEED_CLASSES) {
+        
+        # Initialize attr_options if it is not set
+        $Object::Simple::META->{$caller_class}{attr_options} = {}
+            unless $Object::Simple::META->{$caller_class}{attr_options};
+        
+        # load base class
+        if( my $base_class = ${"${caller_class}::ISA"}[0]) {
+            Carp::croak("Base class '$base_class' is invalid class name ($caller_class)")
+                if $base_class =~ /[^\w:]/;
+            
+            unless($base_class->can('isa')) {
+                eval "require $base_class;";
+                Carp::croak("$@") if $@;
+            }
+        }
+        
+        # Include mixin classes
+        Object::Simple::Functions::include_mixin_classes($caller_class)
+            if $Object::Simple::META->{$caller_class}{mixins};
+        
+        # Create constructor
+        my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
+        $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
+        Carp::croak("$constructor_code\n:$@") if $@;
+    }
     
     return 1;
 }
@@ -190,22 +207,6 @@ sub get_leftmost_isa {
     }
     
     return \@leftmost_isa;
-}
-
-# Inherit base class
-sub inherit_base_class{
-    my ($caller_class, $base_class) = @_;
-    
-    Carp::croak("Base class '$base_class' is invalid class name ($caller_class)")
-        if $base_class =~ /[^\w:]/;
-    
-    unless($base_class->can('isa')) {
-        eval "require $base_class;";
-        Carp::croak("$@") if $@;
-    }
-    
-    no strict 'refs';
-    @{"${caller_class}::ISA"} = ($base_class);
 }
 
 # Include mixin classes
@@ -301,40 +302,48 @@ sub create_constructor {
     my $attr_options = merge_self_and_super_accessor_option($class);
     
     # Create instance
-    my $code =      qq/sub {\n/ .
-                    qq/    my \$class = shift;\n/ .
-                    qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
-                    qq/               ref \$_[0] eq 'HASH' ? {\%{\$_[0]}} :\n/ .
-                    qq/                                     {\@_, undef};\n/ .
-                    qq/    bless \$self, \$class;\n/;
+    my $code =  qq/sub {\n/ .
+                qq/    my \$class = shift;\n/ .
+                qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
+                qq/               ref \$_[0] eq 'HASH' ? {\%{\$_[0]}} :\n/ .
+                qq/                                     {\@_, undef};\n/ .
+                qq/    bless \$self, \$class;\n/;
     
     # Customize initialization
     foreach my $attr (keys %$attr_options) {
         
         # Convert option
-        if (my $convert = $attr_options->{$attr}{convert}) {
-            if(ref $convert eq 'CODE') {
+        if ($attr_options->{$attr}{convert}) {
+            if(ref $attr_options->{$attr}{convert} eq 'CODE') {
                 $code .=
-                qq/        \$self->{$attr} = \$Object::Simple::META->{'$class'}{merged_attr_options}{'$attr'}{convert}->(\$self->{$attr});\n/;
+                qq/    \$self->{$attr} = \$Object::Simple::META->{'$class'}{merged_attr_options}{'$attr'}{convert}->(\$self->{$attr})\n/ .
+                qq/        if exists \$self->{'$attr'};\n/;
             }
             else {
                 require Scalar::Util;
                 
+                my $convert = $attr_options->{$attr}{convert};
                 $code .=
-                qq/        require $convert;\n/ .
-                qq/        \$self->{$attr} = $convert->new(\$self->{$attr}) if defined \$self->{$attr} && !Scalar::Util::blessed(\$self->{$attr});\n/;
+                qq/    require $convert;\n/ .
+                qq/    \$self->{$attr} = $convert->new(\$self->{$attr}) if defined \$self->{$attr} && !Scalar::Util::blessed(\$self->{$attr});\n/;
             }
         }
         
+        # Trigger
+        if ($attr_options->{$attr}{trigger}) {
+            $code .=
+                qq/    \$Object::Simple::META->{'$class'}{merged_attr_options}{'$attr'}{trigger}->(\$self) if exists \$self->{'$attr'};\n/;
+        }
+        
         # Default option
-        if(exists $attr_options->{$attr}{default}) {
+        if(defined $attr_options->{$attr}{default}) {
             if(ref $attr_options->{$attr}{default} eq 'CODE') {
                 $code .=
-                    qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default}->();\n/;
+                qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default}->();\n/;
             }
             elsif(!ref $attr_options->{$attr}{default}) {
                 $code .=
-                    qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default};\n/;
+                qq/    \$self->{$attr} ||= \$META->{'$class'}{merged_attr_options}{$attr}{default};\n/;
             }
             else {
                 Carp::croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
@@ -345,13 +354,13 @@ sub create_constructor {
         if($attr_options->{$attr}{weak}) {
             require Scalar::Util;
             $code .=
-                    qq/    Scalar::Util::weaken(\$self->{'$attr'}) if \$self->{$attr};\n/;
+                qq/    Scalar::Util::weaken(\$self->{'$attr'}) if ref \$self->{$attr};\n/;
         }
     }
     
     # Return
-    $code .=        qq/    return \$self;\n/ .
-                    qq/}\n/;
+    $code .=    qq/    return \$self;\n/ .
+                qq/}\n/;
 }
 
 # Valid type
@@ -363,8 +372,10 @@ sub create_accessor {
     my ($class, $attr) = @_;
     
     # Get accessor options
-    my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref)
-      = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{qw/auto_build read_only chained weak type convert deref/};
+    my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref, $trigger)
+      = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{
+            qw/auto_build read_only chained weak type convert deref trigger/
+        };
     
     # Passed value expression
     my $value = '$_[1]';
@@ -450,7 +461,7 @@ sub create_accessor {
         }
         
         # Store argument optimized
-        if (!$weak && !$chained) {
+        if (!$weak && !$chained && !$trigger) {
             $code .=
                 qq/        return \$_[0]->{'$attr'} = $value;\n/;
         }
@@ -461,11 +472,20 @@ sub create_accessor {
                 qq/        \$_[0]->{'$attr'} = $value;\n/;
         }
         
+        # Trigger
+        if ($trigger) {
+            Carp::croak("'trigger' option must be code reference (${class}::$attr)")
+                unless ref $trigger eq 'CODE';
+            
+            $code .=
+                qq/\$Object::Simple::META->{'$class'}{attr_options}{'$attr'}{trigger}->(\$_[0]);\n/;
+        }
+                
         # Weaken
         if ($weak) {
             require Scalar::Util;
             $code .=
-                qq/        Scalar::Util::weaken(\$_[0]->{'$attr'});\n/;
+                qq/        Scalar::Util::weaken(\$_[0]->{'$attr'}) if ref \$_[0]->{$attr};\n/;
         }
         
         # Return value or instance for chained/weak
@@ -501,10 +521,10 @@ sub create_accessor {
     
     return $code;
 }
- 
+
 # Valid accessor options
 my %VALID_ATTR_OPTIOTNS 
-    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref alias);
+    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref alias trigger);
  
 # Check accessor options
 sub check_accessor_option {
@@ -541,7 +561,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0003
+Version 2.0004
  
 =head1 FEATURES
  
@@ -761,6 +781,13 @@ You can create alias of attribute.
 
     sub title          : Attr {}
     sub alias_of_title : Attr { alias => 'title' }
+
+=head3 trigger
+
+You can defined trigger function when value is set.
+
+sub error : Attr { trigger => sub{ $_[0]->stete('error') } }
+sub state : Attr {}
 
 =head1 INHERITANCE
  

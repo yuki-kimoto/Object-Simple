@@ -1,3 +1,7 @@
+2.0004
+  change: add 'trigger' accessor option
+  change: to be flexible Base class do not load when import method call
+  
 2.0003
   change method name 'end' to 'build_class'
   
