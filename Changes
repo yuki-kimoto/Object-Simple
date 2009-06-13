@@ -1,3 +1,15 @@
+2.0003
+  change method name 'end' to 'build_class'
+  
+2.0002
+  change: when attribute value having 'array' or 'hash' option is set undef value, undef value is set.
+  change: mixin method search order is like Ruby.  1. this class, 2. Mixin class last 3. Mixin class first, 4 Base class
+  
+2.0001
+  add accessor option 'type', 'convert', 'deref'
+  mixins option change like Moose role
+  add 'mixins_rename' option
+  
 1.0003
   bag fix: occur compile error if a class having auto_build option and its name contain :: is loaded,
   

@@ -1,7 +1,6 @@
-package Book;
+package T21;
 use Object::Simple;
 
-sub title : Attr { default => 1 }
+sub m1 : Attr { type => 'no'}
 
 Object::Simple->build_class;
-

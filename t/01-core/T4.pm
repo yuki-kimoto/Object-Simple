@@ -25,4 +25,4 @@ sub __build_a5{
     $self->__a5( 5 );
 }
 
-Object::Simple->end;
+Object::Simple->build_class;

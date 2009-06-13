@@ -10,4 +10,4 @@ sub new{
 
 sub title : Attr { }
 
-Object::Simple->end;
+Object::Simple->build_class;

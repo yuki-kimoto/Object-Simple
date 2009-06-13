@@ -1,0 +1,64 @@
+use Test::More 'no_plan';
+use strict;
+use warnings;
+
+use lib 't/02-mixins';
+
+use T1;
+{
+    my $t = T1->new;
+    ok( $t->can( 'b1' ), 'base option passed as string' );
+    ok( $t->can( 'm1' ), 'mixin option passed as string' );
+    ok( !$t->can( 'm2' ), 'mixin only import method');
+}
+
+use T2;
+{
+     my $t = T2->new;
+     ok( $t->can( 'm1' ), 'mixin option passed as array ref 1' );   
+     ok( $t->can( 'm3_1' ), 'mixin option passed as array ref 3-1' );
+     ok( $t->can( 'm3_2' ), 'mixin option passed as array ref 3-2' );
+     ok( $t->can( 'm3_3' ), 'mixin option passed as array ref 3-3' );
+     ok( $t->can( 'm3_4' ), 'mixin option passed as array ref 3-4' );
+     ok( $t->can( 'm3_5' ), 'mixin option passed as array ref 3-5' );
+}
+
+eval "use T3";
+like( $@, qr/\Q'a' is invalid import option (T3)/, 'Invalid import option' );
+
+eval "use T4";
+ok( $@, 'base not exist class' );
+
+eval "use T5";
+like( $@, qr/\QBase class ';;;;' is invalid class name (T5)/, 'base invalid class name' );
+
+eval "use T6";
+ok($@, 'mixin not exist class' );
+
+eval "use T8";
+like($@, qr/\QMixin class '()()(' is invalid class name (T8)/, 'invalid mixin class name');
+
+eval "use T9";
+like($@, qr/mixins must be array reference/, 'mixin must be array ref');
+
+{
+    use T11;
+    my $t = T11->new;
+    is_deeply( $t, {m1 => 1, m2 => 4, m3 => 2, m4 => 10}, 'mixins attr');
+    
+    is($t->m4, 2, 'override method');
+    is($t->r4, 1, 'rename method');
+    is($t->m5, 3, 'rename method');
+    is($t->r5, 5, 'rename method');
+}
+
+{
+    eval"use T12";
+    like($@, qr/\Q'mixins_rename' must be hash reference/, 'mixins_rename is not hash ref');
+}
+
+{
+    eval"use T14";
+    like($@, qr/\Qrename '^^^' must be method_name/, 'method is not valid name');
+}
+

@@ -3,4 +3,4 @@ use Object::Simple;
 
 sub m1 : A {}
 
-Object::Simple->end;
+Object::Simple->build_class;

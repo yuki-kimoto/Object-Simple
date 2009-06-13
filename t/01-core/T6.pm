@@ -6,4 +6,4 @@ sub build_build_m1{
     shift->build_m1( 1 );
 }
 
-Object::Simple->end;
+Object::Simple->build_class;

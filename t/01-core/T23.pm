@@ -1,7 +1,6 @@
-package Book;
+package T23;
 use Object::Simple;
 
-sub title : Attr { default => 1 }
+sub m1 : Attr {}
 
 Object::Simple->build_class;
-

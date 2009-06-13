@@ -1,4 +1,4 @@
 package PBook;
 use Object::Simple( base => 'Book' );
 
-Object::Simple->end;
+Object::Simple->build_class;

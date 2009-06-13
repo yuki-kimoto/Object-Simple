@@ -5,4 +5,4 @@ use Object::Simple;
 sub a : Attr {}
 sub b : Attr {}
 
-Object::Simple->end;
+Object::Simple->build_class;
