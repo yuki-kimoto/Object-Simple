@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0004';
+our $VERSION = '2.0005';
 
 # Meta imformation
 our $META = {};
@@ -32,13 +32,8 @@ sub import {
         Carp::croak("'$key' is invalid import option ($caller_class)") unless $VALID_IMPORT_OPTIONS{$key};
     }
     
-    # Inherit base class and Object::Simple
-    {
-        no strict 'refs';
-        @{"${caller_class}::ISA"} = ();
-        push @{"${caller_class}::ISA"}, $options{base} if $options{base};
-        push @{"${caller_class}::ISA"}, 'Object::Simple';
-    }
+    # Resist base class to meta information
+    $Object::Simple::META->{$caller_class}{base} = $options{base};
     
     # Regist mixin classes to meta information
     $Object::Simple::META->{$caller_class}{mixins} = $options{mixins};
@@ -55,6 +50,8 @@ sub import {
     
     # Push classes which need build
     push @BUILD_NEED_CLASSES, $caller_class;
+    
+    return 1;
 }
  
 # Unimport
@@ -92,9 +89,6 @@ sub new {
 sub build_class {
     my $self = shift;
     
-    # Get caller class
-    #my $caller_class = caller;
-    
     # Attribute names
     my $attr_names = {};
     
@@ -103,6 +97,8 @@ sub build_class {
     
     # Alias code
     my $alias_code = '';
+    
+    my $caller = caller;
     
     # Parse symbol table and create accessors code
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
@@ -157,17 +153,23 @@ sub build_class {
         eval $accessor_code;
         Carp::croak("$accessor_code\n:$@") if $@;
     }
+        # Inherit base class and Object::Simple
+    
+    my @build_need_classes = @Object::Simple::BUILD_NEED_CLASSES;
+    @Object::Simple::BUILD_NEED_CLASSES = ();
     
     no strict 'refs';
-    while(my $caller_class = shift @Object::Simple::BUILD_NEED_CLASSES) {
-        
+    foreach my $class (@build_need_classes) {
         # Initialize attr_options if it is not set
-        $Object::Simple::META->{$caller_class}{attr_options} = {}
-            unless $Object::Simple::META->{$caller_class}{attr_options};
+        $Object::Simple::META->{$class}{attr_options} = {}
+            unless $Object::Simple::META->{$class}{attr_options};
         
-        # load base class
-        if( my $base_class = ${"${caller_class}::ISA"}[0]) {
-            Carp::croak("Base class '$base_class' is invalid class name ($caller_class)")
+        # inherit base class
+        if( my $base_class = $Object::Simple::META->{$class}{base}) {
+            @{"${class}::ISA"} = ();
+            push @{"${class}::ISA"}, $base_class;
+            if($class eq 'T13') { $DB::single = 1 }
+            Carp::croak("Base class '$base_class' is invalid class name ($class)")
                 if $base_class =~ /[^\w:]/;
             
             unless($base_class->can('isa')) {
@@ -176,16 +178,19 @@ sub build_class {
             }
         }
         
-        # Include mixin classes
-        Object::Simple::Functions::include_mixin_classes($caller_class)
-            if $Object::Simple::META->{$caller_class}{mixins};
+        push @{"${class}::ISA"}, 'Object::Simple';
         
-        # Create constructor
-        my $constructor_code = Object::Simple::Functions::create_constructor($caller_class);
-        $Object::Simple::META->{$caller_class}{constructor} = eval $constructor_code;
-        Carp::croak("$constructor_code\n:$@") if $@;
+        # Include mixin classes
+        Object::Simple::Functions::include_mixin_classes($class)
+            if $Object::Simple::META->{$class}{mixins};
     }
     
+    # Create constructor
+    foreach my $class (@build_need_classes) {
+        my $constructor_code .= Object::Simple::Functions::create_constructor($class);
+        $Object::Simple::META->{$class}{constructor} = eval $constructor_code;
+        Carp::croak("$constructor_code\n:$@") if $@;
+    }
     return 1;
 }
  
@@ -561,7 +566,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0004
+Version 2.0005
  
 =head1 FEATURES
  
@@ -782,7 +787,7 @@ You can create alias of attribute.
     sub title          : Attr {}
     sub alias_of_title : Attr { alias => 'title' }
 
-=head3 trigger
+=head2 trigger
 
 You can defined trigger function when value is set.
 

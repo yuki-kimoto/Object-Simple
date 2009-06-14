@@ -1,3 +1,5 @@
+2.0005
+  bag fix: catch up with perl 5.10.0 
 2.0004
   change: add 'trigger' accessor option
   change: to be flexible Base class do not load when import method call
