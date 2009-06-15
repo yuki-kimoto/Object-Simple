@@ -444,4 +444,37 @@ use T29;
     
 }
 
+use T30;
+{
+    my $t = T30->new;
+    $t->m1(1);
+    is($t->m2->m1, 1, 'translate set value');
+    is($t->m1, 1, 'translate get value');
+}
+
+{
+    my $t = T30->new(m1 => 1);
+    ok(!exists $t->{m1}, 'transate delete key');
+    is($t->m2->m1, 1, 'translate set value from constructor');
+}
+
+
+{
+    my $t = T30->new;
+    $t->m3(1);
+    is($t->m4->m2->m1, 1, 'translate set value multipule');
+    is($t->m3, 1, 'translate get value multipule');
+}
+
+{
+    eval "use T32;";
+    like($@, qr/\Q'2->m1' is invalid.'translate' option must be like 'method1->method2'/, 'invalid translate value');
+    eval "use T33;";
+    ok($@, 'translate invalid 2');
+    eval "use T34;";
+    ok($@, 'translate invalid 3');
+    eval "use T35;";
+    ok($@, 'translate invalid 4');
+}
+
 __END__

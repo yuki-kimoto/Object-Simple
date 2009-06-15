@@ -2,6 +2,7 @@ use Test::More  'no_plan';
 use strict;
 use warnings;
 
+use lib 't/02-core';
 
 package T1;
 use Object::Simple;
@@ -68,8 +69,9 @@ BEGIN{
     sub m2 : Attr { default => 2 }
 
     package T6;
+    use T23;
     use Object::Simple;
     sub m1 : Attr { default => 1 }
 
-    Object::Simple->build_class;
+    Object::Simple->build_class(all => 1);
 }

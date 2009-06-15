@@ -1,3 +1,6 @@
+2.0006
+  cahnge: add 'translate' option
+  cahnge: remove alias, remove mixins_rename, trigger is after weaken
 2.0005
   bag fix: catch up with perl 5.10.0 
 2.0004

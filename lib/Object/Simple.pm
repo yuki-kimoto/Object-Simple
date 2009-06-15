@@ -65,7 +65,7 @@ sub unimport {
 # New
 sub new {
     my $invocant = shift;
-    
+
     # Convert to class name
     my $class = ref $invocant || $invocant;
     
@@ -83,8 +83,9 @@ sub new {
 }
  
 # Build class(create accessor, include mixin class, and create constructor)
+my %VALID_BUILD_CLASS_OPTIONS = map {$_ => 1} qw(all);
 sub build_class {
-    my $self = shift;
+    my ($self, %options) = @_;
     
     # Attribute names
     my $attr_names = {};
@@ -92,7 +93,14 @@ sub build_class {
     # Accessor code
     my $accessor_code = '';
     
-    my $caller = caller;
+    # Get caller class
+    my $caller_class = caller;
+
+    # check build_class options
+    foreach my $key (keys %options) {
+        Carp::croak("'$key' is invalid build_class option ($caller_class)")
+            unless $VALID_BUILD_CLASS_OPTIONS{$key};
+    }
     
     # Parse symbol table and create accessors code
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
@@ -134,10 +142,23 @@ sub build_class {
         eval $accessor_code;
         Carp::croak("$accessor_code\n:$@") if $@;
     }
-        # Inherit base class and Object::Simple
     
-    my @build_need_classes = @Object::Simple::BUILD_NEED_CLASSES;
-    @Object::Simple::BUILD_NEED_CLASSES = ();
+    # Inherit base class and Object::Simple
+    my @build_need_classes;
+    if ($options{all}) {
+        @build_need_classes = @Object::Simple::BUILD_NEED_CLASSES;
+        @Object::Simple::BUILD_NEED_CLASSES = ();
+    }
+    else{
+        if(!@Object::Simple::BUILD_NEED_CLASSES ||
+           $Object::Simple::BUILD_NEED_CLASSES[-1] ne $caller_class)
+        {
+            return 1;
+        }
+        
+        @build_need_classes = ($caller_class);
+        pop @Object::Simple::BUILD_NEED_CLASSES;
+    }
     
     foreach my $class (@build_need_classes) {
         # Initialize attr_options if it is not set
@@ -167,6 +188,7 @@ sub build_class {
     # Create constructor
     foreach my $class (@build_need_classes) {
         my $constructor_code .= Object::Simple::Functions::create_constructor($class);
+        $Object::Simple::META->{$class}{constructor_code} = $constructor_code;
         $Object::Simple::META->{$class}{constructor} = eval $constructor_code;
         Carp::croak("$constructor_code\n:$@") if $@;
     }
@@ -285,9 +307,20 @@ sub create_constructor {
                 qq/                                     {\@_, undef};\n/ .
                 qq/    bless \$self, \$class;\n/;
     
+    # Attribute which have trigger option
     my @attrs_having_trigger;
+    
+    # Attribute which have traslate option
+    my @attrs_having_translate;
+    
     # Customize initialization
     foreach my $attr (keys %$attr_options) {
+        
+        # regist attribute which have traslate option
+        if ($attr_options->{$attr}{translate}) {
+            push @attrs_having_translate, $attr;
+            next;
+        }
         
         # Convert option
         if ($attr_options->{$attr}{convert}) {
@@ -339,6 +372,12 @@ sub create_constructor {
             qq/    \$Object::Simple::META->{'$class'}{merged_attr_options}{'$attr'}{trigger}->(\$self, \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
     }
     
+    # Translate option
+    foreach my $attr (@attrs_having_translate) {
+        $code .=
+            qq/    \$self->$attr(delete \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
+    }
+    
     # Return
     $code .=    qq/    return \$self;\n/ .
                 qq/}\n/;
@@ -353,10 +392,13 @@ sub create_accessor {
     my ($class, $attr) = @_;
     
     # Get accessor options
-    my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref, $trigger)
+    my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref, $trigger, $translate)
       = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{
-            qw/auto_build read_only chained weak type convert deref trigger/
+            qw/auto_build read_only chained weak type convert deref trigger translate/
         };
+    
+    # create translate accessor
+    return Object::Simple::Functions::create_translate_accessor($class, $attr) if $translate;
     
     # Passed value expression
     my $value = '$_[1]';
@@ -503,9 +545,27 @@ sub create_accessor {
     return $code;
 }
 
+sub create_translate_accessor {
+    my ($class, $attr) = @_;
+    my $translate = $Object::Simple::META->{$class}{attr_options}{$attr}{translate};
+    
+    Carp::croak("'$translate' is invalid.'translate' option must be like 'method1->method2'")
+        unless $translate =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
+    
+    my $code =  qq/sub ${class}::$attr {\n/ .
+                qq/    my \$self = shift;\n/ .
+                qq/    if (\@_) {\n/ .
+                qq/        \$self->$translate(\@_);\n/ .
+                qq/    }\n/ .
+                qq/    return \$self->$translate;\n/ .
+                qq/}\n/;
+                
+    return $code;
+}
+
 # Valid accessor options
 my %VALID_ATTR_OPTIOTNS 
-    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger);
+    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate);
  
 # Check accessor options
 sub check_accessor_option {
@@ -539,7 +599,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0005
+Version 2.0006
  
 =head1 FEATURES
  
