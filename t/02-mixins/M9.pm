@@ -8,11 +8,8 @@ sub new {
 sub m1 : Attr { default => 3 }
 
 sub m3 : Attr { default => 2 }
-sub m4 {
-    return 2;
-}
+sub m4 : Attr { default => 2 };
 
-sub m5 {
-    return 5;
-}
+sub m5 : Attr { default => 5 };
+
 Object::Simple->build_class;

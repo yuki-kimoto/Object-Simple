@@ -383,25 +383,13 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     like($@, qr/\Q'deref' option must be specified with 'type' option (T25::m1)/, 'type is invalid');
 }
 
-# Alias
-{
-    use T26;
-    my $t = T26->new;
-    is($t->m1, 3, 'alias default value 1');
-    is($t->m2, 3, 'alias default value 2');
-    
-    $t->m2(1);
-    is($t->m2, 1, 'alias set value 1');
-    is($t->m1, 1, 'alias set value 2');
-}
-
 # Trigger
 
 use T27;
 {
 
     my $t = T27->new;
-    ok(!defined $t->m2, 'check not trigger');
+    is($t->m2, 10, 'trigger default value');
     $t->m1(1);
     is($t->m2, 2, 'trigger set value');
 }
@@ -415,6 +403,19 @@ use T27;
     my $t = T27->new;
     $t->m3(undef);
     is($t->m4, 1, 'trigger shen set undef');
+}
+
+{
+    my $o = T23->new;
+    my $t = T27->new(m5 => $o);
+    is($t->m6, 1, 'weaken on trigger from constructor');
+}
+
+{
+    my $o = T23->new;
+    my $t = T27->new;
+    $t->m5($o);
+    is($t->m6, 1, 'weaken on trigger from constructor');
 }
 
 {
