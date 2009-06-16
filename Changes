@@ -1,3 +1,6 @@
+2.0008
+  bag fix: MIXINS_method can call super method
+  
 2.0007
   add   : add AUTOLOAD subroutine to call all mixin class method
 2.0006

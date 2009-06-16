@@ -6,7 +6,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0007';
+our $VERSION = '2.0008';
 
 # Meta imformation
 our $META = {};
@@ -215,7 +215,7 @@ sub AUTOLOAD {
                 qq/    return unless \$mixin_classes;\n/ .
                 qq/    foreach my \$mixin_class (\@\$mixin_classes) {\n/ .
                 qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
-                qq/        \$self->\$full_qualified_method(\@_);\n/ .
+                qq/        &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
                 qq/    }\n/ .
                 qq/}\n/;
                 
@@ -628,7 +628,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0007
+Version 2.0008
  
 =head1 FEATURES
  
