@@ -194,7 +194,36 @@ sub build_class {
     }
     return 1;
 }
- 
+
+sub DESTROY {}
+
+sub AUTOLOAD {
+    our $AUTOLOAD;
+    my $self = $_[0];
+    my $caller_class = caller;
+    my $method = $AUTOLOAD;
+    $method =~ s/^.*:://;
+    
+    if($method =~ /^MIXINS_(.+)/) {
+        $method = $1;
+        my $code =
+                qq/sub Object::Simple::MIXINS_$method {\n/ .
+                qq/    my \$self = shift;\n/ .
+                qq/    my \$caller_class = caller;\n/ .
+                qq/    my \$mixin_classes = \$Object::Simple::META->{\$caller_class}{mixins};\n/ .
+                qq/    return unless \$mixin_classes;\n/ .
+                qq/    foreach my \$mixin_class (\@\$mixin_classes) {\n/ .
+                qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
+                qq/        \$self->\$full_qualified_method(\@_);\n/ .
+                qq/    }\n/ .
+                qq/}\n/;
+                
+        eval "$code";
+        Carp::croak("$code\n$@") if $@;
+        goto &{"Object::Simple::MIXINS_$method"};
+    }
+}
+
 package Object::Simple::Functions;
 
 # Get leftmost self and parent classes
@@ -820,6 +849,14 @@ You can defined trigger function when value is set.
 sub error : Attr { trigger => sub{ $_[0]->stete('error') } }
 sub state : Attr {}
 
+=head2 translate
+
+You create shortcut of attribute
+    
+    sub person : Attr { default => sub{ Person->new } }
+    sub name   : Attr { translate => 'person->name' }
+    sub age    : Attr { translate => 'person->age' }
+
 =head1 INHERITANCE
  
     # Inheritance
@@ -841,15 +878,6 @@ Object::Simple support mixin syntax
         ]
     );
  
-All methods is imported to Book.If a same named methods is exist, the method is overwrited by mixin method.
-
-You can rename method if methods name crash.
- 
-    use Object::Simple( 
-        mixins => [ 'Some::Mixin' ]
-        mixins_rename => { 'Somo::Mixin::mehtod' => 'renamed_method' }
-    );
-
 Object::Simple mixin merge mixin class attribute.
     
     # mixin class
