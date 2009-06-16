@@ -189,8 +189,9 @@ sub build_class {
     foreach my $class (@build_need_classes) {
         my $constructor_code .= Object::Simple::Functions::create_constructor($class);
         $Object::Simple::META->{$class}{constructor_code} = $constructor_code;
-        $Object::Simple::META->{$class}{constructor} = eval $constructor_code;
+        eval $constructor_code;
         Carp::croak("$constructor_code\n:$@") if $@;
+        $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"}
     }
     return 1;
 }
@@ -328,7 +329,7 @@ sub create_constructor {
     my $attr_options = merge_self_and_super_accessor_option($class);
     
     # Create instance
-    my $code =  qq/sub {\n/ .
+    my $code =  qq/sub Object::Simple::Constructor::${class}::new {\n/ .
                 qq/    my \$class = shift;\n/ .
                 qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
                 qq/               ref \$_[0] eq 'HASH' ? {\%{\$_[0]}} :\n/ .
