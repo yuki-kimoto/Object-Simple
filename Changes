@@ -1,3 +1,5 @@
+2.0007
+  add   : add AUTOLOAD subroutine to call all mixin class method
 2.0006
   cahnge: add 'translate' option
   cahnge: remove alias, remove mixins_rename, trigger is after weaken

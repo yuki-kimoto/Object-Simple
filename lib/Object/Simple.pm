@@ -271,7 +271,6 @@ sub include_mixin_classes {
         # Import all methods
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
-            next if $method eq 'new';
             
             next if defined &{"${caller_class}::$method"} && !$mixined_methods->{$method};
             
@@ -923,6 +922,19 @@ If method names is crashed, method search order is the following
                      |     +--------------+
                      +---2 | Mixin class2 |
                            +--------------+
+
+=head1 CALL MIXINS METHODS
+
+You can call mixins methods.
+
+You use this to initialize or destruct object;
+
+    $self->MIXINS_initialize; # initialize mehtods of mixin classes is called
+    
+    $self->MIXINS_DESTROY;    # DESTROY methods of mixin classes is called
+
+    $self->MIXINS_method;     # any method ok!
+
 
 =head1 using your MODIFY_CODE_ATTRIBUTES subroutine
  

@@ -1,6 +1,5 @@
 package M3;
 
-sub new {}
 sub m3_1 {}
 sub m3_2 {}
 sub m3_3 {}

@@ -44,7 +44,7 @@ like($@, qr/mixins must be array reference/, 'mixin must be array ref');
 {
     use T11;
     my $t = T11->new;
-    is_deeply( $t, {m1 => 1, m2 => 4, m3 => 2, m4 => 2, m5 => 5}, 'mixins attr');
+    is_deeply( $t, {m1 => 1, m2 => 4, m3 => 2, m4 => 2, m5 => 5, m6 =>6}, 'mixins attr');
 }
 
 {
@@ -57,4 +57,17 @@ like($@, qr/mixins must be array reference/, 'mixin must be array ref');
     my $t = T12->new;
     is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4}, 'MIXINS AUTOLOA second');
 }
+
+use T13;
+{
+    my $t = T13->new;
+    is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4, m5 => 5, m6 => 6, m7 => 7}, 'MIXINS AUTOLOA second');
+}
+
+use T14;
+{
+    my $t = T14->new;
+    is_deeply($t, {m1 => 1, m2 => 2}, 'mixin double');
+}
+
 
