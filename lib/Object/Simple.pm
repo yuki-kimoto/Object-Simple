@@ -6,7 +6,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0006';
+our $VERSION = '2.0007';
 
 # Meta imformation
 our $META = {};
@@ -628,7 +628,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0006
+Version 2.0007
  
 =head1 FEATURES
  
