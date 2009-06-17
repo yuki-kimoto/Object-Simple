@@ -104,7 +104,6 @@ sub build_class {
     
     # Parse symbol table and create accessors code
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
-        
         my ($class, $ref) = @$class_and_ref;
         
         # Parse symbol tabel to find code reference correspond to method names
@@ -150,14 +149,10 @@ sub build_class {
         @Object::Simple::BUILD_NEED_CLASSES = ();
     }
     else{
-        if(!@Object::Simple::BUILD_NEED_CLASSES ||
-           $Object::Simple::BUILD_NEED_CLASSES[-1] ne $caller_class)
-        {
-            return 1;
-        }
+        return 1 if !@Object::Simple::BUILD_NEED_CLASSES ||
+                    $Object::Simple::BUILD_NEED_CLASSES[-1] ne $caller_class;
         
-        @build_need_classes = ($caller_class);
-        pop @Object::Simple::BUILD_NEED_CLASSES;
+        @build_need_classes = (pop @Object::Simple::BUILD_NEED_CLASSES);
     }
     
     foreach my $class (@build_need_classes) {
@@ -255,12 +250,9 @@ sub include_mixin_classes {
     # Mixin class attr options
     my $mixins_attr_options = {};
     
-    # Method mixined to caller class
-    my $mixined_methods = {};
-    
     # Include mixin classes
     no warnings 'redefine';
-    foreach my $mixin_class (@$mixin_classes) {
+    foreach my $mixin_class (reverse @$mixin_classes) {
         Carp::croak("Mixin class '$mixin_class' is invalid class name ($caller_class)")
             if $mixin_class =~ /[^\w:]/;
         
@@ -272,27 +264,20 @@ sub include_mixin_classes {
         # Import all methods
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
-            
-            next if defined &{"${caller_class}::$method"} && !$mixined_methods->{$method};
+            next if defined &{"${caller_class}::$method"};
             
             *{"${caller_class}::$method"} = \&{"${mixin_class}::$method"};
-            $mixined_methods->{$method} = 1;
-        }
-        
-        # Merge mixin class attr options
-        if($Object::Simple::META->{$mixin_class}{attr_options}) {
-            $mixins_attr_options = {
-                %{$mixins_attr_options}, 
-                %{$Object::Simple::META->{$mixin_class}{attr_options}}
-            }
         }
     }
     
     # Merge mixin class attr options to caller class
-    $Object::Simple::META->{$caller_class}{attr_options} = {
-        %{$mixins_attr_options},
-        %{$Object::Simple::META->{$caller_class}{attr_options}}
+    my %attr_options;
+    foreach my $class (@$mixin_classes, $caller_class) {
+        %attr_options = ( %attr_options, %{$Object::Simple::META->{$class}{attr_options}})
+            if $Object::Simple::META->{$class}{attr_options};
     }
+    
+    $Object::Simple::META->{$caller_class}{attr_options} = \%attr_options;
 }
  
 # Merge self and super accessor option
