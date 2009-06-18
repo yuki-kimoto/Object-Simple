@@ -75,20 +75,27 @@ use T14;
 use T15;
 {
     my $t = T15->new;
-    is($t->m1, 1, 'UPPER_method mixin class 1');
-    is($t->m2, 2, 'UPPER_method mixin class 2');
-    is($t->m3, 3, 'UPPER_method base class 1');
-    is($t->m4, 4, 'UPPER_method base class 2');
+    $t->m1;
+    $t->M19;
+    is($t->M19, 1, 'UPPER_method mixin class 1');
+    
+    $t->m2;
+    is($t->M18, 1, 'UPPER_method mixin class 2');
+    
+    $t->m3;
+    is($t->B4, 1, 'UPPER_method base class 1');
+    
+    $t->m4;
+    is($t->B5, 1, 'UPPER_method base class 2');
+    
     is($t->m5, 5, 'UPPER_method Object::Simple');
+    
     eval{ $t->m6 };
     like($@, qr/Cannot locate method "m6" via base class of T15/, 'UPPER_method no exist');
+    
+    eval{ $t->m7 };
+    like($@, qr/Cannot locate method "m7" via T15/, 'm7 is undefined');
 }
 
 __END__
-{
-    
-}
 
-{
-    
-}

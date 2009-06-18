@@ -6,7 +6,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0008';
+our $VERSION = '2.0009';
 
 # Meta imformation
 our $META = {};
@@ -229,8 +229,9 @@ sub AUTOLOAD {
                 qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
                 qq/        return &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
                 qq/    }\n/ .
-                qq/    my \@base_classes = get_leftmost_isa(\$caller_class);\n/ .
-                qq/    foreach my \$base_class (\@base_classes) {\n/ .
+                qq/\n/ .
+                qq/    my \$base_class = \$caller_class;\n/ .
+                qq/    while(\$base_class = \${"\${base_class}::ISA"}[0] ) {;\n/ .
                 qq/        my \$full_qualified_method = "\${base_class}::$method";\n/ .
                 qq/        return &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
                 qq/    }\n/ .
@@ -241,6 +242,10 @@ sub AUTOLOAD {
         eval "$code";
         Carp::croak("$code\n$@") if $@;
         goto &{"Object::Simple::UPPER_$method"};
+    }
+    else {
+        my $class = ref $self || $self;
+        Carp::croak("Cannot locate method \"$method\" via $class");
     }
 }
 
@@ -637,7 +642,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0008
+Version 2.0009
  
 =head1 FEATURES
  
@@ -756,7 +761,46 @@ resist attribute and create accessors.
 Script must build_class 'Object::Simple->build_class;'
  
     Object::Simple->build_class; # End of Object::Simple!
- 
+
+=head2 MIXINS_******
+
+You can call all methods of mixin classes by using MIXINS_******.
+
+For example, you can call all initialize methods of mixin classes by using MIXINS_initialize
+    package ThisClass;
+    Object::Simple(mixins => ['MixinClass1', 'MixinClass2']);
+    
+    sub initialize {
+        my $self = shift;
+        
+        # call initialize of all mixin class
+        $self->MIXINS_initialize;
+    }
+    
+MixinClass1::initialize and MixinClass2::initialize is called.
+
+=head2 UPPER_******
+
+This method search method by the following order and call the method.
+
+1. Mixin class2
+
+2. Mixin class1
+
+3. Base class
+
+    package ThisClass;
+    Object::Simple(base => 'BaseClass', mixins => ['MixinClass1', 'MixinClass2']);
+
+    sub run {
+        my $self = shift;
+        $self->UPPER_run;
+    }
+
+If MixinClass1 have run methods, MixinClass1::run is called.
+
+If MIxinClass1 and MixinClass2 have run method, MixinClass2::run is called.
+
 =head1 ACCESSOR OPTIONS
  
 =head2 default
@@ -919,19 +963,29 @@ If method names is crashed, method search order is the following
 
 3. Mixin class1
 
-4. Thit class
+4. Base class
 
-     +------------+
-   4 | Base class |
-     +------------+
+     +--------------+
+   4 | Base class   |
+     +--------------+
            |
-     +------------+        +--------------+
-   1 | This class |--+---3 | Mixin class1 |
-     +------------+  |     +--------------+
-                     |
-                     |     +--------------+
-                     +---2 | Mixin class2 |
-                           +--------------+
+     +--------------+
+   3 | Mixin class1 |
+     +--------------+
+           |
+     +--------------+
+   2 | Mixin class2 |
+     +--------------+
+           |
+     +--------------+
+   1 | This class   |
+     +--------------+
+
+    #       1
+    package ThisClass;
+    #                       4                       3              2
+    Object::Simple(base => 'BaseClass', mixins => ['MixinClass1', 'MixinClass2']);
+
 
 =head1 CALL MIXINS METHODS
 
