@@ -218,6 +218,30 @@ sub AUTOLOAD {
         Carp::croak("$code\n$@") if $@;
         goto &{"Object::Simple::MIXINS_$method"};
     }
+    elsif($method =~ /^UPPER_(.+)/) {
+        $method = $1;
+        my $code =
+                qq/sub Object::Simple::UPPER_$method {\n/ .
+                qq/    my \$self = shift;\n/ .
+                qq/    my \$caller_class = caller;\n/ .
+                qq/    my \$mixin_classes = \$Object::Simple::META->{\$caller_class}{mixins} || [];\n/ .
+                qq/    foreach my \$mixin_class (reverse \@\$mixin_classes) {\n/ .
+                qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
+                qq/        return &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
+                qq/    }\n/ .
+                qq/    my \@base_classes = get_leftmost_isa(\$caller_class);\n/ .
+                qq/    foreach my \$base_class (\@base_classes) {\n/ .
+                qq/        my \$full_qualified_method = "\${base_class}::$method";\n/ .
+                qq/        return &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
+                qq/    }\n/ .
+                qq/    return  Object::Simple::$method(\$self, \@_) if defined &Object::Simple::$method;\n/ .
+                qq/    Carp::croak("Cannot locate method \\"$method\\" via base class of \$caller_class");\n/ .
+                qq/}\n/;
+                
+        eval "$code";
+        Carp::croak("$code\n$@") if $@;
+        goto &{"Object::Simple::UPPER_$method"};
+    }
 }
 
 package Object::Simple::Functions;
