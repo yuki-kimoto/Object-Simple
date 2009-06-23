@@ -1,4 +1,6 @@
-2.009
+2.0010
+  remove : remove Object::Simple::Error, Object::Simple::Constraint from Build.pl requires
+2.0009
   add : method UPPER_*****
 2.0008
   bag fix: MIXINS_method can call super method

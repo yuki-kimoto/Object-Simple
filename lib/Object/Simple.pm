@@ -6,10 +6,12 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0009';
+our $VERSION = '2.0010';
 
 # Meta imformation
 our $META = {};
+
+# Classes which need to build
 our @BUILD_NEED_CLASSES;
  
 # Attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
@@ -642,7 +644,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0009
+Version 2.0010
  
 =head1 FEATURES
  
