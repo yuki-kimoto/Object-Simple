@@ -6,7 +6,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0010';
+our $VERSION = '2.0011';
 
 # Meta imformation
 our $META = {};
@@ -644,7 +644,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0010
+Version 2.0011
  
 =head1 FEATURES
  
@@ -709,8 +709,17 @@ writing new and accessors repeatedly.
     sub url : Attr { convert => sub{ ref $_[0] ? $_[0] : URI->new($_[0]) } }
     
     # derefference of returned value
-    sub authors : Attr { type => 'array', deref => 1 }
+    sub authors    : Attr { type => 'array', deref => 1 }
     sub country_id : Attr { type => 'hash',  deref => 1 }
+    
+    # trigger option
+    sub error : Attr { trigger => sub{ $_[0]->state('error') } }
+    sub state : Attr {}
+    
+    # translate option
+    sub person : Attr { default => sub{ Person->new } }
+    sub name   : Attr { translate => 'person->name' }
+    sub age    : Attr { translate => 'person->age' }
     
     # Inheritance
     package Magazine;
@@ -901,12 +910,12 @@ You can derefference returned value.You must specify it with 'type' option.
 
 You can defined trigger function when value is set.
 
-sub error : Attr { trigger => sub{ $_[0]->stete('error') } }
-sub state : Attr {}
+    sub error : Attr { trigger => sub{ $_[0]->stete('error') } }
+    sub state : Attr {}
 
 =head2 translate
 
-You create shortcut of attribute
+You can create accessor shortcut of object of attribute value.
     
     sub person : Attr { default => sub{ Person->new } }
     sub name   : Attr { translate => 'person->name' }
