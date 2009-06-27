@@ -6,13 +6,16 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0012';
+our $VERSION = '2.0013';
 
 # Meta imformation
 our $META = {};
 
 # Classes which need to build
 our @BUILD_NEED_CLASSES;
+
+# Already build class;
+our %ALREADY_BUILD_CLASSES;
  
 # Attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
 our @ATTRIBUTES_INFO;
@@ -147,14 +150,11 @@ sub build_class {
     # Inherit base class and Object::Simple
     my @build_need_classes;
     if ($options{all}) {
-        @build_need_classes = @Object::Simple::BUILD_NEED_CLASSES;
+        @build_need_classes = grep { !$ALREADY_BUILD_CLASSES{$_} } @Object::Simple::BUILD_NEED_CLASSES;
         @Object::Simple::BUILD_NEED_CLASSES = ();
     }
     else{
-        return 1 if !@Object::Simple::BUILD_NEED_CLASSES ||
-                    $Object::Simple::BUILD_NEED_CLASSES[-1] ne $caller_class;
-        
-        @build_need_classes = (pop @Object::Simple::BUILD_NEED_CLASSES);
+        @build_need_classes = ($caller_class) unless $ALREADY_BUILD_CLASSES{$caller_class};
     }
     
     foreach my $class (@build_need_classes) {
@@ -190,6 +190,10 @@ sub build_class {
         Carp::croak("$constructor_code\n:$@") if $@;
         $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"}
     }
+    
+    # resist already build class
+    $ALREADY_BUILD_CLASSES{$_} = 1 foreach @build_need_classes;
+    
     return 1;
 }
 
@@ -643,7 +647,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0012
+Version 2.0013
  
 =head1 FEATURES
  

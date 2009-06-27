@@ -1,3 +1,5 @@
+2.0013
+  baf fix : Cannot build class when two package exists in a file
 2.0012
   change : MIXIN_method -> Object::Simple::MIXINS::method
   change : UPPER_method -> Object::Simple::UPPER::method
