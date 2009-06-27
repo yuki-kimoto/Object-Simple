@@ -13,7 +13,7 @@ sub initialize {
     my $self = shift;
     
     $self->SUPER::initialize;
-    $self->MIXINS_initialize(3);
+    $self->Object::Simple::MIXINS::initialize(3);
     $self->m2(2);
 }
 

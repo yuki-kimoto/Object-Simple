@@ -1,3 +1,6 @@
+2.0012
+  change : MIXIN_method -> Object::Simple::MIXINS::method
+  change : UPPER_method -> Object::Simple::UPPER::method
 2.0011
   document update
 2.0010

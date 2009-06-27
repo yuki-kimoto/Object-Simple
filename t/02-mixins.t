@@ -92,9 +92,6 @@ use T15;
     
     eval{ $t->m6 };
     like($@, qr/Cannot locate method "m6" via base class of T15/, 'UPPER_method no exist');
-    
-    eval{ $t->m7 };
-    like($@, qr/Cannot locate method "m7" via T15/, 'm7 is undefined');
 }
 
 __END__
