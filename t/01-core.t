@@ -48,6 +48,11 @@ use Book;
     my $book = Book->new( title => undef );
     ok( exists $book->{ title } && !defined $book->{ title } , 'new undef pass' );
 }
+
+{
+    eval{Book->title(3)};
+    ok($@, 'set from class');
+}
  
 # setter return value
 {

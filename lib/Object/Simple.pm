@@ -1,12 +1,11 @@
 package Object::Simple;
 use 5.008_001;
 use strict;
-no strict 'refs';
 use warnings;
  
 require Carp;
  
-our $VERSION = '2.0013';
+our $VERSION = '2.0014';
 
 # Meta imformation
 our $META = {};
@@ -64,6 +63,7 @@ sub unimport {
     my $caller_class = caller;
     
     # Delete MODIFY_CODE_ATTRIBUTES subroutine of caller class
+    no strict 'refs';
     delete ${$caller_class . '::'}{MODIFY_CODE_ATTRIBUTES};
 }
  
@@ -116,6 +116,7 @@ sub build_class {
         
             $attr_names->{$class} = {};
             
+            no strict 'refs';
             foreach my $sym (values %{"${class}::"}) {
             
                 next unless ref(*{$sym}{CODE}) eq 'CODE';
@@ -163,6 +164,7 @@ sub build_class {
             unless $Object::Simple::META->{$class}{attr_options};
         
         # inherit base class
+        no strict 'refs';
         if( my $base_class = $Object::Simple::META->{$class}{base}) {
             @{"${class}::ISA"} = ();
             push @{"${class}::ISA"}, $base_class;
@@ -213,12 +215,15 @@ sub AUTOLOAD {
             qq/    return unless \$mixin_classes;\n/ .
             qq/    foreach my \$mixin_class (\@\$mixin_classes) {\n/ .
             qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
+            qq/        no strict 'refs';\n/ .
             qq/        &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
             qq/    }\n/ .
             qq/}\n/;
             
     eval "$code";
     Carp::croak("$code\n$@") if $@;
+    
+    no strict 'refs';
     goto &{"Object::Simple::MIXINS::$method"};
 }
 
@@ -237,10 +242,12 @@ sub AUTOLOAD {
             qq/    my \$mixin_classes = \$Object::Simple::META->{\$caller_class}{mixins} || [];\n/ .
             qq/    foreach my \$mixin_class (reverse \@\$mixin_classes) {\n/ .
             qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
+            qq/        no strict 'refs';\n/ .
             qq/        return &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
             qq/    }\n/ .
             qq/\n/ .
             qq/    my \$base_class = \$caller_class;\n/ .
+            qq/    no strict 'refs';\n/ .
             qq/    while(\$base_class = \${"\${base_class}::ISA"}[0] ) {;\n/ .
             qq/        my \$full_qualified_method = "\${base_class}::$method";\n/ .
             qq/        return &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
@@ -251,6 +258,8 @@ sub AUTOLOAD {
             
     eval "$code";
     Carp::croak("$code\n$@") if $@;
+    
+    no strict 'refs';
     goto &{"Object::Simple::UPPER::$method"};
 }
 
@@ -266,6 +275,7 @@ sub get_leftmost_isa {
     
     my $leftmost_parent = $class;
     push @leftmost_isa, $leftmost_parent;
+    no strict 'refs';
     while( $leftmost_parent = ${"${leftmost_parent}::ISA"}[0] ) {
         push @leftmost_isa, $leftmost_parent;
     }
@@ -296,6 +306,7 @@ sub include_mixin_classes {
         }
         
         # Import all methods
+        no strict 'refs';
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
             next if defined &{"${caller_class}::$method"};
@@ -629,7 +640,7 @@ sub check_accessor_option {
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
-    *{"${class}::MODIFY_CODE_ATTRIBUTES"} = sub {
+    my $code = sub {
         my ($class, $code_ref, $attr) = @_;
         
         Carp::croak("'$attr' is bad. attribute must be 'Attr'")
@@ -639,6 +650,9 @@ sub define_MODIFY_CODE_ATTRIBUTES {
         
         return;
     };
+    
+    no strict 'refs';
+    *{"${class}::MODIFY_CODE_ATTRIBUTES"} = $code;
 }
  
 =head1 NAME
@@ -647,7 +661,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0013
+Version 2.0014
  
 =head1 FEATURES
  

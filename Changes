@@ -1,3 +1,5 @@
+2.0014
+  baf fix : when accessor is called form class, paccakge variable is set.
 2.0013
   baf fix : Cannot build class when two package exists in a file
 2.0012
