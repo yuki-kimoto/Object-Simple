@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0014';
+our $VERSION = '2.0015';
 
 # Meta imformation
 our $META = {};
@@ -186,8 +186,7 @@ sub build_class {
     
     # Create constructor
     foreach my $class (@build_need_classes) {
-        my $constructor_code .= Object::Simple::Functions::create_constructor($class);
-        $Object::Simple::META->{$class}{constructor_code} = $constructor_code;
+        my $constructor_code = Object::Simple::Functions::create_constructor($class);
         eval $constructor_code;
         Carp::croak("$constructor_code\n:$@") if $@;
         $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"}
@@ -197,34 +196,6 @@ sub build_class {
     $ALREADY_BUILD_CLASSES{$_} = 1 foreach @build_need_classes;
     
     return 1;
-}
-
-package Object::Simple::MIXINS;
-sub AUTOLOAD {
-    our $AUTOLOAD;
-    my $self = $_[0];
-    my $caller_class = caller;
-    my $method = $AUTOLOAD;
-    $method =~ s/^.*:://;
-    
-    my $code =
-            qq/sub Object::Simple::MIXINS::$method {\n/ .
-            qq/    my \$self = shift;\n/ .
-            qq/    my \$caller_class = caller;\n/ .
-            qq/    my \$mixin_classes = \$Object::Simple::META->{\$caller_class}{mixins};\n/ .
-            qq/    return unless \$mixin_classes;\n/ .
-            qq/    foreach my \$mixin_class (\@\$mixin_classes) {\n/ .
-            qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
-            qq/        no strict 'refs';\n/ .
-            qq/        &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
-            qq/    }\n/ .
-            qq/}\n/;
-            
-    eval "$code";
-    Carp::croak("$code\n$@") if $@;
-    
-    no strict 'refs';
-    goto &{"Object::Simple::MIXINS::$method"};
 }
 
 package Object::Simple::UPPER;
@@ -261,6 +232,34 @@ sub AUTOLOAD {
     
     no strict 'refs';
     goto &{"Object::Simple::UPPER::$method"};
+}
+
+package Object::Simple::MIXINS;
+sub AUTOLOAD {
+    our $AUTOLOAD;
+    my $self = $_[0];
+    my $caller_class = caller;
+    my $method = $AUTOLOAD;
+    $method =~ s/^.*:://;
+    
+    my $code =
+            qq/sub Object::Simple::MIXINS::$method {\n/ .
+            qq/    my \$self = shift;\n/ .
+            qq/    my \$caller_class = caller;\n/ .
+            qq/    my \$mixin_classes = \$Object::Simple::META->{\$caller_class}{mixins};\n/ .
+            qq/    return unless \$mixin_classes;\n/ .
+            qq/    foreach my \$mixin_class (\@\$mixin_classes) {\n/ .
+            qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
+            qq/        no strict 'refs';\n/ .
+            qq/        &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
+            qq/    }\n/ .
+            qq/}\n/;
+            
+    eval "$code";
+    Carp::croak("$code\n$@") if $@;
+    
+    no strict 'refs';
+    goto &{"Object::Simple::MIXINS::$method"};
 }
 
 package Object::Simple::Functions;
@@ -654,14 +653,15 @@ sub define_MODIFY_CODE_ATTRIBUTES {
     no strict 'refs';
     *{"${class}::MODIFY_CODE_ATTRIBUTES"} = $code;
 }
- 
+
+
 =head1 NAME
  
 Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0014
+Version 2.0015
  
 =head1 FEATURES
  
