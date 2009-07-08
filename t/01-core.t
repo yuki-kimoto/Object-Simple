@@ -1,4 +1,4 @@
-use Test::More  'no_plan';
+use Test::More tests => 118;
 use strict;
 use warnings;
  
@@ -52,13 +52,6 @@ use Book;
 {
     eval{Book->title(3)};
     ok($@, 'set from class');
-}
- 
-# setter return value
-{
-    my $book = Book->new;
-    my $current_default = $book->author( 'p' );
-    is( $current_default, 'p', 'return current value( default ) in case setter is called' );
 }
  
 {
@@ -218,6 +211,9 @@ like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
     is($r2, $t, 'weak and chained set value ret');
     is_deeply($t->m2, $d2, 'weak and chained set value');
     
+    is($t->m3(1), $t, 'defaut is chained');
+    
+    is($t->m4(1), 1, 'chained => 0');
 }
  
 {
@@ -469,6 +465,38 @@ use T30;
     $t->m3(1);
     is($t->m4->m2->m1, 1, 'translate set value multipule');
     is($t->m3, 1, 'translate get value multipule');
+}
+
+{
+    my $t = T30->new;
+    my $r = $t->m5(1);
+    is($r, $t, 'translate setter return chained');
+}
+
+{
+    my $t = T30->new;
+    my $r = $t->m6(1);
+    is($r, $t, 'translate setter return chained though not chained');
+}
+
+{
+    my $t = T30->new;
+    $t->m7(1, 2);
+    my $r = $t->m7;
+    is_deeply($r, [1, 2], 'translate getter return scalar context value array');
+    
+    my @r = $t->m7;
+    is_deeply([@r], [1, 2], 'translate getter return list context value array');
+}
+
+{
+    my $t = T30->new;
+    $t->m8(k => 1);
+    my $r = $t->m8;
+    is_deeply($r, {k => 1}, 'translate getter return scalar context value hash');
+    
+    my %r = $t->m8;
+    is_deeply({%r}, {k => 1}, 'translate getter return list context value hash');
 }
 
 {

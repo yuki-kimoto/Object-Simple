@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0015';
+our $VERSION = '2.0017';
 
 # Meta imformation
 our $META = {};
@@ -450,10 +450,15 @@ sub create_accessor {
     my ($class, $attr) = @_;
     
     # Get accessor options
-    my ($auto_build, $read_only, $chained, $weak, $type, $convert, $deref, $trigger, $translate)
+    my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $translate)
       = @{$Object::Simple::META->{$class}{attr_options}{$attr}}{
-            qw/auto_build read_only chained weak type convert deref trigger translate/
+            qw/auto_build read_only weak type convert deref trigger translate/
         };
+    
+    # chained
+    my $chained =   exists $Object::Simple::META->{$class}{attr_options}{$attr}{chained}
+                  ? $Object::Simple::META->{$class}{attr_options}{$attr}{chained}
+                  : 1;
     
     # create translate accessor
     return Object::Simple::Functions::create_translate_accessor($class, $attr) if $translate;
@@ -614,8 +619,9 @@ sub create_translate_accessor {
                 qq/    my \$self = shift;\n/ .
                 qq/    if (\@_) {\n/ .
                 qq/        \$self->$translate(\@_);\n/ .
+                qq/        return \$self;\n/ .
                 qq/    }\n/ .
-                qq/    return \$self->$translate;\n/ .
+                qq/    return wantarray ? (\$self->$translate) : \$self->$translate;\n/ .
                 qq/}\n/;
                 
     return $code;
@@ -661,7 +667,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0015
+Version 2.0017
  
 =head1 FEATURES
  
@@ -830,13 +836,20 @@ You can create read only accessor
     sub title: Attr { read_only => 1 }
  
 =head2 chained
- 
-You can chain method
- 
-    sub title  : Attr { chained => 1 }
-    sub author : Attr { chained => 1 }
-    
+
+Setter return value is self by default.
+So you can do method chain.
+
     $book->title('aaa')->author('bbb')->...
+
+If you do not use method chain,You do following.
+ 
+    sub title  : Attr { chained => 0 }
+    sub author : Attr { chained => 0 }
+
+Setter retrun value is current value;
+
+    my $current_value = $book->title('aaa');
     
 =head2 weak
  

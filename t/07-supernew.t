@@ -1,4 +1,4 @@
-use Test::More 'no_plan';
+use Test::More tests => 1;
 
 use lib 't/07-supernew';
 
