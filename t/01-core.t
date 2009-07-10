@@ -1,4 +1,4 @@
-use Test::More tests => 118;
+use Test::More 'no_plan';
 use strict;
 use warnings;
  
@@ -508,6 +508,41 @@ use T30;
     ok($@, 'translate invalid 3');
     eval "use T35;";
     ok($@, 'translate invalid 4');
+}
+
+{
+    eval "use T36;";
+    like($@, qr/T36::m1 'default' is invalid accessor option/);
+    
+}
+
+{
+    use T37;
+    T37->m1(1);
+    is(T37->m1, 1, 'class accessor get');
+    T37->m1(1)->m1(2);
+    is(T37->m1, 2, 'class accessor chained');
+    
+    is(T37->m2(2), 2, 'class accessor no chain');
+    
+    my $p = {};
+    T37->m3($p);
+    ok(Scalar::Util::isweak($Object::Simple::META->{'T37'}{class_attr}{'m3'}), 'class accessor weak package variable');
+    is(T37->m3, $p, 'class accessor weak get');
+    
+    eval{T37->m4(4)};
+    like( $@, qr/T37::m4 is read only/, 'read_only die' );
+    
+    is(T37->m5, 5, 'class accessor auto_build get');
+    
+    T37->m6(1,2);
+    is_deeply([T37->m6], [1, 2], 'class accessor type array and deref get');
+    
+    T37->m7({k => 1});
+    is_deeply({T37->m7}, {k => 1}, 'class accessor type hash and deref get');
+    
+    T37->m8(8);
+    is(T37->m9, 16, 'class accessor get');
 }
 
 __END__
