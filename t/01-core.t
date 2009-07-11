@@ -548,13 +548,22 @@ use T30;
     use T38;
     T37->m1(1);
     is(T37->m1, 1, 'inherit class accessor');
-
+    
     T38->m1(2);
     is(T38->m1, 2, 'inherit class accessor');
     is(T37->m1, 1, 'inherit class accessor');
     
     T37->m1(3);
     is(T38->m1, 2, 'inherit class accessor');
+}
+
+{
+    is_deeply({T37->m10}, {}, 'inherit super class accessor');
+    
+    is_deeply({T38->m10}, { k1 => 1 }, 'inherit super class accessor');
+    
+    use T39;
+    is_deeply({T39->m10}, { k1 => 1, k2 => 2 }, 'inherit super class accessor');
 }
 
 __END__

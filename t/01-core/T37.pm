@@ -11,5 +11,26 @@ sub m7 : ClassAttr { type => 'hash',  deref => 1 }
 sub m8 : ClassAttr { trigger => sub{ $_[0]->m9($_[1]*2) } }
 sub m9 : ClassAttr {}
 
+sub m10 : ClassAttr {  type => 'hash', deref => 1,  auto_build => 1 }
+sub build_m10 : {
+    my $class = shift;
+    
+    my $super = do {
+        no strict 'refs';
+        ${"${class}::ISA"}[0];
+    };
+    
+    $class->m10(eval{ $super->m10 } || {});
+}
+
+sub add_m10 {
+    my $class = shift;
+    my $m10 = $class->m10;
+    
+    my %new_m10 = ref $_[0] eq 'HASH' ? %{$_[0]} : @_;
+    my %old_m10 = $class->m10;
+    $class->m10(%old_m10, %new_m10);
+}
+
 Object::Simple->build_class;
 

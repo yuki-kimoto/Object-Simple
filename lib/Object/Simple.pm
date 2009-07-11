@@ -488,7 +488,7 @@ sub create_accessor {
     
     # Beginning of accessor source code
     my $code =  qq/package $class;\n/ .
-                qq/sub ${class}::$attr {\n/ .
+                qq/sub $attr {\n/ .
                 qq/    my \$self = shift;\n/;
     
     # Variable to strage
@@ -515,7 +515,7 @@ sub create_accessor {
             }
             
             $code .=
-                qq/        \$self->$build_method\n;/;
+                qq/        \$self->$build_method;\n/;
         }
         
         $code .=
@@ -539,11 +539,11 @@ sub create_accessor {
         if($type) {
             if($type eq 'array') {
                 $code .=
-                qq/    \$value = ref \$_[0] eq 'ARRAY' ? \$_[0] : !defined \$_[0] ? undef : [\@_];\n/;
+                qq/        \$value = ref \$_[0] eq 'ARRAY' ? \$_[0] : !defined \$_[0] ? undef : [\@_];\n/;
             }
             else {
                 $code .=
-                qq/    \$value = ref \$_[0] eq 'HASH' ? \$_[0] : !defined \$_[0] ? undef : {\@_};\n/;
+                qq/        \$value = ref \$_[0] eq 'HASH' ? \$_[0] : !defined \$_[0] ? undef : {\@_};\n/;
             }
             $value = '$value';
         }
@@ -634,7 +634,7 @@ sub create_translate_accessor {
         unless $translate =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
     
     my $code =  qq/package $class;\n/ .
-                qq/sub ${class}::$attr {\n/ .
+                qq/sub $attr {\n/ .
                 qq/    my \$self = shift;\n/ .
                 qq/    if (\@_) {\n/ .
                 qq/        \$self->$translate(\@_);\n/ .
