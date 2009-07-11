@@ -81,7 +81,6 @@ use Book;
     
     push @{ $book->title }, 3;
     is_deeply( $ary_get, [ 1, 2, 3 ], 'push array' );
-    
 }
  
 use Point;
@@ -543,6 +542,19 @@ use T30;
     
     T37->m8(8);
     is(T37->m9, 16, 'class accessor get');
+}
+
+{
+    use T38;
+    T37->m1(1);
+    is(T37->m1, 1, 'inherit class accessor');
+
+    T38->m1(2);
+    is(T38->m1, 2, 'inherit class accessor');
+    is(T37->m1, 1, 'inherit class accessor');
+    
+    T37->m1(3);
+    is(T38->m1, 2, 'inherit class accessor');
 }
 
 __END__

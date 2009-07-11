@@ -367,7 +367,8 @@ sub create_constructor {
     my $attr_options = merge_self_and_super_accessor_option($class);
     
     # Create instance
-    my $code =  qq/sub Object::Simple::Constructor::${class}::new {\n/ .
+    my $code =  qq/package Object::Simple::Constructor::${class};\n/ .
+                qq/sub new {\n/ .
                 qq/    my \$class = shift;\n/ .
                 qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
                 qq/               ref \$_[0] eq 'HASH' ? {\%{\$_[0]}} :\n/ .
@@ -475,7 +476,7 @@ sub create_accessor {
     return Object::Simple::Functions::create_translate_accessor($class, $attr) if $translate;
     
     # Passed value expression
-    my $value = '$_[1]';
+    my $value = '$_[0]';
     
     # Check type
     Carp::croak("'type' option must be 'array' or 'hash' (${class}::$attr)")
@@ -486,11 +487,14 @@ sub create_accessor {
         if $deref && !$type;
     
     # Beginning of accessor source code
-    my $code =  qq/sub ${class}::$attr {\n/;
+    my $code =  qq/package $class;\n/ .
+                qq/sub ${class}::$attr {\n/ .
+                qq/    my \$self = shift;\n/;
     
     # Variable to strage
-    my $strage = $is_class_accessor ? "\$Object::Simple::META->{'$_[0]'}{class_attr}{'$attr'}"
-                                    : "\$_[0]->{'$attr'}";
+    my $strage;
+    $strage = $is_class_accessor ? "\$Object::Simple::META->{\$self}{class_attr}{'$attr'}" :
+                                   "\$self->{'$attr'}";
     
     # Create temporary variable if there is type or convert option
     $code .=    qq/    my \$value;\n/ if $type || $convert;
@@ -498,11 +502,11 @@ sub create_accessor {
     # Automatically call build method
     if($auto_build){
         $code .=
-                qq/    if(\@_ == 1 && ! exists $strage) {\n/;
+                qq/    if(\@_ == 0 && ! exists $strage) {\n/;
         
         if(ref $auto_build eq 'CODE') {
             $code .=
-                qq/        \$Object::Simple::META->{'$class'}{$attr_options}{'$attr'}{auto_build}->(\$_[0]);\n/;
+                qq/        \$Object::Simple::META->{'$class'}{$attr_options}{'$attr'}{auto_build}->(\$self);\n/;
         }
         else {
             my $build_method;
@@ -511,7 +515,7 @@ sub create_accessor {
             }
             
             $code .=
-                qq/        \$_[0]->$build_method\n;/;
+                qq/        \$self->$build_method\n;/;
         }
         
         $code .=
@@ -521,7 +525,7 @@ sub create_accessor {
     # Read only accesor
     if ($read_only){
         $code .=
-                qq/    if(\@_ > 1) {\n/ .
+                qq/    if(\@_ > 0) {\n/ .
                 qq/        Carp::croak("${class}::$attr is read only")\n/ .
                 qq/    }\n/;
     }
@@ -529,17 +533,17 @@ sub create_accessor {
     # Read and write accessor
     else {
         $code .=
-                qq/    if(\@_ > 1) {\n/;
+                qq/    if(\@_ > 0) {\n/;
         
         # Variable type
         if($type) {
             if($type eq 'array') {
                 $code .=
-                qq/    \$value = ref \$_[1] eq 'ARRAY' ? \$_[1] : !defined \$_[1] ? undef : [\@_[1 .. \$#_]];\n/;
+                qq/    \$value = ref \$_[0] eq 'ARRAY' ? \$_[0] : !defined \$_[0] ? undef : [\@_];\n/;
             }
             else {
                 $code .=
-                qq/    \$value = ref \$_[1] eq 'HASH' ? \$_[1] : !defined \$_[1] ? undef : {\@_[1 .. \$#_]};\n/;
+                qq/    \$value = ref \$_[0] eq 'HASH' ? \$_[0] : !defined \$_[0] ? undef : {\@_};\n/;
             }
             $value = '$value';
         }
@@ -585,13 +589,13 @@ sub create_accessor {
                 unless ref $trigger eq 'CODE';
             
             $code .=
-                qq/        \$Object::Simple::META->{'$class'}{$attr_options}{'$attr'}{trigger}->(\$_[0], $value);\n/;
+                qq/        \$Object::Simple::META->{'$class'}{$attr_options}{'$attr'}{trigger}->(\$self, $value);\n/;
         }
         
         # Return value or instance for chained/weak
         if ($chained) {
             $code .=
-                qq/        return \$_[0];\n/;
+                qq/        return \$self;\n/;
         }
         
         $code .=
@@ -629,7 +633,8 @@ sub create_translate_accessor {
     Carp::croak("'$translate' is invalid.'translate' option must be like 'method1->method2'")
         unless $translate =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
     
-    my $code =  qq/sub ${class}::$attr {\n/ .
+    my $code =  qq/package $class;\n/ .
+                qq/sub ${class}::$attr {\n/ .
                 qq/    my \$self = shift;\n/ .
                 qq/    if (\@_) {\n/ .
                 qq/        \$self->$translate(\@_);\n/ .
