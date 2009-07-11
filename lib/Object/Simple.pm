@@ -493,8 +493,17 @@ sub create_accessor {
     
     # Variable to strage
     my $strage;
-    $strage = $is_class_accessor ? "\$Object::Simple::META->{\$self}{class_attr}{'$attr'}" :
-                                   "\$self->{'$attr'}";
+    if ($is_class_accessor) {
+        # Strage package Varialbe in case class accessor
+        $strage = "\$Object::Simple::META->{\$self}{class_attr}{'$attr'}";
+        $code .=
+                qq/    Carp::croak("${class}::$attr must be called from class, not instance")\n/ .
+                qq/      if ref \$self;\n/;
+    }
+    else {
+        # Strage hash in case normal accessor
+        $strage = "\$self->{'$attr'}";
+    }
     
     # Create temporary variable if there is type or convert option
     $code .=    qq/    my \$value;\n/ if $type || $convert;

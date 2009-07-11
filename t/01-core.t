@@ -542,6 +542,12 @@ use T30;
     
     T37->m8(8);
     is(T37->m9, 16, 'class accessor get');
+}   
+
+{
+    my $o = T37->new;
+    eval{ $o->m1 };
+    like($@, qr/T37::m1 must be called from class, not instance/, 'class accessor called from object');
 }
 
 {
