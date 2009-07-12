@@ -1,3 +1,5 @@
+2.0018
+  add : Can use Class attribute accessor
 2.0017
   bag fix: translate accessor setter return $self. getter return value corresponding to context.
 2.0016

@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0017';
+our $VERSION = '2.0018';
 
 # Meta imformation
 our $META = {};
@@ -695,7 +695,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0017
+Version 2.0018
  
 =head1 FEATURES
  
@@ -784,7 +784,13 @@ writing new and accessors repeatedly.
             'Object::Simple::Mixin::AttrOptions'
         ]
     );
- 
+    
+    # class attribute accessor
+    sub options : ClassAttr {
+        type => 'array',
+        auto_build => sub { shift->options([]) }
+    }
+
 =cut
  
 =head1 METHODS
@@ -1086,7 +1092,23 @@ If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
     sub m2 : YourAttribute {}
     
     Object::Simple->build_class;
- 
+
+=head1 CLASS ATTRIBUTE ACCESSOR
+
+You can use class attribute accessor.
+
+    # class attribute accessor
+    sub options : ClassAttr {
+        type => 'array',
+        auto_build => sub { shift->options([]) }
+    }
+
+Class attribute belong to class, not object.
+
+all accessor options except 'default' is used.
+
+If you set default value to class attribute, you can use 'auto_build' option.
+
 =head1 AUTHOR
  
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
