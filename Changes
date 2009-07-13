@@ -1,3 +1,5 @@
+2.0019
+  bag fix: meta information class_attr_option isn't merged when mixin class is included.
 2.0018
   add : Can use Class attribute accessor
 2.0017

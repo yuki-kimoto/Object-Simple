@@ -1,4 +1,4 @@
-use Test::More tests => 26;
+use Test::More tests => 30;
 use strict;
 use warnings;
 
@@ -92,6 +92,23 @@ use T15;
     
     eval{ $t->m6 };
     like($@, qr/Cannot locate method "m6" via base class of T15/, 'UPPER_method no exist');
+}
+
+use T16;
+{
+    is(T16->m1, 'T16-m1', 'class_attr mixin1');
+    is(T16->m2, 'M21-m2', 'class_attr mixin2');
+    is(T16->m3, 'M21-m3', 'class_attr miixn3');
+}
+
+use T17;
+{
+    is_deeply(
+        $Object::Simple::META->{'T17'}{class_attr_options},
+        { m1 => {weak => 1}, m2 => {chained => 0}, m3 => {chained => 0}},
+        'meta information class_attr_options'
+    );
+    
 }
 
 __END__

@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0018';
+our $VERSION = '2.0019';
 
 # Meta imformation
 our $META = {};
@@ -325,12 +325,17 @@ sub include_mixin_classes {
     
     # Merge mixin class attr options to caller class
     my %attr_options;
+    my %class_attr_options;
     foreach my $class (@$mixin_classes, $caller_class) {
         %attr_options = ( %attr_options, %{$Object::Simple::META->{$class}{attr_options}})
             if $Object::Simple::META->{$class}{attr_options};
+        
+        %class_attr_options = ( %class_attr_options, %{$Object::Simple::META->{$class}{class_attr_options}})
+            if $Object::Simple::META->{$class}{class_attr_options};
     }
     
     $Object::Simple::META->{$caller_class}{attr_options} = \%attr_options;
+    $Object::Simple::META->{$caller_class}{class_attr_options} = \%class_attr_options;
 }
  
 # Merge self and super accessor option
@@ -695,7 +700,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0018
+Version 2.0019
  
 =head1 FEATURES
  
