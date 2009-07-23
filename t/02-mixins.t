@@ -91,7 +91,7 @@ use T15;
     is($t->m5, 5, 'UPPER_method Object::Simple');
     
     eval{ $t->m6 };
-    like($@, qr/Cannot locate method "m6" via base class of T15/, 'UPPER_method no exist');
+    like($@, qr/Cannot locate method 'm6' via base class of T15/, 'UPPER_method no exist');
 }
 
 use T16;
