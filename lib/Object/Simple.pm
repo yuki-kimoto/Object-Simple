@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0019';
+our $VERSION = '2.0020';
 
 # Meta imformation
 our $META = {};
@@ -251,23 +251,23 @@ sub AUTOLOAD {
     my $method = $AUTOLOAD;
     $method =~ s/^.*:://;
     
-    my $code =
-            qq/sub Object::Simple::MIXINS::$method {\n/ .
-            qq/    my \$self = shift;\n/ .
-            qq/    my \$caller_class = caller;\n/ .
-            qq/    my \$mixin_classes = \$Object::Simple::META->{\$caller_class}{mixins};\n/ .
-            qq/    return unless \$mixin_classes;\n/ .
-            qq/    foreach my \$mixin_class (\@\$mixin_classes) {\n/ .
-            qq/        my \$full_qualified_method = "\${mixin_class}::$method";\n/ .
-            qq/        no strict 'refs';\n/ .
-            qq/        &{"\$full_qualified_method"}(\$self, \@_) if defined &{"\$full_qualified_method"};\n/ .
-            qq/    }\n/ .
-            qq/}\n/;
-            
-    eval "$code";
-    Carp::croak("$code\n$@") if $@;
+    my $code = sub {
+       my $method = shift;
+       return sub {
+           my $self = shift;
+           my $caller_class = caller;
+           my $mixin_classes = $Object::Simple::META->{$caller_class}{mixins};
+           return unless $mixin_classes;
+           foreach my $mixin_class (@$mixin_classes) {
+               my $full_qualified_method = "${mixin_class}::$method";
+               no strict 'refs';
+               &{"$full_qualified_method"}($self, @_) if defined &{"$full_qualified_method"};
+           }
+       }
+    };
     
     no strict 'refs';
+    *{"Object::Simple::MIXINS::$method"} = $code->($method);
     goto &{"Object::Simple::MIXINS::$method"};
 }
 
@@ -700,7 +700,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0019
+Version 2.0020
  
 =head1 FEATURES
  
