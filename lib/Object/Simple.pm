@@ -334,18 +334,12 @@ sub include_mixin_classes {
     }
     
     # Merge attr options to caller class
-    my @attr_options_names = values %$ATTR_OPTIONS_NAME_MAP;
-    
-    my %attr_options;
-    my %class_attr_options;
-    foreach my $class (@$mixin_classes, $caller_class) {
-        foreach my $attr_options_name (@attr_options_names) {
+    foreach my $attr_options_name (values %$ATTR_OPTIONS_NAME_MAP) {
+        my %attr_options;
+        foreach my $class (@$mixin_classes, $caller_class) {
             %attr_options = ( %attr_options, %{$Object::Simple::META->{$class}{$attr_options_name}})
                 if $Object::Simple::META->{$class}{$attr_options_name};
         }
-    }
-    
-    foreach my $attr_options_name (@attr_options_names) {
         $Object::Simple::META->{$caller_class}{$attr_options_name} = \%attr_options;
     }
 }
