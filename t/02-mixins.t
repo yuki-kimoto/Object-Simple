@@ -1,4 +1,4 @@
-use Test::More tests => 30;
+use Test::More 'no_plan';
 use strict;
 use warnings;
 
@@ -108,7 +108,17 @@ use T17;
         { m1 => {weak => 1}, m2 => {chained => 0}, m3 => {chained => 0}},
         'meta information class_attr_options'
     );
+}
+
+# Mixin Translate and Output accessor
+use T18;
+{
+    my $t = T18->new(m1 => 1);
+    is($t->m1, 1, 'mixin translate accessor');
+    is($t->m2->m1, 1, 'mixin translate accessor');
     
+    $t->m1_to(\my $m1_result);
+    is($m1_result, 1, 'mixin output accessor');
 }
 
 __END__

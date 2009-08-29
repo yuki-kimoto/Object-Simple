@@ -1,3 +1,7 @@
+2.0021
+  delete translate option. This change is not forward compatibile.
+  add Translate code attribute. This replace translate option.
+  add Output code attribute. This create accessor for output.
 2.0020
   refactoring Object::Simple::MIXINS::AUTOLOAD using closure
   refactoring Object::Simple::UPPER::AUTOLOAD using closure

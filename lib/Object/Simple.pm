@@ -333,19 +333,21 @@ sub include_mixin_classes {
         }
     }
     
-    # Merge mixin class attr options to caller class
+    # Merge attr options to caller class
+    my @attr_options_names = values %$ATTR_OPTIONS_NAME_MAP;
+    
     my %attr_options;
     my %class_attr_options;
     foreach my $class (@$mixin_classes, $caller_class) {
-        %attr_options = ( %attr_options, %{$Object::Simple::META->{$class}{attr_options}})
-            if $Object::Simple::META->{$class}{attr_options};
-        
-        %class_attr_options = ( %class_attr_options, %{$Object::Simple::META->{$class}{class_attr_options}})
-            if $Object::Simple::META->{$class}{class_attr_options};
+        foreach my $attr_options_name (@attr_options_names) {
+            %attr_options = ( %attr_options, %{$Object::Simple::META->{$class}{$attr_options_name}})
+                if $Object::Simple::META->{$class}{$attr_options_name};
+        }
     }
     
-    $Object::Simple::META->{$caller_class}{attr_options} = \%attr_options;
-    $Object::Simple::META->{$caller_class}{class_attr_options} = \%class_attr_options;
+    foreach my $attr_options_name (@attr_options_names) {
+        $Object::Simple::META->{$caller_class}{$attr_options_name} = \%attr_options;
+    }
 }
  
 # Merge self and super accessor option
@@ -648,12 +650,7 @@ sub create_output_accessor {
                 qq/sub $attr {\n/ .
                 qq/    my (\$self, \$output) = \@_;\n/ .
                 qq/    my \$value = \$self->$target;\n/ .
-                qq/    if (ref \$value) {\n/ .
-                qq/        \$output = \$value;\n/ .
-                qq/    }\n/ .
-                qq/    else {\n/ .
-                qq/        \$\$output = \$value;\n/ .
-                qq/    }\n/ .
+                qq/    \$\$output = \$value;\n/ .
                 qq/    return \$self\n/ .
                 qq/}\n\n/;
                 
@@ -690,7 +687,7 @@ my %VALID_CLASS_ATTR_OPTIONS
 
 # Valid class output accessor options(Output)
 my %VALID_OUTPUT_OPTIONS
-  = map {$_ => 1} qw(attr);
+  = map {$_ => 1} qw(target);
   
 # Valid translate accessor option(Translate)
 my %VALID_TRANSLATE_OPTIONS

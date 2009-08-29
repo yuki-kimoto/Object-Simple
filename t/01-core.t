@@ -455,7 +455,6 @@ use T30;
 
 {
     my $t = T30->new(m1 => 1);
-    $DB::single = 1;
     ok(!exists $t->{m1}, 'transate delete key');
     is($t->m2->m1, 1, 'translate set value from constructor');
 }
@@ -596,4 +595,15 @@ use T30;
 }
 
 ### Output accessor
+{
+    use T40;
+    T40
+      ->new
+      ->m1_to(\my $m1_result)
+      ->m2_to(\my $m2_result)
+    ;
+    
+    is($m1_result, 1, 'Output scalar');
+    is_deeply($m2_result, [1, 2], 'Output array ref');
+}
 __END__
