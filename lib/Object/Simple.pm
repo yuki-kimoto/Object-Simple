@@ -805,10 +805,20 @@ writing new and accessors repeatedly.
     sub error : Attr { trigger => sub{ $_[0]->state('error') } }
     sub state : Attr {}
     
-    # translate option
+    # define accessor for class variable
+    sub options : ClassAttr {
+        type => 'array',
+        auto_build => sub { shift->options([]) }
+    }
+    
+    # define translate accessor
     sub person : Attr { default => sub{ Person->new } }
-    sub name   : Attr { translate => 'person->name' }
-    sub age    : Attr { translate => 'person->age' }
+    sub name   : Translate { target => 'person->name' }
+    sub age    : Translate { target => 'person->age' }
+    
+    # define accessor to output attribute value
+    sub errors    : Attr   {}
+    sub errors_to : Output { target => 'errors' }
     
     # Inheritance
     package Magazine;
@@ -823,11 +833,6 @@ writing new and accessors repeatedly.
         ]
     );
     
-    # class attribute accessor
-    sub options : ClassAttr {
-        type => 'array',
-        auto_build => sub { shift->options([]) }
-    }
 
 =cut
  
@@ -976,13 +981,65 @@ You can defined trigger function when value is set.
     sub error : Attr { trigger => sub{ $_[0]->stete('error') } }
     sub state : Attr {}
 
-=head2 translate
+=head1 SPECIAL ACCESSOR
 
-You can create accessor shortcut of object of attribute value.
+=head2 ClassAttr - Accessor for class variable
+
+You can also define accessor for class variable.
+
+    # class attribute accessor
+    sub options : ClassAttr {
+        type => 'array',
+        auto_build => sub { shift->options([]) }
+    }
+
+options set or get class variable, not some instance.
+
+you can use the same accessor options as normal accessor except 'default' option.
+
+If you define default value to class variable, you must use 'auto_build' option.
+
+If this accessor is used subclass, it access subclass class variable, not the class it is defined. 
+
+=head2 Output - Accessor to output attribute value
+
+You can define accessor to output attribute value
+
+    # define accessor to output attribute value
+    sub errors    : Attr   {}
+    sub errors_to : Output { target => 'errors' }
+    
+    sub results    : Attr   {}
+    sub results_to : Output { target => 'results' }
+    
+This accessor is used the following way.
+
+Create instance and Set input file and parse.
+parse method save the parsed results to results attribute and  some errors to errors attribute
+and continuasly get resutls to $results variable and get errors to $errors variable.
+    
+    use SomeParser;
+    SomeParser
+      ->new
+      ->input_file('somefile')
+      ->parse
+      ->results_to(\my $results)
+      ->errors_to(\my $errors)
+    ;
+    
+You are not familiar with this style.
+But this style is very beautiful and write a soruce code without duplication.
+And You can get rid of typo in source code.
+
+=head2 Translate - Accessor to convert to other accessor
+
+You can define accessor shortcut of object of other attribute value.
     
     sub person : Attr { default => sub{ Person->new } }
     sub name   : Attr { translate => 'person->name' }
     sub age    : Attr { translate => 'person->age' }
+
+You can accesse person->name when you call name.
 
 =head1 INHERITANCE
  
@@ -1060,8 +1117,9 @@ If method names is crashed, method search order is the following
     #                       4                       3              2
     Object::Simple(base => 'BaseClass', mixins => ['MixinClass1', 'MixinClass2']);
 
+=head1 CALLING MIXINS METHODS
 
-=head1 CALL MIXINS METHODS
+=head2 CALL ALL MIXINS METHODS
 
 You can call all methods of mixins methods.
 
@@ -1131,64 +1189,12 @@ If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
     
     Object::Simple->build_class;
 
-=head1 CLASS ATTRIBUTE ACCESSOR
-
-You can use class attribute accessor.
-
-    # class attribute accessor
-    sub options : ClassAttr {
-        type => 'array',
-        auto_build => sub { shift->options([]) }
-    }
-
-Class attribute belong to class, not object.
-
-all accessor options except 'default' is used.
-
-If you set default value to class attribute, you can use 'auto_build' option.
-
 =head1 AUTHOR
  
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
  
-I develope some module the following
- 
-L<http://github.com/yuki-kimoto/>
- 
-=head1 BUGS
- 
-Please report any bugs or feature requests to C<bug-simo at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Object::Simple>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
- 
-=head1 SUPPORT
- 
-You can find documentation for this module with the perldoc command.
- 
-    perldoc Object::Simple
- 
-You can also look for information at:
- 
-=over 4
- 
-=item * RT: CPAN's request tracker
- 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Object::Simple>
- 
-=item * AnnoCPAN: Annotated CPAN documentation
- 
-L<http://annocpan.org/dist/Object::Simple>
- 
-=item * CPAN Ratings
- 
-L<http://cpanratings.perl.org/d/Object::Simple>
- 
-=item * Search CPAN
- 
-L<http://search.cpan.org/dist/Object::Simple/>
- 
-=back
- 
+I develope in L<http://github.com/yuki-kimoto/>
+
 =head1 SIMILAR MODULES
  
 L<Class::Accessor>,L<Class::Accessor::Fast>, L<Moose>, L<Mouse>, L<Mojo::Base>
