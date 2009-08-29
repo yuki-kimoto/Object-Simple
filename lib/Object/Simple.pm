@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0020';
+our $VERSION = '2.0021';
 
 # Meta imformation
 our $META = {};
@@ -89,6 +89,13 @@ sub new {
  
 # Build class(create accessor, include mixin class, and create constructor)
 my %VALID_BUILD_CLASS_OPTIONS = map {$_ => 1} qw(all);
+my $ATTR_OPTIONS_NAME_MAP = {
+    Attr      => 'attr_options',
+    ClassAttr => 'class_attr_options',
+    Output    => 'output_attr_options',
+    Translate => 'translate_attr_options'
+};
+
 sub build_class {
     my ($self, %options) = @_;
     
@@ -109,7 +116,7 @@ sub build_class {
     
     # Parse symbol table and create accessors code
     while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
-        my ($class, $ref, $code_attr) = @$class_and_ref;
+        my ($class, $ref, $accessor_type) = @$class_and_ref;
         
         # Parse symbol tabel to find code reference correspond to method names
         unless($attr_names->{$class}) {
@@ -131,23 +138,26 @@ sub build_class {
         # Get attr options
         my $attr_options = {$ref->()};
         
-        # Is this accessor class accessor
-        my $is_class_accessor = $code_attr eq 'ClassAttr' ? 1 : 0;
-        
         # Check accessor option
-        Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options, $is_class_accessor);
+        Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options, $accessor_type);
         
-        if ($is_class_accessor) {
-            # Resist accessor option to meta imformation
-            $Object::Simple::META->{$class}{class_attr_options}{$attr} = $attr_options;
-        }
-        else {
-            # Resist accessor option to meta imformation
-            $Object::Simple::META->{$class}{attr_options}{$attr} = $attr_options;
-        }
+        # Resist accessor option to meta imformation
+        $Object::Simple::META->{$class}{$ATTR_OPTIONS_NAME_MAP->{$accessor_type}}{$attr} = $attr_options;
         
         # Create accessor source code
-        $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr, $is_class_accessor);
+        if ($accessor_type eq 'Translate') {
+            # Create translate accessor
+            $accessor_code .= Object::Simple::Functions::create_translate_accessor($class, $attr);
+        }
+        elsif ($accessor_type eq 'Output') {
+            # Create output accessor
+            $accessor_code .= Object::Simple::Functions::create_output_accessor($class, $attr);
+        }
+        else {
+            # Create normal accessor or class accessor
+            if ($attr eq 'bookm') { $DB::single = 1 }
+            $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr, $accessor_type);
+        }
     }
     
     # Create accessor
@@ -341,11 +351,12 @@ sub include_mixin_classes {
 # Merge self and super accessor option
 sub merge_self_and_super_accessor_option {
     
-    my $class = shift;
+    my ($class, $attr_options_name) = @_;
+    my $merged_attr_options_name = "merged_$attr_options_name";
     
     # Return cache if cached 
-    return $Object::Simple::META->{$class}{merged_attr_options}
-      if $Object::Simple::META->{$class}{merged_attr_options};
+    return $Object::Simple::META->{$class}{$merged_attr_options_name}
+      if $Object::Simple::META->{$class}{$merged_attr_options_name};
     
     # Get self and super classed
     my $self_and_super_classes
@@ -354,12 +365,12 @@ sub merge_self_and_super_accessor_option {
     # Get merged accessor options 
     my $attr_options = {};
     foreach my $class (reverse @$self_and_super_classes) {
-        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{$class}{attr_options}}}
-            if defined $Object::Simple::META->{$class}{attr_options};
+        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{$class}{$attr_options_name}}}
+            if defined $Object::Simple::META->{$class}{$attr_options_name};
     }
     
     # Cached
-    $Object::Simple::META->{$class}{merged_attr_options} = $attr_options;
+    $Object::Simple::META->{$class}{$merged_attr_options_name} = $attr_options;
     
     return $attr_options;
 }
@@ -369,7 +380,8 @@ sub create_constructor {
     my $class = shift;
     
     # Get merged attr options
-    my $attr_options = merge_self_and_super_accessor_option($class);
+    my $attr_options = merge_self_and_super_accessor_option($class, 'attr_options');
+    my $translate_attr_options = merge_self_and_super_accessor_option($class, 'translate_attr_options');
     
     # Create instance
     my $code =  qq/package Object::Simple::Constructor::${class};\n/ .
@@ -383,17 +395,8 @@ sub create_constructor {
     # Attribute which have trigger option
     my @attrs_having_trigger;
     
-    # Attribute which have traslate option
-    my @attrs_having_translate;
-    
     # Customize initialization
     foreach my $attr (keys %$attr_options) {
-        
-        # regist attribute which have traslate option
-        if ($attr_options->{$attr}{translate}) {
-            push @attrs_having_translate, $attr;
-            next;
-        }
         
         # Convert option
         if ($attr_options->{$attr}{convert}) {
@@ -446,7 +449,7 @@ sub create_constructor {
     }
     
     # Translate option
-    foreach my $attr (@attrs_having_translate) {
+    foreach my $attr (keys %$translate_attr_options) {
         $code .=
             qq/    \$self->$attr(delete \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
     }
@@ -462,23 +465,20 @@ my %VALID_TYPE = map {$_ => 1} qw/array hash/;
 # Create accessor.
 sub create_accessor {
     
-    my ($class, $attr, $is_class_accessor) = @_;
+    my ($class, $attr, $accessor_type) = @_;
     
-    my $attr_options = $is_class_accessor ? 'class_attr_options' : 'attr_options';
+    my $attr_options = $ATTR_OPTIONS_NAME_MAP->{$accessor_type};
     
     # Get accessor options
-    my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $translate)
+    my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger)
       = @{$Object::Simple::META->{$class}{$attr_options}{$attr}}{
-            qw/auto_build read_only weak type convert deref trigger translate/
+            qw/auto_build read_only weak type convert deref trigger/
         };
     
     # chained
     my $chained =   exists $Object::Simple::META->{$class}{$attr_options}{$attr}{chained}
                   ? $Object::Simple::META->{$class}{$attr_options}{$attr}{chained}
                   : 1;
-    
-    # create translate accessor
-    return Object::Simple::Functions::create_translate_accessor($class, $attr) if $translate;
     
     # Passed value expression
     my $value = '$_[0]';
@@ -498,7 +498,7 @@ sub create_accessor {
     
     # Variable to strage
     my $strage;
-    if ($is_class_accessor) {
+    if ($accessor_type eq 'ClassAttr') {
         # Strage package Varialbe in case class accessor
         $strage = "\$Object::Simple::META->{\$self}{class_attr}{'$attr'}";
         $code .=
@@ -596,7 +596,7 @@ sub create_accessor {
             $code .=
                 qq/        Scalar::Util::weaken($strage) if ref $strage;\n/;
         }
-
+        
         # Trigger
         if ($trigger) {
             Carp::croak("'trigger' option must be code reference (${class}::$attr)")
@@ -640,51 +640,77 @@ sub create_accessor {
     return $code;
 }
 
+sub create_output_accessor {
+    
+}
+
 sub create_translate_accessor {
     my ($class, $attr) = @_;
-    my $translate = $Object::Simple::META->{$class}{attr_options}{$attr}{translate};
+    my $target = $Object::Simple::META->{$class}{translate_attr_options}{$attr}{target};
     
-    Carp::croak("'$translate' is invalid.'translate' option must be like 'method1->method2'")
-        unless $translate =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
+    Carp::croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
+        unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
     
     my $code =  qq/package $class;\n/ .
                 qq/sub $attr {\n/ .
                 qq/    my \$self = shift;\n/ .
                 qq/    if (\@_) {\n/ .
-                qq/        \$self->$translate(\@_);\n/ .
+                qq/        \$self->$target(\@_);\n/ .
                 qq/        return \$self;\n/ .
                 qq/    }\n/ .
-                qq/    return wantarray ? (\$self->$translate) : \$self->$translate;\n/ .
+                qq/    return wantarray ? (\$self->$target) : \$self->$target;\n/ .
                 qq/}\n/;
                 
     return $code;
 }
 
-# Valid accessor options
-my %VALID_ATTR_OPTIOTNS 
-    = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate);
- 
+# Valid accessor options(Attr)
+my %VALID_ATTR_OPTIONS 
+  = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate);
+
+# Valid class accessor options(ClassAttr)
+my %VALID_CLASS_ATTR_OPTIONS
+  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate);
+
+# Valid class output accessor options(Output)
+my %VALID_OUTPUT_OPTIONS
+  = map {$_ => 1} qw(attr);
+  
+# Valid translate accessor option(Translate)
+my %VALID_TRANSLATE_OPTIONS
+  = map {$_ => 1} qw(target);
+
+my $VALID_OPTIONS_MAP = {
+    Attr      => \%VALID_ATTR_OPTIONS,
+    ClassAttr => \%VALID_CLASS_ATTR_OPTIONS,
+    Output    => \%VALID_OUTPUT_OPTIONS,
+    Translate => \%VALID_TRANSLATE_OPTIONS
+};
+
 # Check accessor options
 sub check_accessor_option {
-    my ( $attr, $class, $attr_options, $is_class_accessor ) = @_;
+    my ( $attr, $class, $attr_options, $accessor_type ) = @_;
+    
+    my $valid_options = $VALID_OPTIONS_MAP->{$accessor_type};
     
     foreach my $key ( keys %$attr_options ){
         Carp::croak("${class}::$attr '$key' is invalid accessor option.")
-            if !$VALID_ATTR_OPTIOTNS{ $key } || ($is_class_accessor && $key eq 'default');
+            unless $valid_options->{ $key };
     }
 }
  
 # Define MODIFY_CODE_ATTRIBUTRS subroutine
+my %VALID_CODE_ATTRIBUTE_NAME = map {$_ => 1} qw(Attr ClassAttr Output Translate);
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
     my $code = sub {
-        my ($class, $code_ref, $code_attr) = @_;
+        my ($class, $code_ref, $accessor_type) = @_;
         
-        Carp::croak("'$code_attr' is bad. attribute must be 'Attr' or 'ClassAttr")
-            unless $code_attr eq 'Attr' || $code_attr eq 'ClassAttr';
+        Carp::croak("'$accessor_type' is bad name. attribute must be 'Attr','ClassAttr','Output', or 'Translate'")
+            unless $VALID_CODE_ATTRIBUTE_NAME{$accessor_type};
         
-        push(@Object::Simple::ATTRIBUTES_INFO, [$class, $code_ref, $code_attr ]);
+        push(@Object::Simple::ATTRIBUTES_INFO, [$class, $code_ref, $accessor_type ]);
         
         return;
     };

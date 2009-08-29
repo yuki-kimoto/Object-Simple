@@ -1,0 +1,7 @@
+*.BAK
+Build
+MANIFEST
+META.yml
+Makefile.PL
+_build/*
+blib/*

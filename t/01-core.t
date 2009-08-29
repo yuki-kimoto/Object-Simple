@@ -192,7 +192,7 @@ use T10;
 }
  
 eval "use T15";
-like($@, qr/'A' is bad. attribute must be 'Attr'/, 'bat attribute name');
+like($@, qr/'A' is bad name. attribute must be 'Attr','ClassAttr','Output', or 'Translate'/, 'bat attribute name');
  
 {
     use T16;
@@ -448,12 +448,14 @@ use T30;
 {
     my $t = T30->new;
     $t->m1(1);
+    
     is($t->m2->m1, 1, 'translate set value');
     is($t->m1, 1, 'translate get value');
 }
 
 {
     my $t = T30->new(m1 => 1);
+    $DB::single = 1;
     ok(!exists $t->{m1}, 'transate delete key');
     is($t->m2->m1, 1, 'translate set value from constructor');
 }
@@ -500,7 +502,7 @@ use T30;
 
 {
     eval "use T32;";
-    like($@, qr/\Q'2->m1' is invalid.'translate' option must be like 'method1->method2'/, 'invalid translate value');
+    like($@, qr/\QT32::m1 '2->m1' is invalid. Translate 'target' option must be like 'method1->method2'/, 'invalid translate value');
     eval "use T33;";
     ok($@, 'translate invalid 2');
     eval "use T34;";
