@@ -1,5 +1,5 @@
 package T30;
-use Object::Simple;
+use Object::Simple(base => 'T30_Base1');
 
 use T23;
 use T31;

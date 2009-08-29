@@ -641,12 +641,28 @@ sub create_accessor {
 }
 
 sub create_output_accessor {
+    my ($class, $attr) = @_;
+    my $target = $Object::Simple::META->{$class}{output_attr_options}{$attr}{target};
     
+    my $code =  qq/package $class;\n/ .
+                qq/sub $attr {\n/ .
+                qq/    my (\$self, \$output) = \@_;\n/ .
+                qq/    my \$value = \$self->$target;\n/ .
+                qq/    if (ref \$value) {\n/ .
+                qq/        \$output = \$value;\n/ .
+                qq/    }\n/ .
+                qq/    else {\n/ .
+                qq/        \$\$output = \$value;\n/ .
+                qq/    }\n/ .
+                qq/    return \$self\n/ .
+                qq/}\n\n/;
+                
+    return $code;
 }
 
 sub create_translate_accessor {
     my ($class, $attr) = @_;
-    my $target = $Object::Simple::META->{$class}{translate_attr_options}{$attr}{target};
+    my $target = $Object::Simple::META->{$class}{translate_attr_options}{$attr}{target} || '';
     
     Carp::croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
         unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
@@ -659,7 +675,7 @@ sub create_translate_accessor {
                 qq/        return \$self;\n/ .
                 qq/    }\n/ .
                 qq/    return wantarray ? (\$self->$target) : \$self->$target;\n/ .
-                qq/}\n/;
+                qq/}\n\n/;
                 
     return $code;
 }
