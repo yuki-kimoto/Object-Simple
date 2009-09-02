@@ -5,4 +5,4 @@ sub title : Attr {}
 sub author : Attr {}
 sub price : Attr { default => 1 }
 
-Object::Simple->build_class("Book");
+Object::Simple->build_class('Book');

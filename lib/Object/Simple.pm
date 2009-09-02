@@ -120,9 +120,8 @@ sub build_class {
     }
     
     # Parse symbol table and create accessors code
-    while (my $class_and_ref = shift @Object::Simple::CODE_ATTRIBUTE_INFOS) {
-        my ($class, $ref, $accessor_type) = @$class_and_ref;
-        
+    while (my $code_attribute_info = shift @Object::Simple::CODE_ATTRIBUTE_INFOS) {
+        my ($class, $code_ref, $code_attribute_name, $attr_name) = @$code_attribute_info;
         # Parse symbol tabel to find code reference correspond to method names
         unless($attr_names->{$class}) {
         
@@ -138,30 +137,30 @@ sub build_class {
         }
         
         # Get attribute name
-        my $attr = $attr_names->{$class}{$ref};
+        $attr_name ||= $attr_names->{$class}{$code_ref};
         
         # Get attr options
-        my $attr_options = {$ref->()};
+        my @attr_options = $code_ref->();
+        my $attr_options = ref $attr_options[0] eq 'HASH' ? $attr_options[0] : {@attr_options};
         
         # Check accessor option
-        Object::Simple::Functions::check_accessor_option($attr, $class, $attr_options, $accessor_type);
+        Object::Simple::Functions::check_accessor_option($attr_name, $class, $attr_options, $code_attribute_name);
         
         # Resist accessor option to meta imformation
-        $Object::Simple::META->{$class}{$ATTR_OPTIONS_NAME_MAP->{$accessor_type}}{$attr} = $attr_options;
+        $Object::Simple::META->{$class}{$ATTR_OPTIONS_NAME_MAP->{$code_attribute_name}}{$attr_name} = $attr_options;
         
         # Create accessor source code
-        if ($accessor_type eq 'Translate') {
+        if ($code_attribute_name eq 'Translate') {
             # Create translate accessor
-            $accessor_code .= Object::Simple::Functions::create_translate_accessor($class, $attr);
+            $accessor_code .= Object::Simple::Functions::create_translate_accessor($class, $attr_name);
         }
-        elsif ($accessor_type eq 'Output') {
+        elsif ($code_attribute_name eq 'Output') {
             # Create output accessor
-            $accessor_code .= Object::Simple::Functions::create_output_accessor($class, $attr);
+            $accessor_code .= Object::Simple::Functions::create_output_accessor($class, $attr_name);
         }
         else {
             # Create normal accessor or class accessor
-            if ($attr eq 'bookm') { $DB::single = 1 }
-            $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr, $accessor_type);
+            $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr_name, $code_attribute_name);
         }
     }
     
@@ -222,6 +221,15 @@ sub build_class {
     return 1;
 }
 
+sub resist_attribute_info {
+    shift;
+    my ($class, $attr_name, $attr_options, $code_attribute_name) = @_;
+    my $code_ref = ref $attr_options eq 'HASH' ? sub {$attr_options} : $attr_options;
+    
+    $code_attribute_name ||= 'Attr';
+    push @Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $code_attribute_name, $attr_name];
+}
+
 package Object::Simple::UPPER;
 sub AUTOLOAD {
     our $AUTOLOAD;
@@ -229,7 +237,7 @@ sub AUTOLOAD {
     my $caller_class = caller;
     my $method = $AUTOLOAD;
     $method =~ s/^.*:://;
-
+    
     my $code = sub {
         my $method = shift;
         return sub {
@@ -466,9 +474,9 @@ my %VALID_TYPE = map {$_ => 1} qw/array hash/;
 # Create accessor.
 sub create_accessor {
     
-    my ($class, $attr, $accessor_type) = @_;
+    my ($class, $attr, $code_attribute_name) = @_;
     
-    my $attr_options = $ATTR_OPTIONS_NAME_MAP->{$accessor_type};
+    my $attr_options = $ATTR_OPTIONS_NAME_MAP->{$code_attribute_name};
     
     # Get accessor options
     my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger)
@@ -499,7 +507,7 @@ sub create_accessor {
     
     # Variable to strage
     my $strage;
-    if ($accessor_type eq 'ClassAttr') {
+    if ($code_attribute_name eq 'ClassAttr') {
         # Strage package Varialbe in case class accessor
         $strage = "\$Object::Simple::META->{\$self}{class_attr}{'$attr'}";
         $code .=
@@ -701,9 +709,9 @@ my $VALID_OPTIONS_MAP = {
 
 # Check accessor options
 sub check_accessor_option {
-    my ( $attr, $class, $attr_options, $accessor_type ) = @_;
+    my ( $attr, $class, $attr_options, $code_attribute_name ) = @_;
     
-    my $valid_options = $VALID_OPTIONS_MAP->{$accessor_type};
+    my $valid_options = $VALID_OPTIONS_MAP->{$code_attribute_name};
     
     foreach my $key ( keys %$attr_options ){
         Carp::croak("${class}::$attr '$key' is invalid accessor option.")
@@ -717,12 +725,12 @@ sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
     my $code = sub {
-        my ($class, $code_ref, $accessor_type) = @_;
+        my ($class, $code_ref, $code_attribute_name) = @_;
         
-        Carp::croak("'$accessor_type' is bad name. attribute must be 'Attr','ClassAttr','Output', or 'Translate'")
-            unless $VALID_CODE_ATTRIBUTE_NAME{$accessor_type};
+        Carp::croak("'$code_attribute_name' is bad name. attribute must be 'Attr','ClassAttr','Output', or 'Translate'")
+            unless $VALID_CODE_ATTRIBUTE_NAME{$code_attribute_name};
         
-        push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $accessor_type ]);
+        push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $code_attribute_name ]);
         
         return;
     };
@@ -877,6 +885,22 @@ resist attribute and create accessors.
 Script must build_class 'Object::Simple->build_class;'
  
     Object::Simple->build_class; # End of Object::Simple!
+
+=head3 resist_attribute_info
+
+resist attribute information
+
+    Object::Simple->resist_attribute_info($class, $attr_name, $code_ref, $code_attribute_type);
+    Object::Simple->resist_attribute_info('Book', 'title', sub {default => 1}, 'Attr');
+
+This is equal to
+    
+    package Book;
+    sub title : Attr {default => 1}
+
+If you create accessor, you must call build_class
+
+    Object::Simple->build_class('Book');
 
 =head1 ACCESSOR OPTIONS
  

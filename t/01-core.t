@@ -606,4 +606,14 @@ use T30;
     is($m1_result, 1, 'Output scalar');
     is_deeply($m2_result, [1, 2], 'Output array ref');
 }
+
+### resist_attribute_info
+{
+    use T41;
+    T41
+      ->new
+      ->m1_to(\my $m1_result);
+    
+    is($m1_result, 1, 'resist_attribute_info');
+}
 __END__
