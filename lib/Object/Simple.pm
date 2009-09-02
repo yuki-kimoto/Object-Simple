@@ -106,11 +106,11 @@ sub build_class {
     my $accessor_code = '';
     
     # Get caller class
-    my $caller_class = caller;
+    my $build_need_class = caller;
 
     # check build_class options
     foreach my $key (keys %options) {
-        Carp::croak("'$key' is invalid build_class option ($caller_class)")
+        Carp::croak("'$key' is invalid build_class option ($build_need_class)")
             unless $VALID_BUILD_CLASS_OPTIONS{$key};
     }
     
@@ -174,7 +174,7 @@ sub build_class {
         @Object::Simple::BUILD_NEED_CLASSES = ();
     }
     else{
-        @build_need_classes = ($caller_class) unless $ALREADY_BUILD_CLASSES{$caller_class};
+        @build_need_classes = ($build_need_class) unless $ALREADY_BUILD_CLASSES{$build_need_class};
     }
     
     foreach my $class (@build_need_classes) {
