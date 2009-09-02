@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0021';
+our $VERSION = '2.0022';
 
 # Meta imformation
 our $META = {};
@@ -17,7 +17,7 @@ our @BUILD_NEED_CLASSES;
 our %ALREADY_BUILD_CLASSES;
  
 # Attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
-our @ATTRIBUTES_INFO;
+our @CODE_ATTRIBUTE_INFOS;
  
 # Valid import option
 my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins);
@@ -115,7 +115,7 @@ sub build_class {
     }
     
     # Parse symbol table and create accessors code
-    while (my $class_and_ref = shift @Object::Simple::ATTRIBUTES_INFO) {
+    while (my $class_and_ref = shift @Object::Simple::CODE_ATTRIBUTE_INFOS) {
         my ($class, $ref, $accessor_type) = @$class_and_ref;
         
         # Parse symbol tabel to find code reference correspond to method names
@@ -717,7 +717,7 @@ sub define_MODIFY_CODE_ATTRIBUTES {
         Carp::croak("'$accessor_type' is bad name. attribute must be 'Attr','ClassAttr','Output', or 'Translate'")
             unless $VALID_CODE_ATTRIBUTE_NAME{$accessor_type};
         
-        push(@Object::Simple::ATTRIBUTES_INFO, [$class, $code_ref, $accessor_type ]);
+        push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $accessor_type ]);
         
         return;
     };

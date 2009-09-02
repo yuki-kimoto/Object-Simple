@@ -7,3 +7,4 @@ Makefile.PL
 _build/*
 blib/*
 *.tar.gz
+cover_db/*
