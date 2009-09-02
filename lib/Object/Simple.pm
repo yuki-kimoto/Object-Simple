@@ -88,7 +88,7 @@ sub new {
 }
  
 # Build class(create accessor, include mixin class, and create constructor)
-my %VALID_BUILD_CLASS_OPTIONS = map {$_ => 1} qw(all);
+my %VALID_BUILD_CLASS_OPTIONS = map {$_ => 1} qw(all class);
 my $ATTR_OPTIONS_NAME_MAP = {
     Attr      => 'attr_options',
     ClassAttr => 'class_attr_options',
@@ -97,7 +97,12 @@ my $ATTR_OPTIONS_NAME_MAP = {
 };
 
 sub build_class {
-    my ($self, %options) = @_;
+    my ($self, $options) = @_;
+    
+    # passed class name
+    unless (ref $options) {
+        $options = {class => $options};
+    }
     
     # Attribute names
     my $attr_names = {};
@@ -106,10 +111,10 @@ sub build_class {
     my $accessor_code = '';
     
     # Get caller class
-    my $build_need_class = caller;
+    my $build_need_class = $options->{class} || caller;
 
     # check build_class options
-    foreach my $key (keys %options) {
+    foreach my $key (keys %$options) {
         Carp::croak("'$key' is invalid build_class option ($build_need_class)")
             unless $VALID_BUILD_CLASS_OPTIONS{$key};
     }
@@ -169,7 +174,7 @@ sub build_class {
     
     # Inherit base class and Object::Simple
     my @build_need_classes;
-    if ($options{all}) {
+    if ($options->{all}) {
         @build_need_classes = grep { !$ALREADY_BUILD_CLASSES{$_} } @Object::Simple::BUILD_NEED_CLASSES;
         @Object::Simple::BUILD_NEED_CLASSES = ();
     }
