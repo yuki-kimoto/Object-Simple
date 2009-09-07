@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
  
-our $VERSION = '2.0022';
+our $VERSION = '2.0101';
 
 # Meta imformation
 our $META = {};
@@ -148,30 +148,9 @@ sub build_class {
         
         # Resist accessor option to meta imformation
         $Object::Simple::META->{$class}{$ATTR_OPTIONS_NAME_MAP->{$code_attribute_name}}{$attr_name} = $attr_options;
-        
-        # Create accessor source code
-        if ($code_attribute_name eq 'Translate') {
-            # Create translate accessor
-            $accessor_code .= Object::Simple::Functions::create_translate_accessor($class, $attr_name);
-        }
-        elsif ($code_attribute_name eq 'Output') {
-            # Create output accessor
-            $accessor_code .= Object::Simple::Functions::create_output_accessor($class, $attr_name);
-        }
-        else {
-            # Create normal accessor or class accessor
-            $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr_name, $code_attribute_name);
-        }
     }
     
-    # Create accessor
-    if($accessor_code){
-        no warnings qw(redefine);
-        eval $accessor_code;
-        Carp::croak("$accessor_code\n:$@") if $@;
-    }
-    
-    # Inherit base class and Object::Simple
+    # Resist classes which need building
     my @build_need_classes;
     if ($options->{all}) {
         @build_need_classes = grep { !$ALREADY_BUILD_CLASSES{$_} } @Object::Simple::BUILD_NEED_CLASSES;
@@ -181,6 +160,7 @@ sub build_class {
         @build_need_classes = ($build_need_class) unless $ALREADY_BUILD_CLASSES{$build_need_class};
     }
     
+    # Inherit base class and Object::Simple, and include mixin classes
     foreach my $class (@build_need_classes) {
         # Initialize attr_options if it is not set
         $Object::Simple::META->{$class}{attr_options} = {}
@@ -207,15 +187,40 @@ sub build_class {
             if $Object::Simple::META->{$class}{mixins};
     }
     
-    # Create constructor
+    # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
         my $constructor_code = Object::Simple::Functions::create_constructor($class);
         eval $constructor_code;
         Carp::croak("$constructor_code\n:$@") if $@;
-        $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"}
+        $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"};
+        
+        foreach my $attr_options_name (values %$ATTR_OPTIONS_NAME_MAP) {
+            foreach my $attr_name (keys %{$Object::Simple::META->{$class}{$attr_options_name}}) {
+                # Create accessor source code
+                if ($attr_options_name eq 'translate_attr_options') {
+                    # Create translate accessor
+                    $accessor_code .= Object::Simple::Functions::create_translate_accessor($class, $attr_name);
+                }
+                elsif ($attr_options_name eq 'output_attr_options') {
+                    # Create output accessor
+                    $accessor_code .= Object::Simple::Functions::create_output_accessor($class, $attr_name);
+                }
+                else {
+                    # Create normal accessor or class accessor
+                    $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr_name, $attr_options_name);
+                }
+            }
+        }
     }
     
-    # resist already build class
+    # Create accessor
+    if($accessor_code){
+        no warnings qw(redefine);
+        eval $accessor_code;
+        Carp::croak("$accessor_code\n:$@") if $@;
+    }
+    
+    # Resist already build class
     $ALREADY_BUILD_CLASSES{$_} = 1 foreach @build_need_classes;
     
     return 1;
@@ -474,9 +479,7 @@ my %VALID_TYPE = map {$_ => 1} qw/array hash/;
 # Create accessor.
 sub create_accessor {
     
-    my ($class, $attr, $code_attribute_name) = @_;
-    
-    my $attr_options = $ATTR_OPTIONS_NAME_MAP->{$code_attribute_name};
+    my ($class, $attr, $attr_options) = @_;
     
     # Get accessor options
     my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger)
@@ -507,7 +510,7 @@ sub create_accessor {
     
     # Variable to strage
     my $strage;
-    if ($code_attribute_name eq 'ClassAttr') {
+    if ($attr_options eq 'class_attr_options') {
         # Strage package Varialbe in case class accessor
         $strage = "\$Object::Simple::META->{\$self}{class_attr}{'$attr'}";
         $code .=
@@ -686,11 +689,11 @@ sub create_translate_accessor {
 
 # Valid accessor options(Attr)
 my %VALID_ATTR_OPTIONS 
-  = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate);
+  = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate extned);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_ATTR_OPTIONS
-  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate);
+  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend);
 
 # Valid class output accessor options(Output)
 my %VALID_OUTPUT_OPTIONS
@@ -746,7 +749,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0020
+Version 2.0101
  
 =head1 FEATURES
  
@@ -882,9 +885,15 @@ This new can be overided.
  
 resist attribute and create accessors.
  
-Script must build_class 'Object::Simple->build_class;'
+Script must call build_class at end of script;
  
-    Object::Simple->build_class; # End of Object::Simple!
+    Object::Simple->build_class;
+
+The class of caller package is build.
+
+You can also specify class
+
+    Object::Simple->build_class('SomeClass');
 
 =head3 resist_attribute_info
 

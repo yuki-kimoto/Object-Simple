@@ -3,7 +3,7 @@ use strict;
 use warnings;
  
 use lib 't/01-core';
- 
+
 BEGIN{ use_ok( 'Object::Simple' ) }
 can_ok( 'Object::Simple', qw( new ) ); 
  
@@ -616,4 +616,17 @@ use T30;
     
     is($m1_result, 1, 'resist_attribute_info');
 }
+
+### extend base class attribute option
+#{
+    #use T42;
+    #my $m_base = T42_Base->new;
+    #is_deeply([$m_base->m1], [1], 'base class attr option');
+    
+    #my $m = T42->new;
+    #is_deeply([$m_base->m1], [2], 'extend options');
+#}
+
+
+
 __END__

@@ -1,3 +1,6 @@
+2.0101
+  add resiste_attribute_info. If you call this method, resist attribute_info.
+  you can specify class name at build_class method
 2.0021
   delete translate option. This change is not forward compatibile.
   add Translate code attribute. This replace translate option.
