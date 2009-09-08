@@ -73,5 +73,5 @@ BEGIN{
     use Object::Simple;
     sub m1 : Attr { default => 1 }
 
-    Object::Simple->build_class({all => 1});
+    Object::Simple->build_all_classes;
 }

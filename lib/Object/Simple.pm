@@ -4,8 +4,8 @@ use strict;
 use warnings;
  
 require Carp;
- 
-our $VERSION = '2.0101';
+
+our $VERSION = '2.0201';
 
 # Meta imformation
 our $META = {};
@@ -96,6 +96,13 @@ my $ATTR_OPTIONS_NAME_MAP = {
     Translate => 'translate_attr_options'
 };
 
+# Build all classes
+sub build_all_classes {
+    my $self = shift;
+    $self->build_class({all => 1});
+}
+
+# Build class
 sub build_class {
     my ($self, $options) = @_;
     
@@ -193,7 +200,7 @@ sub build_class {
             foreach my $attr_name (keys %{$Object::Simple::META->{$class}{$attr_options_name}}) {
                 my $attr_options;
                 
-                # Extend super class attribute options
+                # Extend super class accessor options
                 my $base_class = $class;
                 while ($Object::Simple::META->{$base_class}{$attr_options_name}{$attr_name}{extend}) {
                     my ($super_attr_options, $attr_found_class)
@@ -225,7 +232,7 @@ sub build_class {
             }
         }
     }
-
+    
     # Create accessor
     if($accessor_code){
         no warnings qw(redefine);
@@ -247,6 +254,7 @@ sub build_class {
     return 1;
 }
 
+# Resit attribute information
 sub resist_attribute_info {
     shift;
     my ($class, $attr_name, $attr_options, $code_attribute_name) = @_;
@@ -915,8 +923,8 @@ This new can be overided.
     }
  
 =head2 build_class
- 
-resist attribute and create accessors.
+
+inherit base class,include mixin classes, create accessors, and create constructor
  
 Script must call build_class at end of script;
  
@@ -927,6 +935,12 @@ The class of caller package is build.
 You can also specify class
 
     Object::Simple->build_class('SomeClass');
+    
+=head2 build_all_classes
+
+You can build all classes once.
+
+    Object::Simple->build_all_classes;
 
 =head3 resist_attribute_info
 
@@ -1051,6 +1065,23 @@ You can defined trigger function when value is set.
 
     sub error : Attr { trigger => sub{ $_[0]->stete('error') } }
     sub state : Attr {}
+
+=head2 extend
+
+You can extend super class accessor options. 
+If you overwrite only default value, do the following
+
+    package BaseClass
+    use Object::Simple;
+    sub authors { default => sub {['taro', 'ken']}, array => 1, deref => 1 }
+    
+    Object::Simple->build_class;
+    
+    package SomeClass
+    use Object::Simple(base => 'BaseClass');
+    sub authors { extend => 1, default => sub {['peter', 'miki']} }
+    
+    Object::Simple->build_class;
 
 =head1 SPECIAL ACCESSOR
 

@@ -1,3 +1,6 @@
+2.0201
+  add extend options
+  add build_all_classes
 2.0101
   add resiste_attribute_info. If you call this method, resist attribute_info.
   you can specify class name at build_class method
