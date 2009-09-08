@@ -189,13 +189,26 @@ sub build_class {
     
     # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
-        my $constructor_code = Object::Simple::Functions::create_constructor($class);
-        eval $constructor_code;
-        Carp::croak("$constructor_code\n:$@") if $@;
-        $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"};
-        
         foreach my $attr_options_name (values %$ATTR_OPTIONS_NAME_MAP) {
             foreach my $attr_name (keys %{$Object::Simple::META->{$class}{$attr_options_name}}) {
+                my $attr_options;
+                
+                # Extend super class attribute options
+                my $base_class = $class;
+                while ($Object::Simple::META->{$base_class}{$attr_options_name}{$attr_name}{extend}) {
+                    my ($super_attr_options, $attr_found_class)
+                      = Object::Simple::Functions::get_super_attr_options($base_class, $attr_name, $attr_options_name);
+                    
+                    delete $Object::Simple::META->{$base_class}{$attr_options_name}{$attr_name}{extend};
+                    
+                    last unless $super_attr_options;
+                    
+                    $Object::Simple::META->{$base_class}{$attr_options_name}{$attr_name}
+                      = {%{$super_attr_options}, %{$Object::Simple::META->{$base_class}{$attr_options_name}{$attr_name}}};
+                    
+                    $base_class = $attr_found_class;
+                }
+                
                 # Create accessor source code
                 if ($attr_options_name eq 'translate_attr_options') {
                     # Create translate accessor
@@ -212,12 +225,20 @@ sub build_class {
             }
         }
     }
-    
+
     # Create accessor
     if($accessor_code){
         no warnings qw(redefine);
         eval $accessor_code;
         Carp::croak("$accessor_code\n:$@") if $@;
+    }
+    
+    # Create constructor
+    foreach my $class (@build_need_classes) {
+        my $constructor_code = Object::Simple::Functions::create_constructor($class);
+        eval $constructor_code;
+        Carp::croak("$constructor_code\n:$@") if $@;
+        $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"};
     }
     
     # Resist already build class
@@ -317,6 +338,18 @@ sub get_leftmost_isa {
     }
     
     return \@leftmost_isa;
+}
+
+# Get upper attribute options
+sub get_super_attr_options {
+    my ($class, $attr_name, $attr_options_name) = @_;
+    my $base_class = $class;
+    no strict 'refs';
+    while($base_class = ${"${base_class}::ISA"}[0]) {
+        return ($Object::Simple::META->{$base_class}{$attr_options_name}{$attr_name}, $base_class)
+          if $Object::Simple::META->{$base_class}{$attr_options_name}{$attr_name};
+    }
+    return;
 }
 
 # Include mixin classes
@@ -689,7 +722,7 @@ sub create_translate_accessor {
 
 # Valid accessor options(Attr)
 my %VALID_ATTR_OPTIONS 
-  = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate extned);
+  = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate extend);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_ATTR_OPTIONS

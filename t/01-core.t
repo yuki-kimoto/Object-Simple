@@ -618,15 +618,26 @@ use T30;
 }
 
 ### extend base class attribute option
-#{
-    #use T42;
-    #my $m_base = T42_Base->new;
-    #is_deeply([$m_base->m1], [1], 'base class attr option');
+{
+    use T42;
+    my $m_base = T42_Base_1->new;
+    is_deeply({$m_base->m1}, {a => 1}, 'base class attr option');
     
-    #my $m = T42->new;
-    #is_deeply([$m_base->m1], [2], 'extend options');
-#}
+    my $m = T42->new;
+    is_deeply({$m->m1}, {b => 2}, 'extend options');
+    is_deeply({$m->m2}, {c => 1}, 'extend two up options');
+    
+}
 
-
-
+### extend base class attribute option
+{
+    use T43;
+    my $m_base = T43_Base_1->new;
+    is_deeply({$m_base->m1}, {a => 1}, 'base class attr option');
+    
+    my $m = T43->new;
+    is_deeply({$m->m1}, {b => 2}, 'extend options');
+    is_deeply({$m->m2}, {c => 1}, 'extend two up options');
+    
+}
 __END__
