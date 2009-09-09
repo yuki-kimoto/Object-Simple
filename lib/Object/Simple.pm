@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
 
-our $VERSION = '2.0201';
+our $VERSION = '2.0202';
 
 # Meta imformation
 our $META = {};
@@ -122,7 +122,7 @@ sub build_class {
 
     # check build_class options
     foreach my $key (keys %$options) {
-        Carp::croak("'$key' is invalid build_class option ($build_need_class)")
+        Carp::croak("'$key' is invalid build_class option")
             unless $VALID_BUILD_CLASS_OPTIONS{$key};
     }
     
@@ -237,14 +237,14 @@ sub build_class {
     if($accessor_code){
         no warnings qw(redefine);
         eval $accessor_code;
-        Carp::croak("$accessor_code\n:$@") if $@;
+        Carp::croak("$accessor_code\n:$@") if $@; # never occured
     }
     
     # Create constructor
     foreach my $class (@build_need_classes) {
         my $constructor_code = Object::Simple::Functions::create_constructor($class);
         eval $constructor_code;
-        Carp::croak("$constructor_code\n:$@") if $@;
+        Carp::croak("$constructor_code\n:$@") if $@; # never occured
         $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"};
     }
     
@@ -290,7 +290,6 @@ sub AUTOLOAD {
                 my $full_qualified_method = "${base_class}::$method";
                 return &{"$full_qualified_method"}($self, @_) if defined &{"$full_qualified_method"};
             }
-            return &{"Object::Simple::$method"}($self, @_) if defined &{"Object::Simple::$method"};
             Carp::croak("Cannot locate method '$method' via base class of $caller_class");
         }
     };
@@ -790,7 +789,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0101
+Version 2.0202
  
 =head1 FEATURES
  
@@ -942,7 +941,7 @@ You can build all classes once.
 
     Object::Simple->build_all_classes;
 
-=head3 resist_attribute_info
+=head2 resist_attribute_info
 
 resist attribute information
 

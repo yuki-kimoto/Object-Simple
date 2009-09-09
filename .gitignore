@@ -8,4 +8,3 @@ _build/*
 blib/*
 *.tar.gz
 cover_db/*
-*.tar.gz

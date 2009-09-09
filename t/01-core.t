@@ -638,6 +638,12 @@ use T30;
     my $m = T43->new;
     is_deeply({$m->m1}, {b => 2}, 'extend options');
     is_deeply({$m->m2}, {c => 1}, 'extend two up options');
-    
+    is($m->m3, 5, 'extend is ignore');
+}
+
+### build_class invalid key
+{
+    eval{Object::Simple->build_class({no => 1})};
+    like($@, qr/'no' is invalid build_class option/, 'build_class invalid key');
 }
 __END__

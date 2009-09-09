@@ -16,6 +16,7 @@ use Object::Simple(base => 'T43_Base_2');
 
 sub m1 : Attr : { extend => 1, default => sub { {b => 2} } }
 sub m2 : Attr : { extend => 1 }
+sub m3 : Attr : { extend => 1, default => 5 }
 
 Object::Simple->build_class({all => 1});
 
