@@ -41,22 +41,23 @@ like($@, qr/\QMixin class '()()(' is invalid class name (T8)/, 'invalid mixin cl
 eval "use T9";
 like($@, qr/mixins must be array reference/, 'mixin must be array ref');
 
-# MIXINS_******
+# mixins  marged attribute
 {
     use T11;
     my $t = T11->new;
     is_deeply( $t, {m1 => 1, m2 => 4, m3 => 2, m4 => 2, m5 => 5, m6 =>6}, 'mixins attr');
 }
 
+# mixin_methods
 {
     use T12;
     my $t = T12->new;
-    is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4}, 'MIXINS AUTOLOAD');
+    is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4}, 'mixin_methods');
 }
 
 {
     my $t = T12->new;
-    is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4}, 'MIXINS AUTOLOA second');
+    is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4}, 'mixin_methods');
 }
 
 use T13;
@@ -65,6 +66,7 @@ use T13;
     is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4, m5 => 5, m6 => 6, m7 => 7}, 'MIXINS AUTOLOA second');
 }
 
+# mixin double
 use T14;
 {
     my $t = T14->new;
