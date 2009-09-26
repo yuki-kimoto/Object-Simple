@@ -1254,55 +1254,6 @@ If method names is crashed, method search order is the following
     #                       4                       3              2
     Object::Simple(base => 'BaseClass', mixins => ['MixinClass1', 'MixinClass2']);
 
-=head1 CALLING MIXINS METHODS
-
-=head2 CALL ALL MIXINS METHODS
-
-You can call all methods of mixins methods.
-
-    $self->Object::Simple::MIXINS::initialize; # call all initialize of mixin classes
-    
-    $self->Object::Simple::MIXINS::DESTROY;    # call all DESTROY of mixin classes
-
-    $self->Object::Simple::MIXINS::method;     # any method ok!
-
-For example, you can call all initialize methods of mixin classes
-    package ThisClass;
-    Object::Simple(mixins => ['MixinClass1', 'MixinClass2']);
-    
-    sub initialize {
-        my $self = shift;
-        
-        # call initialize of all mixin class
-        $self->Object::Simple::MIXINS::initialize;
-    }
-
-=head2 CALL UPPER CLASS METHODS
-
-You can call upper methods.
-    
-    $self->Object::Simple::UPPER::method;
-
-Method is searched by the following order and call the method.
-
-1. Mixin class2
-
-2. Mixin class1
-
-3. Base class
-
-    package ThisClass;
-    Object::Simple(base => 'BaseClass', mixins => ['MixinClass1', 'MixinClass2']);
-
-    sub run {
-        my $self = shift;
-        $self->Object::Simple::UPPER::run;
-    }
-
-If MixinClass1 have run methods, MixinClass1::run is called.
-
-If MIxinClass1 and MixinClass2 have run method, MixinClass2::run is called.
-
 =head1 using your MODIFY_CODE_ATTRIBUTES subroutine
  
 Object::Simple define own MODIFY_CODE_ATTRIBUTES subroutine.
