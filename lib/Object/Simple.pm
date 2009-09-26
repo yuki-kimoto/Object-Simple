@@ -276,6 +276,22 @@ sub call_mixin {
     return $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method}->($self, @_);
 }
 
+# Get mixin methods
+sub mixin_methods {
+    my $self         = shift;
+    my $mixin_class  = shift || '';
+    my $method       = shift || '';
+    
+    my $caller_class = caller;
+    my $method_refs = [];
+    
+    foreach my $mixin (@{$Object::Simple::META->{$caller_class}{mixins}}) {
+        push @$method_refs, $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method}
+          if $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method};
+    }
+    return $method_refs;
+}
+
 # Call super method
 sub call_super {
     my $self   = shift;
