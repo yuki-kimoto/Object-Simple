@@ -352,34 +352,6 @@ sub AUTOLOAD {
     goto &{"Object::Simple::UPPER::$method"};
 }
 
-package Object::Simple::MIXINS;
-sub AUTOLOAD {
-    our $AUTOLOAD;
-    my $self = $_[0];
-    my $caller_class = caller;
-    my $method = $AUTOLOAD;
-    $method =~ s/^.*:://;
-    
-    my $code = sub {
-       my $method = shift;
-       return sub {
-           my $self = shift;
-           my $caller_class = caller;
-           my $mixin_classes = $Object::Simple::META->{$caller_class}{mixins};
-           return unless $mixin_classes;
-           foreach my $mixin_class (@$mixin_classes) {
-               my $full_qualified_method = "${mixin_class}::$method";
-               no strict 'refs';
-               &{"$full_qualified_method"}($self, @_) if defined &{"$full_qualified_method"};
-           }
-       }
-    };
-    
-    no strict 'refs';
-    *{"Object::Simple::MIXINS::$method"} = $code->($method);
-    goto &{"Object::Simple::MIXINS::$method"};
-}
-
 package Object::Simple::Functions;
 
 # Get leftmost self and parent classes
