@@ -418,6 +418,10 @@ sub include_mixin_classes {
     # Mixin class attr options
     my $mixins_attr_options = {};
     
+    # Create deparse object
+    require B::Deparse;
+    my $deparse = B::Deparse->new;
+    
     # Include mixin classes
     no warnings 'redefine';
     foreach my $mixin_class (reverse @$mixin_classes) {
@@ -433,9 +437,29 @@ sub include_mixin_classes {
         no strict 'refs';
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
-            next if defined &{"${caller_class}::$method"};
+            next if $method eq 'MODIFY_CODE_ATTRIBUTES';
             
-            *{"${caller_class}::$method"} = \&{"${mixin_class}::$method"};
+            my $code = $deparse->coderef2text(\&{"${mixin_class}::$method"});
+            $code =~ /^{\s*package\s+(.+?)\s*;/;
+            my $package = $1 || '';
+            
+            my $code_ref;
+            if ($package eq $mixin_class && $code =~ /->SUPER::/) {
+                
+                my $base_class = $Object::Simple::META->{$caller_class}{base};
+                Carp::croak("Not base class") unless $base_class;
+                $code =~ s/->SUPER::(.+?)\(/->Object::Simple::call_super('$caller_class', '$1', /smg;
+                $code_ref = eval "sub $code";
+                Carp::croak("Code copy error : \n $code\n $@") if $@;
+            }
+            else {
+                $code_ref = \&{"${mixin_class}::$method"};
+            }
+            
+            $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method} = $code_ref;
+            
+            next if defined &{"${caller_class}::$method"};
+            *{"${caller_class}::$method"} = $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method};
         }
     }
     
