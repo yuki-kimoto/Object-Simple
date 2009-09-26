@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
 
-our $VERSION = '2.0202';
+our $VERSION = '2.0301';
 
 # Meta imformation
 our $META = {};
@@ -263,6 +263,19 @@ sub resist_attribute_info {
     $code_attribute_name ||= 'Attr';
     push @Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $code_attribute_name, $attr_name];
 }
+
+# Call mixin method
+sub call_mixin {
+    my $self        = shift;
+    my $mixin_class = shift || '';
+    my $method      = shift || '';
+    
+    my $caller_class = caller;
+    Carp::croak(qq/"${mixin_class}::$method from $caller_class" is not exist/)
+      unless $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method};
+    return $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method}->($self, @_);
+}
+
 
 package Object::Simple::UPPER;
 sub AUTOLOAD {
@@ -782,6 +795,7 @@ sub define_MODIFY_CODE_ATTRIBUTES {
     *{"${class}::MODIFY_CODE_ATTRIBUTES"} = $code;
 }
 
+package Object::Simple;
 
 =head1 NAME
  
@@ -789,7 +803,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0202
+Version 2.0301
  
 =head1 FEATURES
  
