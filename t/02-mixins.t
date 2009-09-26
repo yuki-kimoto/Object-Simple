@@ -73,7 +73,7 @@ use T14;
     is_deeply($t, {m1 => 1, m2 => 2}, 'mixin double');
 }
 
-# UPPER_******
+# mixin_methods
 use T15;
 {
     my $t = T15->new;
@@ -92,8 +92,6 @@ use T15;
     
     is($t->m5, 5, 'UPPER_method Object::Simple');
     
-    eval{ $t->m6 };
-    like($@, qr/Cannot locate method 'm6' via base class of T15/, 'UPPER_method no exist');
 }
 
 # call_mixin

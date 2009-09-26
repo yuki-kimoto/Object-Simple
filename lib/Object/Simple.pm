@@ -317,41 +317,6 @@ sub call_super {
     return;
 }
 
-package Object::Simple::UPPER;
-sub AUTOLOAD {
-    our $AUTOLOAD;
-    my $self = $_[0];
-    my $caller_class = caller;
-    my $method = $AUTOLOAD;
-    $method =~ s/^.*:://;
-    
-    my $code = sub {
-        my $method = shift;
-        return sub {
-            my $self = shift;
-            my $caller_class = caller;
-            my $mixin_classes = $Object::Simple::META->{$caller_class}{mixins} || [];
-            foreach my $mixin_class (reverse @$mixin_classes) {
-                my $full_qualified_method = "${mixin_class}::$method";
-                no strict 'refs';
-                return &{"$full_qualified_method"}($self, @_) if defined &{"$full_qualified_method"};
-            }
-            my $base_class = $caller_class;
-            
-            no strict 'refs';
-            while($base_class = ${"${base_class}::ISA"}[0] ) {
-                my $full_qualified_method = "${base_class}::$method";
-                return &{"$full_qualified_method"}($self, @_) if defined &{"$full_qualified_method"};
-            }
-            Carp::croak("Cannot locate method '$method' via base class of $caller_class");
-        }
-    };
-    
-    no strict 'refs';
-    *{"Object::Simple::UPPER::$method"} = $code->($method);
-    goto &{"Object::Simple::UPPER::$method"};
-}
-
 package Object::Simple::Functions;
 
 # Get leftmost self and parent classes
