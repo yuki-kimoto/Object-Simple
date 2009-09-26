@@ -33,6 +33,32 @@ sub m6 {
     $self->Object::Simple::UPPER::m6;
 }
 
+sub m7 {
+    my $self = shift;
+    return $self->Object::Simple::call_mixin('M19', 'm7', 1, 2);
+}
+
+sub m8 {
+    my $self = shift;
+    return $self->Object::Simple::call_mixin('NoExist', 'm7');
+}
+
+sub m9 {
+    my $self = shift;
+    return $self->Object::Simple::call_mixin('M19', 'no_exist');
+}
+
+sub m10 {
+    my $self = shift;
+    return $self->Object::Simple::call_mixin;
+}
+
+sub m11 {
+    my $self = shift;
+    return $self->Object::Simple::call_mixin('M19');
+}
+
+
 sub M19 : Attr {}
 sub M18 : Attr {}
 sub B4  : Attr {}

@@ -94,6 +94,25 @@ use T15;
     like($@, qr/Cannot locate method 'm6' via base class of T15/, 'UPPER_method no exist');
 }
 
+# call_mixin
+{
+    my $t = T15->new;
+    is($t->m7, 3, 'call_mixin');
+    
+    eval{ $t->m8 };
+    like($@, qr/"NoExist::m7 from T15" is not exist/, 'call_mixin error1');
+
+    eval{ $t->m9 };
+    like($@, qr/"M19::no_exist from T15" is not exist/, 'call_mixin error2');
+
+    eval{ $t->m10 };
+    like($@, qr/":: from T15" is not exist/, 'call_mixin error3');
+
+    eval{ $t->m11 };
+    like($@, qr/"M19:: from T15" is not exist/, 'call_mixin error4');
+    
+}
+
 use T16;
 {
     is(T16->m1, 'T16-m1', 'class_attr mixin1');

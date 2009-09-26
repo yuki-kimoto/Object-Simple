@@ -646,4 +646,22 @@ use T30;
     eval{Object::Simple->build_class({no => 1})};
     like($@, qr/'no' is invalid build_class option/, 'build_class invalid key');
 }
+
+## Mixin call super class
+use T44;
+{
+    my $o = T44->new;
+    is($o->m1, 3, 'Mixin call super class1');
+}
+
+use T45;
+{
+    my $o = T45->new;
+    is($o->m1, 4, 'Mixin call super class2');
+    is($o->m2, 5, 'Mixin call super class3');
+    is($o->m3, 4, 'Mixin call super class4');
+    is($o->m4, 5, 'Mixin call super class5');
+    is($o->m5, 6, 'Mixin call super class6');
+}
+
 __END__
