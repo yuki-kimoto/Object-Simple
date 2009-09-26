@@ -169,6 +169,12 @@ sub build_class {
     
     # Inherit base class and Object::Simple, and include mixin classes
     foreach my $class (@build_need_classes) {
+        # Delete MODIFY_CODE_ATTRIBUTES
+        {
+            no strict 'refs';
+            delete ${$class . '::'}{MODIFY_CODE_ATTRIBUTES};
+        }
+        
         # Initialize attr_options if it is not set
         $Object::Simple::META->{$class}{attr_options} = {}
             unless $Object::Simple::META->{$class}{attr_options};
@@ -437,7 +443,6 @@ sub include_mixin_classes {
         no strict 'refs';
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
-            next if $method eq 'MODIFY_CODE_ATTRIBUTES';
             
             my $code = $deparse->coderef2text(\&{"${mixin_class}::$method"});
             $code =~ /^{\s*package\s+(.+?)\s*;/;
