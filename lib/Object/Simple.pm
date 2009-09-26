@@ -276,6 +276,25 @@ sub call_mixin {
     return $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{method}{$method}->($self, @_);
 }
 
+# Call super method
+sub call_super {
+    my $self   = shift;
+    my $class  = shift || '';
+    my $method = shift || '';
+    
+    my @leftmost_isa;
+    
+    # Sortcut
+    return unless $class;
+    
+    my $leftmost_parent = $class;
+    push @leftmost_isa, $leftmost_parent;
+    no strict 'refs';
+    while($leftmost_parent = ${"${leftmost_parent}::ISA"}[0]) {
+        return &{"${leftmost_parent}::$method"}($self, @_) if defined &{"${leftmost_parent}::$method"};
+    }
+    return;
+}
 
 package Object::Simple::UPPER;
 sub AUTOLOAD {
