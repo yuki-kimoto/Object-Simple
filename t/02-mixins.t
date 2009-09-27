@@ -71,6 +71,9 @@ use T14;
 {
     my $t = T14->new;
     is_deeply($t, {m1 => 1, m2 => 2}, 'mixin double');
+    
+    is($t->m3, 'ccc', 'mixin double super class');
+    is($t->m4, 4, 'mixin double super class')
 }
 
 # mixin_methods
