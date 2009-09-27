@@ -1,3 +1,12 @@
+2.0301
+  delete Object::Simple::UPPER (not Backward compatibility)
+  delete Object::Simple::MIXINS (not Backward compatibility )
+  delete MODIFY_CODE_ATTRIBUTE when build_class is called
+  mixins SUPER keyword can work good
+  add mixin_methods method
+  add call_super method
+  add call_mixin method
+
 2.0201
   add extend options
   add build_all_classes
