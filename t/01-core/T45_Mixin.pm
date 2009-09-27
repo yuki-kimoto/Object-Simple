@@ -26,5 +26,10 @@ sub m5 {
     return $self->SUPER::m5(0) + $self->SUPER::m1(0);
 }
 
+sub m6 {
+    my $self = shift;
+    return $self->SUPER::m6(@_) * 4;
+}
+
 
 Object::Simple->build_class;

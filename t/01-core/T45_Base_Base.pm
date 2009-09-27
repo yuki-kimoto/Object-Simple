@@ -1,11 +1,9 @@
-package T45_Mixin2;
+package T45_Base_Base;
 use Object::Simple;
 
 sub m6 {
     my $self = shift;
-    $self->SUPER::m6(@_) + 3
+    return $_[0] + $_[1];
 }
-
-
 
 Object::Simple->build_class;

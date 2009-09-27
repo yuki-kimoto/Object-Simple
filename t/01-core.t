@@ -662,6 +662,9 @@ use T45;
     is($o->m3, 4, 'Mixin call super class4');
     is($o->m4, 5, 'Mixin call super class5');
     is($o->m5, 6, 'Mixin call super class6');
+    is($o->m6(6,7), 159, 'Mixin call super class7');
 }
+
+
 
 __END__
