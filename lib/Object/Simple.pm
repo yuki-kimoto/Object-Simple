@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
 
-our $VERSION = '2.0401';
+our $VERSION = '2.0402';
 
 # Meta imformation
 our $META = {};
@@ -378,9 +378,8 @@ sub include_mixin_classes {
     # Mixin class attr options
     my $mixins_attr_options = {};
     
-    # Create deparse object
-    require B::Deparse;
-    my $deparse = B::Deparse->new;
+    # Deparse object
+    my $deparse;
     
     # Include mixin classes
     no warnings 'redefine';
@@ -393,6 +392,13 @@ sub include_mixin_classes {
             Carp::croak("$@") if $@;
         }
         
+        my $deparse_possibility = Object::Simple::Functions::mixin_method_deparse_possibility($mixin_class);
+        my $deparse;
+        if ($deparse_possibility) {
+            require B::Deparse;
+            $deparse ||= B::Deparse->new;
+        }
+        
         # Import all methods
         no strict 'refs';
         foreach my $method ( keys %{"${mixin_class}::"} ) {
@@ -403,17 +409,22 @@ sub include_mixin_classes {
                                ? \&{"${derive_class}::$method"}
                                : \&{"${mixin_class}::$method"};
             
-            my $code = $deparse->coderef2text($deparse_method);
-            $code =~ /^{\s*package\s+(.+?)\s*;/;
-            my $package = $1 || '';
-            
             my $code_ref;
-            if ((($derive_class && $package eq $derive_class) || $package eq $mixin_class)
-              && $code =~ /->SUPER::/) 
-            {
-                $code =~ s/->SUPER::(.+?)\(/->Object::Simple::call_super([ '$1', '$caller_class', '$mixin_class'], /smg;
-                $code_ref = eval "sub $code";
-                Carp::croak("Code copy error : \n $code\n $@") if $@;
+            if ($deparse_possibility) {
+                my $code = $deparse->coderef2text($deparse_method);
+                $code =~ /^{\s*package\s+(.+?)\s*;/;
+                my $package = $1 || '';
+                
+                if ((($derive_class && $package eq $derive_class) || $package eq $mixin_class)
+                  && $code =~ /->SUPER::/) 
+                {
+                    $code =~ s/->SUPER::(.+?)\(/->Object::Simple::call_super([ '$1', '$caller_class', '$mixin_class'], /smg;
+                    $code_ref = eval "sub $code";
+                    Carp::croak("Code copy error : \n $code\n $@") if $@;
+                }
+                else {
+                    $code_ref = \&{"${mixin_class}::$method"};
+                }
             }
             else {
                 $code_ref = \&{"${mixin_class}::$method"};
@@ -437,6 +448,35 @@ sub include_mixin_classes {
         }
         $Object::Simple::META->{$caller_class}{$attr_options_name} = \%attr_options;
     }
+}
+
+sub mixin_method_deparse_possibility {
+    my $mixin_class = shift;
+    
+    $DB::single = 1;
+    
+    # Has mixin classes
+    return 1
+      if ref $Object::Simple::META->{$mixin_class}{mixins} &&
+         @{$Object::Simple::META->{$mixin_class}{mixins}};
+    
+    # Call SUPER method
+    my $module_path = join('/', split(/::/, $mixin_class)) . '.pm';
+    my $module_file = $INC{$module_path};
+    if ($module_file && -r $module_file) {
+        # Open
+        open my $fh, "<", $module_file
+          or return 1;
+        
+        # Slurp
+        local $/;
+        my $content = <$fh>;
+        
+        if (index($content, '->SUPER::') == -1) {
+            return 0;
+        }
+    }
+    return 1;
 }
  
 # Merge self and super accessor option
@@ -827,7 +867,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0401
+Version 2.0402
  
 =head1 FEATURES
  

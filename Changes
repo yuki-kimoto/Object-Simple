@@ -1,3 +1,5 @@
+2.0402
+  Mixin speed up by deparse method in need
 2.0401
   remixin is available
   call_super can be passed only method name(not Backward compatibility)
