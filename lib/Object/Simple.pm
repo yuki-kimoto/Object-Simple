@@ -196,8 +196,8 @@ sub build_class {
     
     # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
-        foreach my $attr_name (values %{$Object::Simple::META->{$class}{attrs}}) {
-            my $attr_options;
+        my $attrs = $Object::Simple::META->{$class}{attrs};
+        foreach my $attr_name (keys %$attrs) {
             
             # Extend super class accessor options
             my $base_class = $class;
@@ -214,6 +214,8 @@ sub build_class {
                 
                 $base_class = $attr_found_class;
             }
+            
+            my $attr_type = $attrs->{$attr_name}{type};
             
             # Create accessor source code
             if ($attr_type eq 'Translate') {
@@ -438,13 +440,13 @@ sub include_mixin_classes {
         }
     }
     
-    # Merge attr options to caller class
-    my %attr_options;
+    # Merge attr to caller class
+    my %attrs;
     foreach my $class (@$mixin_classes, $caller_class) {
-        %attr_options = (%attr_options, %{$Object::Simple::META->{$class}{attrs}})
+        %attrs = (%attrs, %{$Object::Simple::META->{$class}{attrs}})
             if $Object::Simple::META->{$class}{attrs};
     }
-    $Object::Simple::META->{$caller_class}{$attr_options_name} = \%attr_options;
+    $Object::Simple::META->{$caller_class}{attrs} = \%attrs;
 }
 
 sub mixin_method_deparse_possibility {
@@ -533,34 +535,34 @@ sub create_constructor {
     my @attrs_having_trigger;
     
     # Customize initialization
-    foreach my $name (keys %$object_attrs) {
+    foreach my $attr (keys %$object_attrs) {
         
         # Convert option
-        if ($attrs->{$name}{options}{convert}) {
-            if(ref $attrs->{$name}{options}{convert} eq 'CODE') {
+        if ($attrs->{$attr}{options}{convert}) {
+            if(ref $attrs->{$attr}{options}{convert} eq 'CODE') {
                 $code .=
-                qq/    \$self->{$attr} = \$Object::Simple::META->{'$class'}{attrs}{'$attr'}{options}{convert}->(\$self->{$attr})\n/ .
+                qq/    \$self->{'$attr'} = \$Object::Simple::META->{'$class'}{attrs}{'$attr'}{options}{convert}->(\$self->{'$attr'})\n/ .
                 qq/        if exists \$self->{'$attr'};\n/;
             }
             else {
                 require Scalar::Util;
                 
-                my $convert = $attrs->{$name}{options}{convert};
+                my $convert = $attrs->{$attr}{options}{convert};
                 $code .=
                 qq/    require $convert;\n/ .
-                qq/    \$self->{$attr} = $convert->new(\$self->{$attr}) if defined \$self->{$attr} && !Scalar::Util::blessed(\$self->{$attr});\n/;
+                qq/    \$self->{'$attr'} = $convert->new(\$self->{'$attr'}) if defined \$self->{'$attr'} && !Scalar::Util::blessed(\$self->{'$attr'});\n/;
             }
         }
         
         # Default option
-        if(defined $attrs->{$name}{options}{default}) {
-            if(ref $attrs->{$name}{options}{default} eq 'CODE') {
+        if(defined $attrs->{$attr}{options}{default}) {
+            if(ref $attrs->{$attr}{options}{default} eq 'CODE') {
                 $code .=
-                qq/    \$self->{$attr} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default}->();\n/;
+                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default}->();\n/;
             }
-            elsif(!ref $attrs->{$name}{options}{default}) {
+            elsif(!ref $attrs->{'$attr'}{options}{default}) {
                 $code .=
-                qq/    \$self->{$attr} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default};\n/;
+                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default};\n/;
             }
             else {
                 Carp::croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
@@ -568,15 +570,15 @@ sub create_constructor {
         }
         
         # Weak option
-        if($attrs->{$name}{options}{weak}) {
+        if($attrs->{$attr}{options}{weak}) {
             require Scalar::Util;
             $code .=
-                qq/    Scalar::Util::weaken(\$self->{'$attr'}) if ref \$self->{$attr};\n/;
+                qq/    Scalar::Util::weaken(\$self->{'$attr'}) if ref \$self->{'$attr'};\n/;
         }
         
         # Regist attribute which have trigger option
         push @attrs_having_trigger, $attr
-            if $attrs->{$name}{options}{trigger};
+            if $attrs->{$attr}{options}{trigger};
     }
     
     # Trigger option
