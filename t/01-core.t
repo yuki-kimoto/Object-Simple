@@ -548,7 +548,7 @@ use T30;
     
     my $p = {};
     T37->m3($p);
-    ok(Scalar::Util::isweak($Object::Simple::META->{'T37'}{class_attr}{'m3'}), 'class accessor weak package variable');
+    ok(Scalar::Util::isweak($Object::Simple::META->{'T37'}{attrs}{'m3'}{value}), 'class accessor weak package variable');
     is(T37->m3, $p, 'class accessor weak get');
     
     eval{T37->m4(4)};

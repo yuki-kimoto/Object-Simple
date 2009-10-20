@@ -126,8 +126,12 @@ use T16;
 use T17;
 {
     is_deeply(
-        $Object::Simple::META->{'T17'}{class_attr_options},
-        { m1 => {weak => 1}, m2 => {chained => 0}, m3 => {chained => 0}},
+        [
+            $Object::Simple::META->{'T17'}{attrs}{m1}{options},
+            $Object::Simple::META->{'T17'}{attrs}{m2}{options},
+            $Object::Simple::META->{'T17'}{attrs}{m3}{options}
+        ],
+        [{weak => 1}, {chained => 0}, {chained => 0}],
         'meta information class_attr_options'
     );
 }

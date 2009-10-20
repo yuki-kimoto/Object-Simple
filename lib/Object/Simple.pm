@@ -542,7 +542,7 @@ sub create_constructor {
         if ($attrs->{$attr}{options}{convert}) {
             if(ref $attrs->{$attr}{options}{convert} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$attr'} = \$Object::Simple::META->{'$class'}{attrs}{'$attr'}{options}{convert}->(\$self->{'$attr'})\n/ .
+                qq/    \$self->{'$attr'} = \$Object::Simple::META->{'$class'}{merged_attrs}{'$attr'}{options}{convert}->(\$self->{'$attr'})\n/ .
                 qq/        if exists \$self->{'$attr'};\n/;
             }
             else {
@@ -559,11 +559,11 @@ sub create_constructor {
         if(defined $attrs->{$attr}{options}{default}) {
             if(ref $attrs->{$attr}{options}{default} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default}->();\n/;
+                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{merged_attrs}{'$attr'}{options}{default}->();\n/;
             }
             elsif(!ref $attrs->{$attr}{options}{default}) {
                 $code .=
-                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default};\n/;
+                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{merged_attrs}{'$attr'}{options}{default};\n/;
             }
             else {
                 Carp::croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
@@ -585,7 +585,7 @@ sub create_constructor {
     # Trigger option
     foreach my $attr (@attrs_having_trigger) {
         $code .=
-            qq/    \$Object::Simple::META->{'$class'}{attrs}{'$attr'}{options}{trigger}->(\$self, \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
+            qq/    \$Object::Simple::META->{'$class'}{merged_attrs}{'$attr'}{options}{trigger}->(\$self, \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
     }
     
     # Translate option
