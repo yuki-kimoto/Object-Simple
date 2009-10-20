@@ -333,6 +333,18 @@ sub call_super {
     Carp::croak("Cannot locate method '$method' via base class of $base_class");
 }
 
+# Specify class attribute is exsist?
+sub exsits_class_attr {
+    my ($class, $attr) = @_;
+    return exists $Object::Simple::CLASS_INFO->{$class}{attrs}{$attr}{value};
+}
+
+# Delete specify class attribute
+sub delete_class_attr {
+    my ($class, $attr) = @_;
+    return delete $Object::Simple::CLASS_INFO->{$class}{attrs}{$attr}{value};
+}
+
 package Object::Simple::Functions;
 
 # Get leftmost self and parent classes
