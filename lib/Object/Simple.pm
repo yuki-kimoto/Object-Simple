@@ -90,10 +90,11 @@ sub new {
 # Build class(create accessor, include mixin class, and create constructor)
 my %VALID_BUILD_CLASS_OPTIONS = map {$_ => 1} qw(all class);
 my $ATTR_OPTIONS_NAME_MAP = {
-    Attr      => 'attr_options',
-    ClassAttr => 'class_attr_options',
-    Output    => 'output_attr_options',
-    Translate => 'translate_attr_options'
+    Attr            => 'attr_options',
+    ClassAttr       => 'class_attr_options',
+    ClassObjectAttr => 'class_object_attr_options',
+    Output          => 'output_attr_options',
+    Translate       => 'translate_attr_options'
 };
 
 # Build all classes
@@ -225,15 +226,21 @@ sub build_class {
                 # Create accessor source code
                 if ($attr_options_name eq 'translate_attr_options') {
                     # Create translate accessor
-                    $accessor_code .= Object::Simple::Functions::create_translate_accessor($class, $attr_name);
+                    $accessor_code .= "package $class;\nsub $attr_name " 
+                                    . Object::Simple::Functions::create_translate_accessor($class, $attr_name);
                 }
                 elsif ($attr_options_name eq 'output_attr_options') {
                     # Create output accessor
-                    $accessor_code .= Object::Simple::Functions::create_output_accessor($class, $attr_name);
+                    $accessor_code .= "package $class;\nsub $attr_name " 
+                                    . Object::Simple::Functions::create_output_accessor($class, $attr_name);
+                }
+                elsif ($attr_options_name eq 'class_object_attr_options') {
+                    
                 }
                 else {
                     # Create normal accessor or class accessor
-                    $accessor_code .= Object::Simple::Functions::create_accessor($class, $attr_name, $attr_options_name);
+                    $accessor_code .= "package $class;\nsub $attr_name " 
+                                    . Object::Simple::Functions::create_accessor($class, $attr_name, $attr_options_name);
                 }
             }
         }
@@ -621,8 +628,7 @@ sub create_accessor {
         if $deref && !$type;
     
     # Beginning of accessor source code
-    my $code =  qq/package $class;\n/ .
-                qq/sub $attr {\n/ .
+    my $code =  qq/{\n/ .
                 qq/    my \$self = shift;\n/;
     
     # Variable to strage
@@ -773,8 +779,7 @@ sub create_output_accessor {
     my ($class, $attr) = @_;
     my $target = $Object::Simple::META->{$class}{output_attr_options}{$attr}{target};
     
-    my $code =  qq/package $class;\n/ .
-                qq/sub $attr {\n/ .
+    my $code =  qq/{\n/ .
                 qq/    my (\$self, \$output) = \@_;\n/ .
                 qq/    my \$value = \$self->$target;\n/ .
                 qq/    \$\$output = \$value;\n/ .
@@ -791,8 +796,7 @@ sub create_translate_accessor {
     Carp::croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
         unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
     
-    my $code =  qq/package $class;\n/ .
-                qq/sub $attr {\n/ .
+    my $code =  qq/{\n/ .
                 qq/    my \$self = shift;\n/ .
                 qq/    if (\@_) {\n/ .
                 qq/        \$self->$target(\@_);\n/ .
@@ -812,6 +816,11 @@ my %VALID_ATTR_OPTIONS
 my %VALID_CLASS_ATTR_OPTIONS
   = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend);
 
+# Valid class accessor options(ClassAttr)
+my %VALID_CLASS_OBJECT_ATTR_OPTIONS
+  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend);
+
+
 # Valid class output accessor options(Output)
 my %VALID_OUTPUT_OPTIONS
   = map {$_ => 1} qw(target);
@@ -821,10 +830,11 @@ my %VALID_TRANSLATE_OPTIONS
   = map {$_ => 1} qw(target);
 
 my $VALID_OPTIONS_MAP = {
-    Attr      => \%VALID_ATTR_OPTIONS,
-    ClassAttr => \%VALID_CLASS_ATTR_OPTIONS,
-    Output    => \%VALID_OUTPUT_OPTIONS,
-    Translate => \%VALID_TRANSLATE_OPTIONS
+    Attr            => \%VALID_ATTR_OPTIONS,
+    ClassAttr       => \%VALID_CLASS_ATTR_OPTIONS,
+    ClassObjectAttr => \%VALID_CLASS_OBJECT_ATTR_OPTIONS,
+    Output          => \%VALID_OUTPUT_OPTIONS,
+    Translate       => \%VALID_TRANSLATE_OPTIONS
 };
 
 # Check accessor options
@@ -840,14 +850,14 @@ sub check_accessor_option {
 }
  
 # Define MODIFY_CODE_ATTRIBUTRS subroutine
-my %VALID_CODE_ATTRIBUTE_NAME = map {$_ => 1} qw(Attr ClassAttr Output Translate);
+my %VALID_CODE_ATTRIBUTE_NAME = map {$_ => 1} qw(Attr ClassAttr ClassObjectAttr Output Translate);
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
     my $code = sub {
         my ($class, $code_ref, $code_attribute_name) = @_;
         
-        Carp::croak("'$code_attribute_name' is bad name. attribute must be 'Attr','ClassAttr','Output', or 'Translate'")
+        Carp::croak("'$code_attribute_name' is bad name. attribute must be 'Attr', 'ClassAttr', 'ClassObjectAttr', Output', or 'Translate'")
             unless $VALID_CODE_ATTRIBUTE_NAME{$code_attribute_name};
         
         push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $code_attribute_name ]);
