@@ -491,16 +491,16 @@ sub merge_self_and_super_attrs {
       = Object::Simple::Functions::get_leftmost_isa($class);
     
     # Get merged accessor options 
-    my $attr_options = {};
+    my $attrs = {};
     foreach my $class (reverse @$self_and_super_classes) {
-        $attr_options = {%{$attr_options}, %{$Object::Simple::META->{$class}{attrs}}}
+        $attrs = {%{$attrs}, %{$Object::Simple::META->{$class}{attrs}}}
             if defined $Object::Simple::META->{$class}{attrs};
     }
     
     # Cached
-    $Object::Simple::META->{$class}{merged_attrs} = $attr_options;
+    $Object::Simple::META->{$class}{merged_attrs} = $attrs;
     
-    return $attr_options;
+    return $attrs;
 }
 
 # Create constructor
@@ -512,12 +512,14 @@ sub create_constructor {
     my $object_attrs = {};
     my $translate_attrs = {};
     
-    foreach my $name (keys %$attrs) {
-        if ($attrs->{$name}{type} eq 'Attr') {
-            $object_attrs->{$name} = $attrs->{$name};
+    # Attr or Transalte
+    foreach my $attr (keys %$attrs) {
+        my $attr_type = $attrs->{$attr}{type} || '';
+        if ($attr_type eq 'Attr') {
+            $object_attrs->{$attr} = $attrs->{$attr};
         }
-        elsif ($attrs->{$name}{type} eq 'Translate') {
-            $translate_attrs->{$name} = $attrs->{$name};
+        elsif ($attr_type eq 'Translate') {
+            $translate_attrs->{$attr} = $attrs->{$attr};
         }
     }
     
@@ -559,7 +561,7 @@ sub create_constructor {
                 $code .=
                 qq/    \$self->{'$attr'} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default}->();\n/;
             }
-            elsif(!ref $attrs->{'$attr'}{options}{default}) {
+            elsif(!ref $attrs->{$attr}{options}{default}) {
                 $code .=
                 qq/    \$self->{'$attr'} ||= \$META->{'$class'}{attrs}{'$attr'}{options}{default};\n/;
             }
