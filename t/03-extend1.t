@@ -28,7 +28,7 @@ is( $pbook->title, 1, 'method invoked atfter super class dose' );
     my $t = T3->new(m4 => 4);
     is_deeply($t, {m1 => 1, m2 => 2, m3 => 3, m4 => 4, title => 1}, 'use base');
     
-    ok($Object::Simple::META->{T3}{constructor}, 'cache constructor');
+    ok($Object::Simple::CLASS_INFOS->{T3}{constructor}, 'cache constructor');
     my $t2 = T3->new(m4 => 4);
     is_deeply($t2, {m1 => 1, m2 => 2, m3 => 3, m4 => 4, title => 1}, 'use base');
 }

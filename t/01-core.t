@@ -97,8 +97,8 @@ use Point;
 }
 {
     my $p = Point->new;
-    is_deeply($p, {x => 1, y => 1, p => $Object::Simple::META->{Point}{attrs}{p}{options}{default}->()}, 'default overwrited' );
-    cmp_ok(ref $Object::Simple::META->{Point}{attrs}{p}{options}{default}, 'ne', $p->p, 'default different ref' );
+    is_deeply($p, {x => 1, y => 1, p => $Object::Simple::CLASS_INFOS->{Point}{attrs}{p}{options}{default}->()}, 'default overwrited' );
+    cmp_ok(ref $Object::Simple::CLASS_INFOS->{Point}{attrs}{p}{options}{default}, 'ne', $p->p, 'default different ref' );
 }
  
 use T1;
@@ -548,7 +548,7 @@ use T30;
     
     my $p = {};
     T37->m3($p);
-    ok(Scalar::Util::isweak($Object::Simple::META->{'T37'}{attrs}{'m3'}{value}), 'class accessor weak package variable');
+    ok(Scalar::Util::isweak($Object::Simple::CLASS_INFOS->{'T37'}{attrs}{'m3'}{value}), 'class accessor weak package variable');
     is(T37->m3, $p, 'class accessor weak get');
     
     eval{T37->m4(4)};

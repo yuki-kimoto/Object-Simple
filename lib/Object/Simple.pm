@@ -8,7 +8,7 @@ require Carp;
 our $VERSION = '2.0402';
 
 # Meta imformation
-our $META = {};
+our $CLASS_INFOS = {};
 
 # Classes which need to build
 our @BUILD_NEED_CLASSES;
@@ -38,10 +38,10 @@ sub import {
     }
     
     # Resist base class to meta information
-    $Object::Simple::META->{$caller_class}{base} = $options{base};
+    $Object::Simple::CLASS_INFOS->{$caller_class}{base} = $options{base};
     
     # Regist mixin classes to meta information
-    $Object::Simple::META->{$caller_class}{mixins} = $options{mixins};
+    $Object::Simple::CLASS_INFOS->{$caller_class}{mixins} = $options{mixins};
     
     # Adapt strict and warnings pragma to caller class
     strict->import;
@@ -75,14 +75,14 @@ sub new {
     my $class = ref $invocant || $invocant;
     
     # Call constructor
-    return $META->{$class}{constructor}->($class,@_)
-        if $META->{$class}{constructor};
+    return $CLASS_INFOS->{$class}{constructor}->($class,@_)
+        if $CLASS_INFOS->{$class}{constructor};
     
     # Search super class constructor  if constructor is not resited to meta information
     foreach my $super_class (@{Object::Simple::Functions::get_leftmost_isa($class)}) {
-        if($META->{$super_class}{constructor}) {
-            $META->{$class}{constructor} = $META->{$super_class}{constructor};
-            return $META->{$class}{constructor}->($class,@_);
+        if($CLASS_INFOS->{$super_class}{constructor}) {
+            $CLASS_INFOS->{$class}{constructor} = $CLASS_INFOS->{$super_class}{constructor};
+            return $CLASS_INFOS->{$class}{constructor}->($class,@_);
         }
     }
 }
@@ -148,7 +148,7 @@ sub build_class {
         Object::Simple::Functions::check_accessor_option($attr_name, $class, $attr_options, $attr_type);
         
         # Resist attribute type and attribute options
-        @{$Object::Simple::META->{$class}{attrs}{$attr_name}}{qw/type options/}
+        @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr_name}}{qw/type options/}
           = ($attr_type, $attr_options);
     }
     
@@ -171,12 +171,12 @@ sub build_class {
         }
         
         # Initialize attr_options if it is not set
-        #$Object::Simple::META->{$class}{attrs} = {}
-        #    unless $Object::Simple::META->{$class}{attrs};
+        #$Object::Simple::CLASS_INFOS->{$class}{attrs} = {}
+        #    unless $Object::Simple::CLASS_INFOS->{$class}{attrs};
         
         # inherit base class
         no strict 'refs';
-        if( my $base_class = $Object::Simple::META->{$class}{base}) {
+        if( my $base_class = $Object::Simple::CLASS_INFOS->{$class}{base}) {
             @{"${class}::ISA"} = ();
             push @{"${class}::ISA"}, $base_class;
             Carp::croak("Base class '$base_class' is invalid class name ($class)")
@@ -192,26 +192,26 @@ sub build_class {
         
         # Include mixin classes
         Object::Simple::Functions::include_mixin_classes($class)
-            if $Object::Simple::META->{$class}{mixins};
+            if $Object::Simple::CLASS_INFOS->{$class}{mixins};
     }
 
     # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
-        my $attrs = $Object::Simple::META->{$class}{attrs};
+        my $attrs = $Object::Simple::CLASS_INFOS->{$class}{attrs};
         foreach my $attr_name (keys %$attrs) {
             
             # Extend super class accessor options
             my $base_class = $class;
-            while ($Object::Simple::META->{$base_class}{attrs}{$attr_name}{options}{extend}) {
+            while ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}{extend}) {
                 my ($super_attr_options, $attr_found_class)
                   = Object::Simple::Functions::get_super_attr_options($base_class, $attr_name);
                 
-                delete $Object::Simple::META->{$base_class}{attrs}{$attr_name}{options}{extend};
+                delete $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}{extend};
                 
                 last unless $super_attr_options;
                 
-                $Object::Simple::META->{$base_class}{attrs}{$attr_name}{options}
-                  = {%{$super_attr_options}, %{$Object::Simple::META->{$base_class}{attrs}{$attr_name}{options}}};
+                $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}
+                  = {%{$super_attr_options}, %{$Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}}};
                 
                 $base_class = $attr_found_class;
             }
@@ -253,7 +253,7 @@ sub build_class {
         my $constructor_code = Object::Simple::Functions::create_constructor($class);
         eval $constructor_code;
         Carp::croak("$constructor_code\n:$@") if $@; # never occured
-        $Object::Simple::META->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"};
+        $Object::Simple::CLASS_INFOS->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"};
     }
     
     # Resist already build class
@@ -280,8 +280,8 @@ sub call_mixin {
     
     my $caller_class = caller;
     Carp::croak(qq/"${mixin_class}::$method from $caller_class" is not exist/)
-      unless $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method};
-    return $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method}->($self, @_);
+      unless $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method};
+    return $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method}->($self, @_);
 }
 
 # Get mixin methods
@@ -291,9 +291,9 @@ sub mixin_methods {
     my $caller_class = caller;
 
     my $method_refs = [];
-    foreach my $mixin_class (@{$Object::Simple::META->{$caller_class}{mixins}}) {
-        push @$method_refs, $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method}
-          if $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method};
+    foreach my $mixin_class (@{$Object::Simple::CLASS_INFOS->{$caller_class}{mixins}}) {
+        push @$method_refs, $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method}
+          if $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method};
     }
     return $method_refs;
 }
@@ -314,13 +314,13 @@ sub call_super {
     
     # Call last mixin method
     my $mixin_found = $mixin_base_class ? 0 : 1;
-    if ($Object::Simple::META->{$base_class}{mixins}) {
-        foreach my $mixin_class (reverse @{$Object::Simple::META->{$base_class}{mixins}}) {
+    if ($Object::Simple::CLASS_INFOS->{$base_class}{mixins}) {
+        foreach my $mixin_class (reverse @{$Object::Simple::CLASS_INFOS->{$base_class}{mixins}}) {
             if ($mixin_base_class && $mixin_base_class eq $mixin_class) {
                 $mixin_found = 1;
             }
-            elsif ($mixin_found && $Object::Simple::META->{$base_class}{mixin}{$mixin_class}{methods}{mixined}{$method}) {
-                return $Object::Simple::META->{$base_class}{mixin}{$mixin_class}{methods}{mixined}{$method}->($self, @_);
+            elsif ($mixin_found && $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{mixined}{$method}) {
+                return $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{mixined}{$method}->($self, @_);
             }
         }
     }
@@ -363,8 +363,8 @@ sub get_super_attr_options {
     my $base_class = $class;
     no strict 'refs';
     while($base_class = ${"${base_class}::ISA"}[0]) {
-        return ($Object::Simple::META->{$base_class}{attrs}{$attr_name}{options}, $base_class)
-          if $Object::Simple::META->{$base_class}{attrs}{$attr_name}{options};
+        return ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}, $base_class)
+          if $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options};
     }
     return;
 }
@@ -374,7 +374,7 @@ sub include_mixin_classes {
     my $caller_class = shift;
     
     # Get mixin classes
-    my $mixin_classes = $Object::Simple::META->{$caller_class}{mixins};
+    my $mixin_classes = $Object::Simple::CLASS_INFOS->{$caller_class}{mixins};
     Carp::croak("mixins must be array reference ($caller_class)") unless ref $mixin_classes eq 'ARRAY';
     
     # Mixin class attr options
@@ -406,7 +406,7 @@ sub include_mixin_classes {
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
             
-            my $derive_class = $Object::Simple::META->{$mixin_class}{methods}{$method}{derive};
+            my $derive_class = $Object::Simple::CLASS_INFOS->{$mixin_class}{methods}{$method}{derive};
             my $deparse_method = $derive_class
                                ? \&{"${derive_class}::$method"}
                                : \&{"${mixin_class}::$method"};
@@ -432,22 +432,22 @@ sub include_mixin_classes {
                 $code_ref = \&{"${mixin_class}::$method"};
             }
             
-            $Object::Simple::META->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method} = $code_ref;
+            $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method} = $code_ref;
             
             next if defined &{"${caller_class}::$method"};
             *{"${caller_class}::$method"} = $code_ref;
-            $Object::Simple::META->{$caller_class}{methods}{$method}{derive} = 
-              $Object::Simple::META->{$mixin_class}{methods}{$method}{derive} || $mixin_class;
+            $Object::Simple::CLASS_INFOS->{$caller_class}{methods}{$method}{derive} = 
+              $Object::Simple::CLASS_INFOS->{$mixin_class}{methods}{$method}{derive} || $mixin_class;
         }
     }
     
     # Merge attr to caller class
     my %attrs;
     foreach my $class (@$mixin_classes, $caller_class) {
-        %attrs = (%attrs, %{$Object::Simple::META->{$class}{attrs}})
-            if $Object::Simple::META->{$class}{attrs};
+        %attrs = (%attrs, %{$Object::Simple::CLASS_INFOS->{$class}{attrs}})
+            if $Object::Simple::CLASS_INFOS->{$class}{attrs};
     }
-    $Object::Simple::META->{$caller_class}{attrs} = \%attrs;
+    $Object::Simple::CLASS_INFOS->{$caller_class}{attrs} = \%attrs;
 }
 
 sub mixin_method_deparse_possibility {
@@ -455,8 +455,8 @@ sub mixin_method_deparse_possibility {
     
     # Has mixin classes
     return 1
-      if ref $Object::Simple::META->{$mixin_class}{mixins} &&
-         @{$Object::Simple::META->{$mixin_class}{mixins}};
+      if ref $Object::Simple::CLASS_INFOS->{$mixin_class}{mixins} &&
+         @{$Object::Simple::CLASS_INFOS->{$mixin_class}{mixins}};
     
     # Call SUPER method
     my $module_path = join('/', split(/::/, $mixin_class)) . '.pm';
@@ -483,8 +483,8 @@ sub merge_self_and_super_attrs {
     my $class = shift;
     
     # Return cache if cached 
-    return $Object::Simple::META->{$class}{merged_attrs}
-      if $Object::Simple::META->{$class}{merged_attrs};
+    return $Object::Simple::CLASS_INFOS->{$class}{merged_attrs}
+      if $Object::Simple::CLASS_INFOS->{$class}{merged_attrs};
     
     # Get self and super classed
     my $self_and_super_classes
@@ -493,12 +493,12 @@ sub merge_self_and_super_attrs {
     # Get merged accessor options 
     my $attrs = {};
     foreach my $class (reverse @$self_and_super_classes) {
-        $attrs = {%{$attrs}, %{$Object::Simple::META->{$class}{attrs}}}
-            if defined $Object::Simple::META->{$class}{attrs};
+        $attrs = {%{$attrs}, %{$Object::Simple::CLASS_INFOS->{$class}{attrs}}}
+            if defined $Object::Simple::CLASS_INFOS->{$class}{attrs};
     }
     
     # Cached
-    $Object::Simple::META->{$class}{merged_attrs} = $attrs;
+    $Object::Simple::CLASS_INFOS->{$class}{merged_attrs} = $attrs;
     
     return $attrs;
 }
@@ -542,7 +542,7 @@ sub create_constructor {
         if ($attrs->{$attr}{options}{convert}) {
             if(ref $attrs->{$attr}{options}{convert} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$attr'} = \$Object::Simple::META->{'$class'}{merged_attrs}{'$attr'}{options}{convert}->(\$self->{'$attr'})\n/ .
+                qq/    \$self->{'$attr'} = \$Object::Simple::CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{convert}->(\$self->{'$attr'})\n/ .
                 qq/        if exists \$self->{'$attr'};\n/;
             }
             else {
@@ -559,11 +559,11 @@ sub create_constructor {
         if(defined $attrs->{$attr}{options}{default}) {
             if(ref $attrs->{$attr}{options}{default} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{merged_attrs}{'$attr'}{options}{default}->();\n/;
+                qq/    \$self->{'$attr'} ||= \$CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{default}->();\n/;
             }
             elsif(!ref $attrs->{$attr}{options}{default}) {
                 $code .=
-                qq/    \$self->{'$attr'} ||= \$META->{'$class'}{merged_attrs}{'$attr'}{options}{default};\n/;
+                qq/    \$self->{'$attr'} ||= \$CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{default};\n/;
             }
             else {
                 Carp::croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
@@ -585,7 +585,7 @@ sub create_constructor {
     # Trigger option
     foreach my $attr (@attrs_having_trigger) {
         $code .=
-            qq/    \$Object::Simple::META->{'$class'}{merged_attrs}{'$attr'}{options}{trigger}->(\$self, \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
+            qq/    \$Object::Simple::CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{trigger}->(\$self, \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
     }
     
     # Translate option
@@ -609,13 +609,13 @@ sub create_accessor {
     
     # Get accessor options
     my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger)
-      = @{$Object::Simple::META->{$class}{attrs}{$attr}{options}}{
+      = @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}}{
             qw/auto_build read_only weak type convert deref trigger/
         };
     
     # chained
-    my $chained =   exists $Object::Simple::META->{$class}{attrs}{$attr}{options}{chained}
-                  ? $Object::Simple::META->{$class}{attrs}{$attr}{options}{chained}
+    my $chained =   exists $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{chained}
+                  ? $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{chained}
                   : 1;
     
     # Passed value expression
@@ -637,7 +637,7 @@ sub create_accessor {
     my $strage;
     if ($attr_type eq 'ClassAttr') {
         # Strage package Varialbe in case class accessor
-        $strage = "\$Object::Simple::META->{\$self}{attrs}{'$attr'}{value}";
+        $strage = "\$Object::Simple::CLASS_INFOS->{\$self}{attrs}{'$attr'}{value}";
         $code .=
                 qq/    Carp::croak("${class}::$attr must be called from class, not instance")\n/ .
                 qq/      if ref \$self;\n/;
@@ -657,7 +657,7 @@ sub create_accessor {
         
         if(ref $auto_build eq 'CODE') {
             $code .=
-                qq/        \$Object::Simple::META->{'$class'}{attrs}{'$attr'}{options}{auto_build}->(\$self);\n/;
+                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{attrs}{'$attr'}{options}{auto_build}->(\$self);\n/;
         }
         else {
             my $build_method;
@@ -703,7 +703,7 @@ sub create_accessor {
         if ($convert) {
             if(ref $convert eq 'CODE') {
                 $code .=
-                qq/        \$value = \$Object::Simple::META->{'$class'}{attrs}{'$attr'}{options}{convert}->($value);\n/;
+                qq/        \$value = \$Object::Simple::CLASS_INFOS->{'$class'}{attrs}{'$attr'}{options}{convert}->($value);\n/;
             }
             else {
                 require Scalar::Util;
@@ -740,7 +740,7 @@ sub create_accessor {
                 unless ref $trigger eq 'CODE';
             
             $code .=
-                qq/        \$Object::Simple::META->{'$class'}{attrs}{'$attr'}{options}{trigger}->(\$self, $value);\n/;
+                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{attrs}{'$attr'}{options}{trigger}->(\$self, $value);\n/;
         }
         
         # Return value or instance for chained/weak
@@ -786,7 +786,7 @@ sub create_class_object_accessor {
 
 sub create_output_accessor {
     my ($class, $attr) = @_;
-    my $target = $Object::Simple::META->{$class}{attrs}{$attr}{options}{target};
+    my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target};
     
     my $code =  qq/{\n/ .
                 qq/    my (\$self, \$output) = \@_;\n/ .
@@ -800,7 +800,7 @@ sub create_output_accessor {
 
 sub create_translate_accessor {
     my ($class, $attr) = @_;
-    my $target = $Object::Simple::META->{$class}{attrs}{$attr}{options}{target} || '';
+    my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target} || '';
     
     Carp::croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
         unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
