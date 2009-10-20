@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
 
-our $VERSION = '2.0402';
+our $VERSION = '2.0501';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -170,10 +170,6 @@ sub build_class {
             delete ${$class . '::'}{MODIFY_CODE_ATTRIBUTES};
         }
         
-        # Initialize attr_options if it is not set
-        #$Object::Simple::CLASS_INFOS->{$class}{attrs} = {}
-        #    unless $Object::Simple::CLASS_INFOS->{$class}{attrs};
-        
         # inherit base class
         no strict 'refs';
         if( my $base_class = $Object::Simple::CLASS_INFOS->{$class}{base}) {
@@ -280,8 +276,8 @@ sub call_mixin {
     
     my $caller_class = caller;
     Carp::croak(qq/"${mixin_class}::$method from $caller_class" is not exist/)
-      unless $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method};
-    return $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method}->($self, @_);
+      unless $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
+    return $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method}->($self, @_);
 }
 
 # Get mixin methods
@@ -292,8 +288,8 @@ sub mixin_methods {
 
     my $method_refs = [];
     foreach my $mixin_class (@{$Object::Simple::CLASS_INFOS->{$caller_class}{mixins}}) {
-        push @$method_refs, $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method}
-          if $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method};
+        push @$method_refs, $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method}
+          if $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
     }
     return $method_refs;
 }
@@ -319,8 +315,8 @@ sub call_super {
             if ($mixin_base_class && $mixin_base_class eq $mixin_class) {
                 $mixin_found = 1;
             }
-            elsif ($mixin_found && $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{mixined}{$method}) {
-                return $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{mixined}{$method}->($self, @_);
+            elsif ($mixin_found && $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{$method}) {
+                return $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{$method}->($self, @_);
             }
         }
     }
@@ -432,7 +428,7 @@ sub include_mixin_classes {
                 $code_ref = \&{"${mixin_class}::$method"};
             }
             
-            $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{mixined}{$method} = $code_ref;
+            $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method} = $code_ref;
             
             next if defined &{"${caller_class}::$method"};
             *{"${caller_class}::$method"} = $code_ref;
@@ -777,13 +773,36 @@ sub create_accessor {
     return $code;
 }
 
+# Create class and object hibrid accessor
 sub create_class_object_accessor {
     my ($class, $attr) = @_;
     my $object_accessor = Object::Simple::Functions::create_accessor($class, $attr, 'Attr');
-    my $class_accessor  = Object::Simple::Functions::create_accessor($class, $attr, 'ClassAttr');
+    $object_accessor = join("\n    ", split("\n", $object_accessor));
     
+    my $class_accessor  = Object::Simple::Functions::create_accessor($class, $attr, 'ClassAttr');
+    $class_accessor = join("\n    ", split("\n", $class_accessor));
+    
+    my $code = qq/{\n/ .
+               qq/    my \$object_accessor = sub $object_accessor;\n\n/ .
+               qq/    my \$class_accessor  = sub $class_accessor;\n\n/ .
+               qq/    package $class;\n/ .
+               qq/    sub $attr {\n/ .
+               qq/        my \$invocant = shift;\n/ .
+               qq/        if (ref \$invocant) {\n/ .
+               qq/            return wantarray ? (\$object_accessor->(\$invocant, \@_))\n/ .
+               qq/                             : \$object_accessor->(\$invocant, \@_);\n/ .
+               qq/        }\n/ .
+               qq/        else {\n/ .
+               qq/            return wantarray ? (\$class_accessor->(\$invocant, \@_))\n/ .
+               qq/                             : \$class_accessor->(\$invocant, \@_);\n/ .
+               qq/        }\n/ .
+               qq/    }\n/ .
+               qq/}\n\n/;
+    $DB::single = 1;
+    return $code;
 }
 
+# Create accessor for output
 sub create_output_accessor {
     my ($class, $attr) = @_;
     my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target};
@@ -798,6 +817,7 @@ sub create_output_accessor {
     return $code;
 }
 
+# Create accessor for delegate
 sub create_translate_accessor {
     my ($class, $attr) = @_;
     my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target} || '';
@@ -886,7 +906,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0402
+Version 2.0501
  
 =head1 FEATURES
  
@@ -1362,21 +1382,25 @@ If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
 
 =head1 INTERNAL
 
-=head2 CLASS_INFO package variable
+=head2 CLASS_INFOS package variable
 
-    $CLASS_INFO data structure
-    $class base
-           mixins
-           mixin   $mixin method mixined $method
-           methods  $method derive
-           constructor
-           attrs $attr type    $type
-                       value   $value
-                       options {default => $default, auto_build => $auto_build
-                               extend
-           marged_attrs type    $type
-                        value   $value
-                        options            
+    $CLASS_INFOS data structure
+    $class base         $base
+           mixins       [$mixin1, $mixin2]
+           mixin        $mixin  methods  $method
+           methods      $method derive
+           constructor  $constructor
+           
+           attrs        $attr   type     $type
+                                value    $value
+                                options  {default => $default, ..}
+           
+           marged_attrs $attr   type     $type
+                                value    $value
+                                options  {default => $default, ..}
+
+This variable data structure will be change. so You do not directory access this variable.
+Please only use to undarstand Object::Simple well.
 
 =head1 AUTHOR
  

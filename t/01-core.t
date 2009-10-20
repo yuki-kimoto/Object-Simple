@@ -665,6 +665,21 @@ use T45;
     is($o->m6(6,7), 159, 'Mixin call super class7');
 }
 
+use T46;
+{
+    my $o = T46->new;
+    $o->m1([1,2]);
+    is_deeply(scalar $o->m1, [1, 2], 'ClassObjectAttr object accessor');
+    is_deeply([$o->m1], [1, 2], 'ClassObjectAttr object accessor list context');
+    is_deeply($o->m2, [5, 6], 'ClassObjectAttr object accessor auto_build');
+    
+    T46->m1([3, 4]);
+    is_deeply(scalar T46->m1, [3, 4], 'ClassObjectAttr class accessor');
+    is_deeply([T46->m1], [3, 4], 'ClassObjectAttr class accessor list context');
+    is_deeply(T46->m2, [5, 6], 'ClassObjectAttr class accessor auto_build');
+    
+}
+
 
 
 __END__
