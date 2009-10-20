@@ -671,13 +671,20 @@ use T46;
     $o->m1([1,2]);
     is_deeply(scalar $o->m1, [1, 2], 'ClassObjectAttr object accessor');
     is_deeply([$o->m1], [1, 2], 'ClassObjectAttr object accessor list context');
+    ok(!exists $o->{m2});
     is_deeply($o->m2, [5, 6], 'ClassObjectAttr object accessor auto_build');
     
     T46->m1([3, 4]);
     is_deeply(scalar T46->m1, [3, 4], 'ClassObjectAttr class accessor');
     is_deeply([T46->m1], [3, 4], 'ClassObjectAttr class accessor list context');
+    ok(!T46->exists_class_attr('m2'));
     is_deeply(T46->m2, [5, 6], 'ClassObjectAttr class accessor auto_build');
+    T46->m2;
     
+    ok(T46->exists_class_attr('m2'), 'key is exists');
+    my $delete = T46->delete_class_attr('m2');
+    is_deeply($delete, [5, 6], 'delete value');
+    ok(!T46->exists_class_attr('m2'));
 }
 
 

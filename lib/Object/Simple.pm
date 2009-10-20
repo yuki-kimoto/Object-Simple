@@ -334,15 +334,15 @@ sub call_super {
 }
 
 # Specify class attribute is exsist?
-sub exsits_class_attr {
+sub exists_class_attr {
     my ($class, $attr) = @_;
-    return exists $Object::Simple::CLASS_INFO->{$class}{attrs}{$attr}{value};
+    return exists $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{value};
 }
 
 # Delete specify class attribute
 sub delete_class_attr {
     my ($class, $attr) = @_;
-    return delete $Object::Simple::CLASS_INFO->{$class}{attrs}{$attr}{value};
+    return delete $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{value};
 }
 
 package Object::Simple::Functions;
@@ -810,7 +810,6 @@ sub create_class_object_accessor {
                qq/        }\n/ .
                qq/    }\n/ .
                qq/}\n\n/;
-    $DB::single = 1;
     return $code;
 }
 
@@ -1070,6 +1069,18 @@ You can build all classes once.
 
     Object::Simple->build_all_classes;
 
+=head2 exists_class_attr
+
+    You can check exists class attribute
+    
+    $class->exists_class_attr($attr);
+
+=head2 delete_class_attr
+
+    You can delete class attribute key
+    
+    $class->delete_class_attr($attr);
+
 =head2 resist_attribute_info
 
 resist attribute information
@@ -1252,6 +1263,20 @@ you can use the same accessor options as normal accessor except 'default' option
 If you define default value to class variable, you must use 'auto_build' option.
 
 If this accessor is used subclass, it access subclass class variable, not the class it is defined. 
+
+=head2 ClassObjectAttr - Accessor for object or class variable 
+
+You can define object or class hibrid accessor.
+
+If you invoke method from object, data is saved into object
+    
+    $obj->m1('a'); # save into object
+
+If you invoke method from class, data is saved into class
+
+    $class->m1('a'); # save into class
+
+This is very useful.
 
 =head2 Output - Accessor to output attribute value
 
