@@ -235,7 +235,8 @@ sub build_class {
                                     . Object::Simple::Functions::create_output_accessor($class, $attr_name);
                 }
                 elsif ($attr_options_name eq 'class_object_attr_options') {
-                    
+                    # Create class and object hibrid accessor
+                    $accessor_code .= Object::Simple::Functions::create_class_object_accessor($class, $attr_name);
                 }
                 else {
                     # Create normal accessor or class accessor
@@ -773,6 +774,11 @@ sub create_accessor {
     $code .=    qq/}\n\n/;
     
     return $code;
+}
+
+sub create_class_object_accessor {
+    my ($class, $attr) = @_;
+    
 }
 
 sub create_output_accessor {
