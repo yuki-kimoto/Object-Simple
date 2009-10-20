@@ -147,8 +147,9 @@ sub build_class {
         # Check accessor option
         Object::Simple::Functions::check_accessor_option($attr_name, $class, $attr_options, $attr_type);
         
-        # Resist accessor option to meta imformation
-        $Object::Simple::META->{$class}{attrs}{$attr_name}{options} = $attr_options;
+        # Resist attribute type and attribute options
+        @{$Object::Simple::META->{$class}{attrs}{$attr_name}}{qw/type options/}
+          = ($attr_type, $attr_options);
     }
     
     # Resist classes which need building
@@ -193,7 +194,7 @@ sub build_class {
         Object::Simple::Functions::include_mixin_classes($class)
             if $Object::Simple::META->{$class}{mixins};
     }
-    
+
     # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
         my $attrs = $Object::Simple::META->{$class}{attrs};
@@ -228,7 +229,7 @@ sub build_class {
                 $accessor_code .= "package $class;\nsub $attr_name " 
                                 . Object::Simple::Functions::create_output_accessor($class, $attr_name);
             }
-            elsif ($attr_type eq 'ClassAttr') {
+            elsif ($attr_type eq 'ClassObjectAttr') {
                 # Create class and object hibrid accessor
                 $accessor_code .= Object::Simple::Functions::create_class_object_accessor($class, $attr_name);
             }
@@ -451,8 +452,6 @@ sub include_mixin_classes {
 
 sub mixin_method_deparse_possibility {
     my $mixin_class = shift;
-    
-    $DB::single = 1;
     
     # Has mixin classes
     return 1
