@@ -1,3 +1,5 @@
+2.0502
+  fix bag that attribute is not initialize when created by ClassObjectAttr 
 2.0501
   add ClassObjectAttr code attribute
   add exists_class_attr method

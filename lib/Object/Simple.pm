@@ -5,7 +5,7 @@ use warnings;
  
 require Carp;
 
-our $VERSION = '2.0501';
+our $VERSION = '2.0502';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -523,7 +523,7 @@ sub create_constructor {
     # Attr or Transalte
     foreach my $attr (keys %$attrs) {
         my $attr_type = $attrs->{$attr}{type} || '';
-        if ($attr_type eq 'Attr') {
+        if ($attr_type eq 'Attr' || $attr_type eq 'ClassObjectAttr') {
             $object_attrs->{$attr} = $attrs->{$attr};
         }
         elsif ($attr_type eq 'Translate') {
@@ -917,7 +917,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0501
+Version 2.0502
  
 =head1 FEATURES
  

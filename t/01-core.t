@@ -666,6 +666,7 @@ use T45;
 }
 
 use T46;
+# ClassObjectAttr
 {
     my $o = T46->new;
     $o->m1([1,2]);
@@ -685,6 +686,11 @@ use T46;
     my $delete = T46->delete_class_attr('m2');
     is_deeply($delete, [5, 6], 'delete value');
     ok(!T46->exists_class_attr('m2'));
+}
+
+{
+    my $o = T46->new(m1 => 5, m2 => 6);
+    is_deeply($o, {m1 => 5, m2 => 6}, 'ClassObjectAttr constructor');
 }
 
 
