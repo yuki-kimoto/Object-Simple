@@ -731,7 +731,30 @@ use T47;
     is($o->m1, 2, 'copied class');
 }
 
+{
+    my $o = T47_4->new;
+    is($o->m1, 2, 'initialize_class_object_attr scalar multi inherit object');
+    is_deeply($o->m2, [1, 2], 'initialize_class_object_attr array multi inherit object');
+    is_deeply($o->m3, {a => 1, b => 2}, 'initialize_class_object_attr hash multi inherit object');
+}
 
+{
+    is(T47->new->m4, 6, 'user clone method');
+}
+
+{
+    eval{T47->m5};
+    like($@, qr/'clone' option must be 'scalar', 'array', 'hash', or code reference/, 'noexis clone option');
+    
+    eval{T47->m6};
+    like($@, qr/'accessor_name' options must be specified to initialize_class_object_attr/, 'no accessor_name option');
+
+    eval{T47->m7};
+    like($@, qr/'default' option must be scalar, or code ref/, 'no dfault option');
+    
+    eval{T47->m8};
+    ok(!T47->m8, 'default is undef');
+}
 
 
 __END__

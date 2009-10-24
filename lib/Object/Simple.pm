@@ -411,20 +411,17 @@ sub initialize_class_object_attr {
             $clone = sub {my $value = shift; return \%{$value || {}}};
         }
         else {
-            croak("'clone' option value must be 'scalar', 'array', 'hash', or code ref");
+            croak("'clone' option must be 'scalar', 'array', 'hash', or code reference");
         }
     }
     
     # default options
+    my $default_exist = exists $options->{default};
     my $default = delete $options->{default};
     
-    # default is undefined
-    croak("'default' options must be specified to initialize_class_object_attr")
-      unless defined $default;
-    
     # Check default option
-    if (my $default_type = ref $default) {
-        croak("'default' option value must be scalar, or code ref")
+    if ($default_exist && (my $default_type = ref $default)) {
+        croak("'default' option must be scalar, or code ref")
           unless $default_type eq 'CODE'
     }
     
