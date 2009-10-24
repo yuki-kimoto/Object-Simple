@@ -17,7 +17,7 @@ our @BUILD_NEED_CLASSES;
 our %ALREADY_BUILD_CLASSES;
  
 # Attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
-our @CODE_ATTRIBUTE_INFOS;
+our @ACCESSOR_INFOS;
  
 # Valid import option
 my %VALID_IMPORT_OPTIONS = map {$_ => 1} qw(base mixins);
@@ -124,7 +124,7 @@ sub build_class {
     }
     
     # Parse symbol table and create accessors code
-    while (my $code_attribute_info = shift @Object::Simple::CODE_ATTRIBUTE_INFOS) {
+    while (my $code_attribute_info = shift @Object::Simple::ACCESSOR_INFOS) {
         # CODE_ATTRIBUTE infomation
         my ($class, $code_ref, $attr_type, $attr_name) = @$code_attribute_info;
         
@@ -285,16 +285,19 @@ sub build_class {
 # Resit attribute information
 sub resist_accessor_info {
     shift;
-    my ($class, $attr_name, $attr_options, $attr_type) = @_;
+    my ($class, $accessor_name, $accessor_options, $accessor_type) = @_;
     
-    my $code_ref = ref $attr_options eq 'HASH' 
-                 ? sub {$attr_options}
-                 : $attr_options;
+    # Rearrange accessor options
+    my $accessor_options_  = ref $accessor_options eq 'HASH'
+                           ? sub {$accessor_options}
+                           : $accessor_options;
     
-    $attr_type ||= 'Attr';
+    # Default accessor type
+    $accessor_type ||= 'Attr';
     
-    push @Object::Simple::CODE_ATTRIBUTE_INFOS,
-         [$class, $code_ref, $attr_type, $attr_name];
+    # Add accessor info
+    push @Object::Simple::ACCESSOR_INFOS,
+         [$class, $accessor_options_, $accessor_type, $accessor_name];
 }
 
 # Call mixin method
@@ -946,7 +949,7 @@ sub define_MODIFY_CODE_ATTRIBUTES {
           unless $VALID_ACCESSOR_TYPES{$accessor_type};
         
         # Add 
-        push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $accessor_type]);
+        push(@Object::Simple::ACCESSOR_INFOS, [$class, $code_ref, $accessor_type]);
         
         return;
     };
@@ -1155,7 +1158,8 @@ This is equal to
     package Book;
     sub title : Attr {default => 1}
 
-If you create accessor, you must call build_class
+resist_accessor_info only resist accessor infomation.
+If you want to create accessor, you must call build_class
 
     Object::Simple->build_class('Book');
 
