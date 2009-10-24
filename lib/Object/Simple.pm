@@ -1124,23 +1124,22 @@ You can also override new
  
 =head2 build_class
 
-inherit base class,include mixin classes, create accessors, and create constructor
- 
-Script must call build_class at end of script;
- 
+    # Build caller class (This is general way)
     Object::Simple->build_class;
-
-The class of caller package is build.
-
-You can also specify class
-
-    Object::Simple->build_class('SomeClass');
     
-=head2 build_all_classes
+    # Build specify class
+    Object::Simple->build_class($class);
 
-You can build all classes once.
+build_class must be called end of your module.
 
-    Object::Simple->build_all_classes
+When build_class is called, your module is setuped.
+
+    1. Inherit base class
+    2. Inculde mixin classes methods
+    3. Create accessors
+    4. Create constructor
+    
+If You do not pass class name to build_class, caller class is build.
 
 =head2 exists_class_attr
     
