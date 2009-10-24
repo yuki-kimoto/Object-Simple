@@ -756,5 +756,10 @@ use T47;
     ok(!T47->m8, 'default is undef');
 }
 
+{
+    my $o = T47->new;
+    is_deeply({$o->m9}, {a => 1, b => 2}, 'deref hash');
+    is_deeply([$o->m10], [1, 2], 'deref array');
+}
 
 __END__

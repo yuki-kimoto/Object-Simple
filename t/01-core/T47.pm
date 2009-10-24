@@ -64,6 +64,23 @@ sub m8 : ClassObjectAttr {auto_build => sub {
     })
 }}
 
+sub m9 : ClassObjectAttr {type => 'hash', deref => 1, auto_build => sub {
+    shift->Object::Simple::initialize_class_object_attr({
+        accessor_name => 'm9',
+        clone         => 'hash',
+        default       => sub { {a => 1, b => 2} }
+    })
+}}
+
+sub m10 : ClassObjectAttr {type => 'array', deref => 1, auto_build => sub {
+    shift->Object::Simple::initialize_class_object_attr({
+        accessor_name => 'm10',
+        clone         => 'array',
+        default       => sub { [1, 2] }
+    })
+}}
+
+
 Object::Simple->build_class;
 
 package T47_2;

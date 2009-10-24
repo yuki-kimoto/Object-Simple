@@ -5,7 +5,7 @@ use warnings;
  
 use Carp 'croak';
 
-our $VERSION = '2.0601';
+our $VERSION = '2.0602';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -430,7 +430,7 @@ sub initialize_class_object_attr {
     
     # Called from object
     if (my $class = ref $invocant) {
-        $invocant->$accessor_name($clone->($class->$accessor_name));
+        $invocant->$accessor_name($clone->(scalar $class->$accessor_name));
     }
     else {
         # Called from class
@@ -439,7 +439,7 @@ sub initialize_class_object_attr {
             ${"${invocant}::ISA"}[0];
         };
         my $value = eval{$super->can($accessor_name)}
-                       ? $clone->($super->$accessor_name)
+                       ? $clone->(scalar $super->$accessor_name)
                        : $default;
                           
         $invocant->$accessor_name($value);
@@ -1037,7 +1037,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0601
+Version 2.0602
  
 =head1 FEATURES
  
