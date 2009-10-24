@@ -693,6 +693,45 @@ use T46;
     is_deeply($o, {m1 => 5, m2 => 6}, 'ClassObjectAttr constructor');
 }
 
+use T47;
+{
+    my $p = T47->m1;
+    is(T47->m1, 1, 'initialize_class_object_attr scalar class');
+    is_deeply(T47->m2, [1, 2], 'initialize_class_object_attr array class');
+    is_deeply(T47->m3, {a => 1, b => 2}, 'initialize_class_object_attr hash class');
+}
+
+{
+    my $o = T47->new;
+    is($o->m1, 1, 'initialize_class_object_attr scalar object');
+    is_deeply($o->m2, [1, 2], 'initialize_class_object_attr array object');
+    is_deeply($o->m3, {a => 1, b => 2}, 'initialize_class_object_attr hash object');
+}
+
+{
+    my $p = T47_2->m1;
+    is(T47_2->m1, 1, 'initialize_class_object_attr scalar sub class ');
+    is_deeply(T47_2->m2, [1, 2], 'initialize_class_object_attr array sub class');
+    is_deeply(T47_2->m3, {a => 1, b => 2}, 'initialize_class_object_attr hash sub class');
+}
+
+{
+    my $o = T47_2->new;
+    is($o->m1, 1, 'initialize_class_object_attr scalar sub object');
+    is_deeply($o->m2, [1, 2], 'initialize_class_object_attr array sub object');
+    is_deeply($o->m3, {a => 1, b => 2}, 'initialize_class_object_attr hash sub object');
+}
+
+{
+    T47_2->m1(2);
+    is(T47->m1, 1, 'no effect');
+    is(T47_2->m1, 2, 'no effect');
+    my $o = T47_2->new;
+    $o->m1;
+    is($o->m1, 2, 'copied class');
+}
+
+
 
 
 __END__

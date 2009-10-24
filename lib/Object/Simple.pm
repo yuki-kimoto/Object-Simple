@@ -402,7 +402,7 @@ sub initialize_class_object_attr {
     # Check clone option
     unless (ref $clone eq 'CODE') {
         if ($clone eq 'scalar') {
-            $clone = undef;
+            $clone = sub {shift};
         }
         elsif ($clone eq 'array') {
             $clone = sub {my $value = shift; return \@{$value || []}};
@@ -432,18 +432,21 @@ sub initialize_class_object_attr {
     $default = $default->() if ref $default eq 'CODE';
     
     # Called from object
-    $invocant->$accessor_name($default) if ref $invocant;
-    
-    # Called from class
-    my $super =  do {
-        no strict 'refs';
-        ${"${invocant}::ISA"}[0];
-    };
-    my $value = eval{$super->can($accessor_name)}
-                   ? $super->$accessor_name
-                   : $default;
-                      
-    $invocant->$accessor_name($value);
+    if (my $class = ref $invocant) {
+        $invocant->$accessor_name($clone->($class->$accessor_name));
+    }
+    else {
+        # Called from class
+        my $super =  do {
+            no strict 'refs';
+            ${"${invocant}::ISA"}[0];
+        };
+        my $value = eval{$super->can($accessor_name)}
+                       ? $clone->($super->$accessor_name)
+                       : $default;
+                          
+        $invocant->$accessor_name($value);
+    }
 }
 
 

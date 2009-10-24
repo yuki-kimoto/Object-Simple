@@ -1,5 +1,6 @@
 2.0601
   rename resist_attribute_info to resist_accessor_info
+  add initialize_class_object_attr method
 2.0502
   fix bag that attribute is not initialize when created by ClassObjectAttr 
 2.0501
