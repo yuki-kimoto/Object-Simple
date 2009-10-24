@@ -382,6 +382,71 @@ sub delete_class_attr {
     return delete $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{value};
 }
 
+# Initialize ClassObjectAttr
+sub initialize_class_object_attr {
+    my $invocant = shift;
+    my $options = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    
+    # accessor_name option
+    my $accessor_name = delete $options->{accessor_name};
+    croak("'accessor_name' options must be specified to initialize_class_object_attr")
+      unless $accessor_name;
+    
+    # clone option
+    my $clone   = delete $options->{clone};
+    
+    # clone is undefined
+    croak("'clone' options must be specified to initialize_class_object_attr")
+      unless defined $clone;
+    
+    # Check clone option
+    unless (ref $clone eq 'CODE') {
+        if ($clone eq 'scalar') {
+            $clone = undef;
+        }
+        elsif ($clone eq 'array') {
+            $clone = sub {my $value = shift; return \@{$value || []}};
+        }
+        elsif ($clone eq 'hash') {
+            $clone = sub {my $value = shift; return \%{$value || {}}};
+        }
+        else {
+            croak("'clone' option value must be 'scalar', 'array', 'hash', or code ref");
+        }
+    }
+    
+    # default options
+    my $default = delete $options->{default};
+    
+    # default is undefined
+    croak("'default' options must be specified to initialize_class_object_attr")
+      unless defined $default;
+    
+    # Check default option
+    if (my $default_type = ref $default) {
+        croak("'default' option value must be scalar, or code ref")
+          unless $default_type eq 'CODE'
+    }
+    
+    # get Default value when it is code ref
+    $default = $default->() if ref $default eq 'CODE';
+    
+    # Called from object
+    $invocant->$accessor_name($default) if ref $invocant;
+    
+    # Called from class
+    my $super =  do {
+        no strict 'refs';
+        ${"${invocant}::ISA"}[0];
+    };
+    my $value = eval{$super->can($accessor_name)}
+                   ? $super->$accessor_name
+                   : $default;
+                      
+    $invocant->$accessor_name($value);
+}
+
+
 package Object::Simple::Functions;
 use strict;
 use warnings;
@@ -717,7 +782,7 @@ sub create_accessor {
         
         if(ref $auto_build eq 'CODE') {
             $code .=
-                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{auto_build}->(\$self);\n/;
+                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{auto_build}->(\$self, {accessor_name => '$accessor_name'});\n/;
         }
         else {
             my $build_method;
@@ -1141,6 +1206,55 @@ When build_class is called, your module is setuped.
     
 If You do not pass class name to build_class, caller class is build.
 
+=head2 initialize_class_object_attr
+
+    # Initialize Class attribute or Object attribute
+    sub method : ClassObjectAttr {atuo_build => sub {
+        shift->Object::Simple::initialize_class_object_attr(
+                                            {accessor_name => $accessor_name,   
+                                             clone         => $clone_method,    
+                                             default       => $default_value });
+    }
+    
+    # Sample
+    sub constraints : ClassObjectAttr {atuo_build => sub {
+        shift->Object::Simple::initialize_class_object_attr(
+                                            {accessor_name => 'constraints', 
+                                             clone         => 'hash',        
+                                             default       => sub { {} } }); 
+    }
+    
+It is normally used from auto_build to initialize class-object accessor value
+This method clone super class value to this class when invocant is class
+and clone clas value to object value when invacant is object
+
+Accessor name is specified to 'accessor_name' option.
+
+   # Sample
+   accessor_name => 'constraints'
+
+Clone option must be specified.The following is clone options
+
+    # clone option
+    1. 'scalar'     # Normal copy
+    2. 'array'      # array ref shallow copy : sub{ \@{shift} }
+    3. 'hash'       # hash ref shallow copy  : sub{ \%{shift} }
+    4. code ref     # your clone method, for exsample : 
+                    #   sub { shift->clone }
+    
+    # Samples
+    clone => 'scalar'
+    clone => 'array'
+    clone => 'hash'
+    clone => sub { shift->clone }
+
+Default value must be specified. default value must be scalar or code ref
+
+    # Sapmles
+    default => 'good life' # scalar 
+    default => sub { [] }  # array ref
+    default => sub { {} }  # hash
+
 =head2 exists_class_attr
     
     # Check existence of class attribute
@@ -1551,9 +1665,9 @@ Please only use to undarstand Object::Simple well.
  
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
  
-I develope in L<http://github.com/yuki-kimoto/>
+Github L<http://github.com/yuki-kimoto/>
 
-=head1 SIMILAR MODULES
+=head1 SEE ALSO
  
 L<Class::Accessor>,L<Class::Accessor::Fast>, L<Moose>, L<Mouse>, L<Mojo::Base>
  
