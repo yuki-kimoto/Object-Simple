@@ -205,13 +205,13 @@ sub build_class {
 
     # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
-        my $attrs = $Object::Simple::CLASS_INFOS->{$class}{accessors};
-        foreach my $accessor_name (keys %$attrs) {
+        my $accessors = $Object::Simple::CLASS_INFOS->{$class}{accessors};
+        foreach my $accessor_name (keys %$accessors) {
             
             # Extend super class accessor options
             my $base_class = $class;
             while ($Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend}) {
-                my ($super_accessor_options, $attr_found_class)
+                my ($super_accessor_options, $accessor_found_class)
                   = Object::Simple::Functions::get_super_accessor_options($base_class, $accessor_name);
                 
                 delete $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend};
@@ -222,10 +222,10 @@ sub build_class {
                   = {%{$super_accessor_options}, 
                      %{$Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}}};
                 
-                $base_class = $attr_found_class;
+                $base_class = $accessor_found_class;
             }
             
-            my $accessor_type = $attrs->{$accessor_name}{type};
+            my $accessor_type = $accessors->{$accessor_name}{type};
             
             # Create accessor source code
             if ($accessor_type eq 'Translate') {
@@ -279,7 +279,7 @@ sub build_class {
     return 1;
 }
 
-# Resit attribute information
+# Resit accessor information
 sub resist_accessor_info {
     shift;
     my ($class, $accessor_name, $accessor_options, $accessor_type) = @_;
@@ -369,14 +369,14 @@ sub call_super {
 
 # Class attribute is exsist?
 sub exists_class_attr {
-    my ($class, $attr) = @_;
-    return exists $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{value};
+    my ($class, $accessor_name) = @_;
+    return exists $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{value};
 }
 
 # Delete class attribute
 sub delete_class_attr {
-    my ($class, $attr) = @_;
-    return delete $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{value};
+    my ($class, $accessor_name) = @_;
+    return delete $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{value};
 }
 
 package Object::Simple::Functions;
@@ -402,7 +402,7 @@ sub get_leftmost_isa {
     return \@leftmost_isa;
 }
 
-# Get upper attribute options
+# Get upper accessor options
 sub get_super_accessor_options {
     my ($class, $accessor_name) = @_;
     
@@ -430,7 +430,7 @@ sub include_mixin_classes {
     croak("mixins must be array reference ($caller_class)") 
       unless ref $mixin_classes eq 'ARRAY';
     
-    # Mixin class attr options
+    # Mixin class accessor options
     my $mixins_accessor_options = {};
     
     # Deparse object
@@ -498,13 +498,13 @@ sub include_mixin_classes {
         }
     }
     
-    # Merge attr to caller class
-    my %attrs;
+    # Merge accessor to caller class
+    my %accessors;
     foreach my $class (@$mixin_classes, $caller_class) {
-        %attrs = (%attrs, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}})
+        %accessors = (%accessors, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}})
             if $Object::Simple::CLASS_INFOS->{$class}{accessors};
     }
-    $Object::Simple::CLASS_INFOS->{$caller_class}{accessors} = \%attrs;
+    $Object::Simple::CLASS_INFOS->{$caller_class}{accessors} = \%accessors;
 }
 
 sub mixin_method_deparse_possibility {
@@ -535,29 +535,29 @@ sub mixin_method_deparse_possibility {
 }
  
 # Merge self and super accessor option
-sub merge_self_and_super_attrs {
+sub merge_self_and_super_accessors {
     
     my $class = shift;
     
     # Return cache if cached 
-    return $Object::Simple::CLASS_INFOS->{$class}{merged_attrs}
-      if $Object::Simple::CLASS_INFOS->{$class}{merged_attrs};
+    return $Object::Simple::CLASS_INFOS->{$class}{merged_accessors}
+      if $Object::Simple::CLASS_INFOS->{$class}{merged_accessors};
     
     # Get self and super classed
     my $self_and_super_classes
       = Object::Simple::Functions::get_leftmost_isa($class);
     
     # Get merged accessor options 
-    my $attrs = {};
+    my $accessors = {};
     foreach my $class (reverse @$self_and_super_classes) {
-        $attrs = {%{$attrs}, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}}}
+        $accessors = {%{$accessors}, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}}}
             if defined $Object::Simple::CLASS_INFOS->{$class}{accessors};
     }
     
     # Cached
-    $Object::Simple::CLASS_INFOS->{$class}{merged_attrs} = $attrs;
+    $Object::Simple::CLASS_INFOS->{$class}{merged_accessors} = $accessors;
     
-    return $attrs;
+    return $accessors;
 }
 
 # Create constructor
@@ -565,7 +565,7 @@ sub create_constructor {
     my $class = shift;
     
     # Get merged attrs
-    my $attrs = merge_self_and_super_attrs($class);
+    my $attrs = merge_self_and_super_accessors($class);
     my $object_attrs = {};
     my $translate_attrs = {};
     
@@ -599,7 +599,7 @@ sub create_constructor {
         if ($attrs->{$attr}{options}{convert}) {
             if(ref $attrs->{$attr}{options}{convert} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$attr'} = \$Object::Simple::CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{convert}->(\$self->{'$attr'})\n/ .
+                qq/    \$self->{'$attr'} = \$Object::Simple::CLASS_INFOS->{'$class'}{merged_accessors}{'$attr'}{options}{convert}->(\$self->{'$attr'})\n/ .
                 qq/        if exists \$self->{'$attr'};\n/;
             }
             else {
@@ -616,11 +616,11 @@ sub create_constructor {
         if(defined $attrs->{$attr}{options}{default}) {
             if(ref $attrs->{$attr}{options}{default} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$attr'} ||= \$CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{default}->();\n/;
+                qq/    \$self->{'$attr'} ||= \$CLASS_INFOS->{'$class'}{merged_accessors}{'$attr'}{options}{default}->();\n/;
             }
             elsif(!ref $attrs->{$attr}{options}{default}) {
                 $code .=
-                qq/    \$self->{'$attr'} ||= \$CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{default};\n/;
+                qq/    \$self->{'$attr'} ||= \$CLASS_INFOS->{'$class'}{merged_accessors}{'$attr'}{options}{default};\n/;
             }
             else {
                 croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
@@ -642,7 +642,7 @@ sub create_constructor {
     # Trigger option
     foreach my $attr (@attrs_having_trigger) {
         $code .=
-            qq/    \$Object::Simple::CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{trigger}->(\$self, \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
+            qq/    \$Object::Simple::CLASS_INFOS->{'$class'}{merged_accessors}{'$attr'}{options}{trigger}->(\$self, \$self->{'$attr'}) if exists \$self->{'$attr'};\n/;
     }
     
     # Translate option
@@ -930,9 +930,9 @@ sub check_accessor_option {
     
     my $valid_accessor_options = $VALID_ACCESSOR_OPTIONS->{$accessor_type};
     
-    foreach my $name ( keys %$accessor_options ){
-        croak("${class}::$attr '$name' is invalid accessor option.")
-          unless $valid_accessor_options->{$name};
+    foreach my $accessor_name ( keys %$accessor_options ){
+        croak("${class}::$attr '$accessor_name' is invalid accessor option.")
+          unless $valid_accessor_options->{$accessor_name};
     }
 }
  
