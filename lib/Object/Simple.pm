@@ -215,7 +215,7 @@ sub build_class {
             my $base_class = $class;
             while ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}{extend}) {
                 my ($super_attr_options, $attr_found_class)
-                  = Object::Simple::Functions::get_super_attr_options($base_class, $attr_name);
+                  = Object::Simple::Functions::get_super_accessor_options($base_class, $attr_name);
                 
                 delete $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}{extend};
                 
@@ -406,14 +406,20 @@ sub get_leftmost_isa {
 }
 
 # Get upper attribute options
-sub get_super_attr_options {
-    my ($class, $attr_name, $attr_options_name) = @_;
+sub get_super_accessor_options {
+    my ($class, $accessor_name) = @_;
+    
+    # Base class
     my $base_class = $class;
+    
+    # Get super class accessor option 
     no strict 'refs';
     while($base_class = ${"${base_class}::ISA"}[0]) {
-        return ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}, $base_class)
-          if $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options};
+        return ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}, $base_class)
+          if $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options};
     }
+    
+    # Not found
     return;
 }
 
