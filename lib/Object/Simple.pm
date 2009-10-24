@@ -124,41 +124,38 @@ sub build_class {
     }
     
     # Parse symbol table and create accessors code
-    while (my $code_attribute_info = shift @Object::Simple::ACCESSOR_INFOS) {
+    while (my $accessor_info = shift @Object::Simple::ACCESSOR_INFOS) {
         # CODE_ATTRIBUTE infomation
-        my ($class, $code_ref, $accessor_type, $accessor_name) = @$code_attribute_info;
+        my ($class, $accessor_options, $accessor_type, $accessor_name) = @$accessor_info;
         
-        # Parse symbol tabel to find code reference correspond to method names
+        # Parse symbol tabel to find code reference correspond to accessor names
         unless($accessor_names->{$class}) {
-        
             $accessor_names->{$class} = {};
             
             no strict 'refs';
             foreach my $sym (values %{"${class}::"}) {
-            
                 next unless ref(*{$sym}{CODE}) eq 'CODE';
-                
                 $accessor_names->{$class}{*{$sym}{CODE}} = *{$sym}{NAME};
             }
         }
         
-        # Get attribute name
-        $accessor_name ||= $accessor_names->{$class}{$code_ref};
+        # Get accessor name
+        $accessor_name ||= $accessor_names->{$class}{$accessor_options};
         
-        # Get attr options
-        my @attr_options = $code_ref->();
-        my $attr_options = ref $attr_options[0] eq 'HASH'
-                         ? $attr_options[0] 
-                         : {@attr_options};
+        # Get accessor options
+        my @accessor_options = $accessor_options->();
+        $accessor_options = ref $accessor_options[0] eq 'HASH'
+                          ? $accessor_options[0] 
+                          : {@accessor_options};
         
         # Check accessor option
         Object::Simple::Functions::check_accessor_option($accessor_name, 
-                                                         $class, $attr_options,
+                                                         $class, $accessor_options,
                                                          $accessor_type);
         
-        # Resist attribute type and attribute options
+        # Resist accessor type and accessor options
         @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$accessor_name}}{qw/type options/}
-          = ($accessor_type, $attr_options);
+          = ($accessor_type, $accessor_options);
     }
     
     # Resist classes which need building
@@ -214,15 +211,15 @@ sub build_class {
             # Extend super class accessor options
             my $base_class = $class;
             while ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}{extend}) {
-                my ($super_attr_options, $attr_found_class)
+                my ($super_accessor_options, $attr_found_class)
                   = Object::Simple::Functions::get_super_accessor_options($base_class, $accessor_name);
                 
                 delete $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}{extend};
                 
-                last unless $super_attr_options;
+                last unless $super_accessor_options;
                 
                 $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}
-                  = {%{$super_attr_options}, 
+                  = {%{$super_accessor_options}, 
                      %{$Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}}};
                 
                 $base_class = $attr_found_class;
@@ -434,7 +431,7 @@ sub include_mixin_classes {
       unless ref $mixin_classes eq 'ARRAY';
     
     # Mixin class attr options
-    my $mixins_attr_options = {};
+    my $mixins_accessor_options = {};
     
     # Deparse object
     my $deparse;
