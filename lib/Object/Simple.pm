@@ -1188,25 +1188,44 @@ If you want to create accessor, you must call build_class
 
 =head2 call_mixin
 
-You can call any mixin method.
+    # Call method of mixin class
+    Object::Simple->call_mixin($mixin_class, $method_name);
 
-    Object::Simple->call_mixin('SomeMixinClass', 'method_name');
+You cann call any method of mixin class, even if method is not import to your class
 
 =head2 mixin_methods
-
-You can get all mixin methods reference and call each methods.
-
-    my $method_refs = Object::Simple->mixin_methods('SomeMixinClass', 'method_name');
     
+    # Get all same name method of mixin classes
+    my $method_refs = Object::Simple->mixin_methods($mixin_class, $method_name);
+    
+    # Call all method
     foreach my $method_ref (@$method_refs) {
         $method_ref->($self, @args);
     }
     
 =head2 call_super
 
-You can call super class method. It is like SUPER keyword. but You can specify base class.
+    # Call method of super class
+    Object::Simple->call_super($base_class, $method_name);
+    
+You can call method of super class. but this method do not call method of real super class.
+Method is serched by using the follwoing order.
 
-    Object::Simple->call_super('BaseClass', 'method_name');
+     +--------------+
+   3 | Base class   | # real super class
+     +--------------+
+           |
+     +--------------+
+   2 | Mixin class1 |
+     +--------------+
+           |
+     +--------------+
+   1 | Mixin class2 |
+     +--------------+
+           |
+     +--------------+
+     | This class   |
+     +--------------+
 
 =head1 ACCESSOR OPTIONS
  
