@@ -109,7 +109,7 @@ sub build_class {
     }
     
     # Attribute names
-    my $attr_names = {};
+    my $accessor_names = {};
     
     # Accessor code
     my $accessor_code = '';
@@ -126,24 +126,24 @@ sub build_class {
     # Parse symbol table and create accessors code
     while (my $code_attribute_info = shift @Object::Simple::ACCESSOR_INFOS) {
         # CODE_ATTRIBUTE infomation
-        my ($class, $code_ref, $attr_type, $attr_name) = @$code_attribute_info;
+        my ($class, $code_ref, $attr_type, $accessor_name) = @$code_attribute_info;
         
         # Parse symbol tabel to find code reference correspond to method names
-        unless($attr_names->{$class}) {
+        unless($accessor_names->{$class}) {
         
-            $attr_names->{$class} = {};
+            $accessor_names->{$class} = {};
             
             no strict 'refs';
             foreach my $sym (values %{"${class}::"}) {
             
                 next unless ref(*{$sym}{CODE}) eq 'CODE';
                 
-                $attr_names->{$class}{*{$sym}{CODE}} = *{$sym}{NAME};
+                $accessor_names->{$class}{*{$sym}{CODE}} = *{$sym}{NAME};
             }
         }
         
         # Get attribute name
-        $attr_name ||= $attr_names->{$class}{$code_ref};
+        $accessor_name ||= $accessor_names->{$class}{$code_ref};
         
         # Get attr options
         my @attr_options = $code_ref->();
@@ -152,12 +152,12 @@ sub build_class {
                          : {@attr_options};
         
         # Check accessor option
-        Object::Simple::Functions::check_accessor_option($attr_name, 
+        Object::Simple::Functions::check_accessor_option($accessor_name, 
                                                          $class, $attr_options,
                                                          $attr_type);
         
         # Resist attribute type and attribute options
-        @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr_name}}{qw/type options/}
+        @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$accessor_name}}{qw/type options/}
           = ($attr_type, $attr_options);
     }
     
