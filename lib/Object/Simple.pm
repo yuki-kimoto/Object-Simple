@@ -283,7 +283,7 @@ sub build_class {
 }
 
 # Resit attribute information
-sub resist_attribute_info {
+sub resist_accessor_info {
     shift;
     my ($class, $attr_name, $attr_options, $attr_type) = @_;
     
@@ -931,18 +931,21 @@ sub check_accessor_option {
 }
  
 # Define MODIFY_CODE_ATTRIBUTRS subroutine
-my %VALID_ACCESSOR_TYPES = map {$_ => 1} qw(Attr ClassAttr ClassObjectAttr Output Translate);
+my %VALID_ACCESSOR_TYPES = map {$_ => 1} qw/Attr ClassAttr ClassObjectAttr Output Translate/;
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
+    # MODIFY_CODE_ATTRIBUTES
     my $code = sub {
         my ($class, $code_ref, $accessor_type) = @_;
         
+        # Accessor type is not exist
         croak("Accessor type '$accessor_type' is not exist. " .
               "Accessor type must be 'Attr', 'ClassAttr', " . 
               "'ClassObjectAttr', 'Output', or 'Translate'")
           unless $VALID_ACCESSOR_TYPES{$accessor_type};
         
+        # Add 
         push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $accessor_type]);
         
         return;
@@ -1110,26 +1113,42 @@ You can also specify class
 
 You can build all classes once.
 
-    Object::Simple->build_all_classes;
+    Object::Simple->build_all_classes
 
 =head2 exists_class_attr
-
-    You can check exists class attribute
     
+    # Check existence of class attribute
     $class->exists_class_attr($attr);
+    
+    # Sample
+    $class->exists_class_attr('title');
+
+This is different from checking class attribute is defined or not.
+
+    defined $class->title;              # check title class attribute is defined
+    $class->exists_class_attr('title'); # check title class attribute is exist
 
 =head2 delete_class_attr
 
-    You can delete class attribute key
-    
+    # Delete class attribute
     $class->delete_class_attr($attr);
+    
+    # Sample
+    $class->delete_class_attr('title');
 
-=head2 resist_attribute_info
+This is different from setting undef to class attribute
 
-resist attribute information
+    $class->title(undef);                # set undef to title class attribute
+    $class->delete_class_attr('title');  # delete title class attribute
 
-    Object::Simple->resist_attribute_info($class, $attr_name, $code_ref, $code_attribute_type);
-    Object::Simple->resist_attribute_info('Book', 'title', sub {default => 1}, 'Attr');
+=head2 resist_accessor_info
+
+    # Resit accessor infomation
+    Object::Simple->resist_accessor_info($class, $accessor_name, 
+                                         $accessor_options, $accessor_type);
+    
+    # Sample
+    Object::Simple->resist_accessor_info('Book', 'title', {default => 1}, 'Attr');
 
 This is equal to
     
