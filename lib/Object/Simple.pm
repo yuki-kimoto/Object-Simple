@@ -3,9 +3,9 @@ use 5.008_001;
 use strict;
 use warnings;
  
-require Carp;
+use Carp 'croak';
 
-our $VERSION = '2.0502';
+our $VERSION = '2.0601';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -34,7 +34,8 @@ sub import {
     
     # Check import option
     foreach my $key (keys %options) {
-        Carp::croak("'$key' is invalid import option ($caller_class)") unless $VALID_IMPORT_OPTIONS{$key};
+        croak("'$key' is invalid import option ($caller_class)")
+          unless $VALID_IMPORT_OPTIONS{$key};
     }
     
     # Resist base class to meta information
@@ -78,10 +79,12 @@ sub new {
     return $CLASS_INFOS->{$class}{constructor}->($class,@_)
         if $CLASS_INFOS->{$class}{constructor};
     
-    # Search super class constructor  if constructor is not resited to meta information
+    # Search super class constructor if constructor is not resited
     foreach my $super_class (@{Object::Simple::Functions::get_leftmost_isa($class)}) {
         if($CLASS_INFOS->{$super_class}{constructor}) {
-            $CLASS_INFOS->{$class}{constructor} = $CLASS_INFOS->{$super_class}{constructor};
+            $CLASS_INFOS->{$class}{constructor}
+              = $CLASS_INFOS->{$super_class}{constructor};
+            
             return $CLASS_INFOS->{$class}{constructor}->($class,@_);
         }
     }
@@ -116,13 +119,15 @@ sub build_class {
 
     # check build_class options
     foreach my $key (keys %$options) {
-        Carp::croak("'$key' is invalid build_class option")
+        croak("'$key' is invalid build_class option")
             unless $VALID_BUILD_CLASS_OPTIONS{$key};
     }
     
     # Parse symbol table and create accessors code
     while (my $code_attribute_info = shift @Object::Simple::CODE_ATTRIBUTE_INFOS) {
+        # CODE_ATTRIBUTE infomation
         my ($class, $code_ref, $attr_type, $attr_name) = @$code_attribute_info;
+        
         # Parse symbol tabel to find code reference correspond to method names
         unless($attr_names->{$class}) {
         
@@ -142,10 +147,14 @@ sub build_class {
         
         # Get attr options
         my @attr_options = $code_ref->();
-        my $attr_options = ref $attr_options[0] eq 'HASH' ? $attr_options[0] : {@attr_options};
+        my $attr_options = ref $attr_options[0] eq 'HASH'
+                         ? $attr_options[0] 
+                         : {@attr_options};
         
         # Check accessor option
-        Object::Simple::Functions::check_accessor_option($attr_name, $class, $attr_options, $attr_type);
+        Object::Simple::Functions::check_accessor_option($attr_name, 
+                                                         $class, $attr_options,
+                                                         $attr_type);
         
         # Resist attribute type and attribute options
         @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr_name}}{qw/type options/}
@@ -155,11 +164,16 @@ sub build_class {
     # Resist classes which need building
     my @build_need_classes;
     if ($options->{all}) {
-        @build_need_classes = grep { !$ALREADY_BUILD_CLASSES{$_} } @Object::Simple::BUILD_NEED_CLASSES;
+        # Select build needing class
+        @build_need_classes = grep {!$ALREADY_BUILD_CLASSES{$_}}
+                                   @Object::Simple::BUILD_NEED_CLASSES;
+        
+        # Clear BUILD_NEED_CLASSES
         @Object::Simple::BUILD_NEED_CLASSES = ();
     }
     else{
-        @build_need_classes = ($build_need_class) unless $ALREADY_BUILD_CLASSES{$build_need_class};
+        @build_need_classes = ($build_need_class)
+          unless $ALREADY_BUILD_CLASSES{$build_need_class};
     }
     
     # Inherit base class and Object::Simple, and include mixin classes
@@ -175,12 +189,13 @@ sub build_class {
         if( my $base_class = $Object::Simple::CLASS_INFOS->{$class}{base}) {
             @{"${class}::ISA"} = ();
             push @{"${class}::ISA"}, $base_class;
-            Carp::croak("Base class '$base_class' is invalid class name ($class)")
-                if $base_class =~ /[^\w:]/;
+            
+            croak("Base class '$base_class' is invalid class name ($class)")
+              if $base_class =~ /[^\w:]/;
             
             unless($base_class->can('isa')) {
                 eval "require $base_class;";
-                Carp::croak("$@") if $@;
+                croak("$@") if $@;
             }
         }
         
@@ -207,7 +222,8 @@ sub build_class {
                 last unless $super_attr_options;
                 
                 $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}
-                  = {%{$super_attr_options}, %{$Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}}};
+                  = {%{$super_attr_options}, 
+                     %{$Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$attr_name}{options}}};
                 
                 $base_class = $attr_found_class;
             }
@@ -217,22 +233,26 @@ sub build_class {
             # Create accessor source code
             if ($attr_type eq 'Translate') {
                 # Create translate accessor
-                $accessor_code .= "package $class;\nsub $attr_name " 
-                                . Object::Simple::Functions::create_translate_accessor($class, $attr_name);
+                $accessor_code 
+                  .= "package $class;\nsub $attr_name " 
+                  . Object::Simple::Functions::create_translate_accessor($class, $attr_name);
             }
             elsif ($attr_type eq 'Output') {
                 # Create output accessor
-                $accessor_code .= "package $class;\nsub $attr_name " 
-                                . Object::Simple::Functions::create_output_accessor($class, $attr_name);
+                $accessor_code
+                  .= "package $class;\nsub $attr_name " 
+                  . Object::Simple::Functions::create_output_accessor($class, $attr_name);
             }
             elsif ($attr_type eq 'ClassObjectAttr') {
                 # Create class and object hibrid accessor
-                $accessor_code .= Object::Simple::Functions::create_class_object_accessor($class, $attr_name);
+                $accessor_code
+                  .= Object::Simple::Functions::create_class_object_accessor($class, $attr_name);
             }
             else {
                 # Create normal accessor or class accessor
-                $accessor_code .= "package $class;\nsub $attr_name " 
-                                . Object::Simple::Functions::create_accessor($class, $attr_name, $attr_type);
+                $accessor_code
+                  .= "package $class;\nsub $attr_name " 
+                  . Object::Simple::Functions::create_accessor($class, $attr_name, $attr_type);
             }
         }
     }
@@ -241,15 +261,19 @@ sub build_class {
     if($accessor_code){
         no warnings qw(redefine);
         eval $accessor_code;
-        Carp::croak("$accessor_code\n:$@") if $@; # never occured
+        croak("$accessor_code\n:$@") if $@; # never occured
     }
     
     # Create constructor
     foreach my $class (@build_need_classes) {
-        my $constructor_code = Object::Simple::Functions::create_constructor($class);
+        my $constructor_code
+          = Object::Simple::Functions::create_constructor($class);
+        
         eval $constructor_code;
-        Carp::croak("$constructor_code\n:$@") if $@; # never occured
-        $Object::Simple::CLASS_INFOS->{$class}{constructor} = \&{"Object::Simple::Constructor::${class}::new"};
+        croak("$constructor_code\n:$@") if $@; # never occured
+        
+        $Object::Simple::CLASS_INFOS->{$class}{constructor}
+          = \&{"Object::Simple::Constructor::${class}::new"};
     }
     
     # Resist already build class
@@ -262,10 +286,15 @@ sub build_class {
 sub resist_attribute_info {
     shift;
     my ($class, $attr_name, $attr_options, $attr_type) = @_;
-    my $code_ref = ref $attr_options eq 'HASH' ? sub {$attr_options} : $attr_options;
+    
+    my $code_ref = ref $attr_options eq 'HASH' 
+                 ? sub {$attr_options}
+                 : $attr_options;
     
     $attr_type ||= 'Attr';
-    push @Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $attr_type, $attr_name];
+    
+    push @Object::Simple::CODE_ATTRIBUTE_INFOS,
+         [$class, $code_ref, $attr_type, $attr_name];
 }
 
 # Call mixin method
@@ -275,8 +304,10 @@ sub call_mixin {
     my $method      = shift || '';
     
     my $caller_class = caller;
-    Carp::croak(qq/"${mixin_class}::$method from $caller_class" is not exist/)
+    
+    croak(qq/"${mixin_class}::$method from $caller_class" is not exist/)
       unless $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
+    
     return $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method}->($self, @_);
 }
 
@@ -288,7 +319,9 @@ sub mixin_methods {
 
     my $method_refs = [];
     foreach my $mixin_class (@{$Object::Simple::CLASS_INFOS->{$caller_class}{mixins}}) {
-        push @$method_refs, $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method}
+        
+        push @$method_refs,
+             $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method}
           if $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
     }
     return $method_refs;
@@ -328,9 +361,10 @@ sub call_super {
     push @leftmost_isa, $leftmost_parent;
     no strict 'refs';
     while($leftmost_parent = ${"${leftmost_parent}::ISA"}[0]) {
-        return &{"${leftmost_parent}::$method"}($self, @_) if defined &{"${leftmost_parent}::$method"};
+        return &{"${leftmost_parent}::$method"}($self, @_)
+          if defined &{"${leftmost_parent}::$method"};
     }
-    Carp::croak("Cannot locate method '$method' via base class of $base_class");
+    croak("Cannot locate method '$method' via base class of $base_class");
 }
 
 # Specify class attribute is exsist?
@@ -345,7 +379,12 @@ sub delete_class_attr {
     return delete $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{value};
 }
 
+
+
 package Object::Simple::Functions;
+use strict;
+use warnings;
+use Carp 'croak';
 
 # Get leftmost self and parent classes
 sub get_leftmost_isa {
@@ -383,7 +422,9 @@ sub include_mixin_classes {
     
     # Get mixin classes
     my $mixin_classes = $Object::Simple::CLASS_INFOS->{$caller_class}{mixins};
-    Carp::croak("mixins must be array reference ($caller_class)") unless ref $mixin_classes eq 'ARRAY';
+    
+    croak("mixins must be array reference ($caller_class)") 
+      unless ref $mixin_classes eq 'ARRAY';
     
     # Mixin class attr options
     my $mixins_attr_options = {};
@@ -394,15 +435,17 @@ sub include_mixin_classes {
     # Include mixin classes
     no warnings 'redefine';
     foreach my $mixin_class (reverse @$mixin_classes) {
-        Carp::croak("Mixin class '$mixin_class' is invalid class name ($caller_class)")
-            if $mixin_class =~ /[^\w:]/;
+        croak("Mixin class '$mixin_class' is invalid class name ($caller_class)")
+          if $mixin_class =~ /[^\w:]/;
         
         unless($mixin_class->can('isa')) {
             eval "require $mixin_class;";
-            Carp::croak("$@") if $@;
+            croak("$@") if $@;
         }
         
-        my $deparse_possibility = Object::Simple::Functions::mixin_method_deparse_possibility($mixin_class);
+        my $deparse_possibility
+          = Object::Simple::Functions::mixin_method_deparse_possibility($mixin_class);
+        
         my $deparse;
         if ($deparse_possibility) {
             require B::Deparse;
@@ -414,7 +457,9 @@ sub include_mixin_classes {
         foreach my $method ( keys %{"${mixin_class}::"} ) {
             next unless defined &{"${mixin_class}::$method"};
             
-            my $derive_class = $Object::Simple::CLASS_INFOS->{$mixin_class}{methods}{$method}{derive};
+            my $derive_class
+              = $Object::Simple::CLASS_INFOS->{$mixin_class}{methods}{$method}{derive};
+            
             my $deparse_method = $derive_class
                                ? \&{"${derive_class}::$method"}
                                : \&{"${mixin_class}::$method"};
@@ -430,7 +475,7 @@ sub include_mixin_classes {
                 {
                     $code =~ s/->SUPER::(.+?)\(/->Object::Simple::call_super([ '$1', '$caller_class', '$mixin_class'], /smg;
                     $code_ref = eval "sub $code";
-                    Carp::croak("Code copy error : \n $code\n $@") if $@;
+                    croak("Code copy error : \n $code\n $@") if $@;
                 }
                 else {
                     $code_ref = \&{"${mixin_class}::$method"};
@@ -574,7 +619,7 @@ sub create_constructor {
                 qq/    \$self->{'$attr'} ||= \$CLASS_INFOS->{'$class'}{merged_attrs}{'$attr'}{options}{default};\n/;
             }
             else {
-                Carp::croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
+                croak("Value of 'default' option must be a code reference or constant value(${class}::$attr)");
             }
         }
         
@@ -630,11 +675,11 @@ sub create_accessor {
     my $value = '$_[0]';
     
     # Check type
-    Carp::croak("'type' option must be 'array' or 'hash' (${class}::$attr)")
+    croak("'type' option must be 'array' or 'hash' (${class}::$attr)")
         if $type && !$VALID_TYPE{$type};
     
     # Check deref
-    Carp::croak("'deref' option must be specified with 'type' option (${class}::$attr)")
+    croak("'deref' option must be specified with 'type' option (${class}::$attr)")
         if $deref && !$type;
     
     # Beginning of accessor source code
@@ -744,7 +789,7 @@ sub create_accessor {
         
         # Trigger
         if ($trigger) {
-            Carp::croak("'trigger' option must be code reference (${class}::$attr)")
+            croak("'trigger' option must be code reference (${class}::$attr)")
                 unless ref $trigger eq 'CODE';
             
             $code .=
@@ -833,7 +878,7 @@ sub create_translate_accessor {
     my ($class, $attr) = @_;
     my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target} || '';
     
-    Carp::croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
+    croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
         unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
     
     my $code =  qq/{\n/ .
@@ -884,7 +929,7 @@ sub check_accessor_option {
     my $valid_options = $VALID_OPTIONS_MAP->{$attr_type};
     
     foreach my $key ( keys %$attr_options ){
-        Carp::croak("${class}::$attr '$key' is invalid accessor option.")
+        croak("${class}::$attr '$key' is invalid accessor option.")
             unless $valid_options->{ $key };
     }
 }
@@ -897,8 +942,8 @@ sub define_MODIFY_CODE_ATTRIBUTES {
     my $code = sub {
         my ($class, $code_ref, $attr_type) = @_;
         
-        Carp::croak("'$attr_type' is bad name. attribute must be 'Attr', 'ClassAttr', 'ClassObjectAttr', Output', or 'Translate'")
-            unless $VALID_CODE_ATTRIBUTE_NAME{$attr_type};
+        croak("'$attr_type' is bad name. attribute must be 'Attr', 'ClassAttr', 'ClassObjectAttr', Output', or 'Translate'")
+          unless $VALID_CODE_ATTRIBUTE_NAME{$attr_type};
         
         push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $attr_type ]);
         
@@ -917,7 +962,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0502
+Version 2.0601
  
 =head1 FEATURES
  
