@@ -192,7 +192,7 @@ use T10;
 }
  
 eval "use T15";
-like($@, qr/'A' is bad name. attribute must be 'Attr', 'ClassAttr', 'ClassObjectAttr', Output', or 'Translate'/, 'bat attribute name');
+like($@, qr/Accessor type 'A' is not exist. Accessor type must be 'Attr', 'ClassAttr', 'ClassObjectAttr', 'Output', or 'Translate'/, 'Not exist accessor name');
  
 {
     use T16;

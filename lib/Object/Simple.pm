@@ -120,7 +120,7 @@ sub build_class {
     # check build_class options
     foreach my $key (keys %$options) {
         croak("'$key' is invalid build_class option")
-            unless $VALID_BUILD_CLASS_OPTIONS{$key};
+          unless $VALID_BUILD_CLASS_OPTIONS{$key};
     }
     
     # Parse symbol table and create accessors code
@@ -378,8 +378,6 @@ sub delete_class_attr {
     my ($class, $attr) = @_;
     return delete $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{value};
 }
-
-
 
 package Object::Simple::Functions;
 use strict;
@@ -676,11 +674,11 @@ sub create_accessor {
     
     # Check type
     croak("'type' option must be 'array' or 'hash' (${class}::$attr)")
-        if $type && !$VALID_TYPE{$type};
+      if $type && !$VALID_TYPE{$type};
     
     # Check deref
     croak("'deref' option must be specified with 'type' option (${class}::$attr)")
-        if $deref && !$type;
+      if $deref && !$type;
     
     # Beginning of accessor source code
     my $code =  qq/{\n/ .
@@ -729,9 +727,7 @@ sub create_accessor {
     # Read only accesor
     if ($read_only){
         $code .=
-                qq/    if(\@_ > 0) {\n/ .
-                qq/        Carp::croak("${class}::$attr is read only")\n/ .
-                qq/    }\n/;
+                qq/    Carp::croak("${class}::$attr is read only") if \@_ > 0;\n/;
     }
     
     # Read and write accessor
@@ -790,7 +786,7 @@ sub create_accessor {
         # Trigger
         if ($trigger) {
             croak("'trigger' option must be code reference (${class}::$attr)")
-                unless ref $trigger eq 'CODE';
+              unless ref $trigger eq 'CODE';
             
             $code .=
                 qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{attrs}{'$attr'}{options}{trigger}->(\$self, $value);\n/;
@@ -879,7 +875,7 @@ sub create_translate_accessor {
     my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target} || '';
     
     croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
-        unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
+      unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
     
     my $code =  qq/{\n/ .
                 qq/    my \$self = shift;\n/ .
@@ -894,15 +890,15 @@ sub create_translate_accessor {
 }
 
 # Valid accessor options(Attr)
-my %VALID_ATTR_OPTIONS 
+my %VALID_OBJECT_ACCESSOR_OPTIONS 
   = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate extend);
 
 # Valid class accessor options(ClassAttr)
-my %VALID_CLASS_ATTR_OPTIONS
+my %VALID_CLASS_ACCESSOR_OPTIONS
   = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend);
 
 # Valid class accessor options(ClassAttr)
-my %VALID_CLASS_OBJECT_ATTR_OPTIONS
+my %VALID_CLASS_OBJECT_ACCESSOR_OPTIONS
   = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend);
 
 
@@ -914,38 +910,40 @@ my %VALID_OUTPUT_OPTIONS
 my %VALID_TRANSLATE_OPTIONS
   = map {$_ => 1} qw(target);
 
-my $VALID_OPTIONS_MAP = {
-    Attr            => \%VALID_ATTR_OPTIONS,
-    ClassAttr       => \%VALID_CLASS_ATTR_OPTIONS,
-    ClassObjectAttr => \%VALID_CLASS_OBJECT_ATTR_OPTIONS,
+my $VALID_ACCESSOR_OPTIONS = {
+    Attr            => \%VALID_OBJECT_ACCESSOR_OPTIONS,
+    ClassAttr       => \%VALID_CLASS_ACCESSOR_OPTIONS,
+    ClassObjectAttr => \%VALID_CLASS_OBJECT_ACCESSOR_OPTIONS,
     Output          => \%VALID_OUTPUT_OPTIONS,
     Translate       => \%VALID_TRANSLATE_OPTIONS
 };
 
 # Check accessor options
 sub check_accessor_option {
-    my ( $attr, $class, $attr_options, $attr_type ) = @_;
+    my ( $attr, $class, $accessor_options, $attr_type ) = @_;
     
-    my $valid_options = $VALID_OPTIONS_MAP->{$attr_type};
+    my $valid_accessor_options = $VALID_ACCESSOR_OPTIONS->{$attr_type};
     
-    foreach my $key ( keys %$attr_options ){
-        croak("${class}::$attr '$key' is invalid accessor option.")
-            unless $valid_options->{ $key };
+    foreach my $name ( keys %$accessor_options ){
+        croak("${class}::$attr '$name' is invalid accessor option.")
+          unless $valid_accessor_options->{$name};
     }
 }
  
 # Define MODIFY_CODE_ATTRIBUTRS subroutine
-my %VALID_CODE_ATTRIBUTE_NAME = map {$_ => 1} qw(Attr ClassAttr ClassObjectAttr Output Translate);
+my %VALID_ACCESSOR_TYPES = map {$_ => 1} qw(Attr ClassAttr ClassObjectAttr Output Translate);
 sub define_MODIFY_CODE_ATTRIBUTES {
     my $class = shift;
     
     my $code = sub {
-        my ($class, $code_ref, $attr_type) = @_;
+        my ($class, $code_ref, $accessor_type) = @_;
         
-        croak("'$attr_type' is bad name. attribute must be 'Attr', 'ClassAttr', 'ClassObjectAttr', Output', or 'Translate'")
-          unless $VALID_CODE_ATTRIBUTE_NAME{$attr_type};
+        croak("Accessor type '$accessor_type' is not exist. " .
+              "Accessor type must be 'Attr', 'ClassAttr', " . 
+              "'ClassObjectAttr', 'Output', or 'Translate'")
+          unless $VALID_ACCESSOR_TYPES{$accessor_type};
         
-        push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $attr_type ]);
+        push(@Object::Simple::CODE_ATTRIBUTE_INFOS, [$class, $code_ref, $accessor_type]);
         
         return;
     };
