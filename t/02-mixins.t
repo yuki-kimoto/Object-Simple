@@ -127,9 +127,9 @@ use T17;
 {
     is_deeply(
         [
-            $Object::Simple::CLASS_INFOS->{'T17'}{attrs}{m1}{options},
-            $Object::Simple::CLASS_INFOS->{'T17'}{attrs}{m2}{options},
-            $Object::Simple::CLASS_INFOS->{'T17'}{attrs}{m3}{options}
+            $Object::Simple::CLASS_INFOS->{'T17'}{accessors}{m1}{options},
+            $Object::Simple::CLASS_INFOS->{'T17'}{accessors}{m2}{options},
+            $Object::Simple::CLASS_INFOS->{'T17'}{accessors}{m3}{options}
         ],
         [{weak => 1}, {chained => 0}, {chained => 0}],
         'meta information class_attr_options'

@@ -154,7 +154,7 @@ sub build_class {
                                                          $accessor_type);
         
         # Resist accessor type and accessor options
-        @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$accessor_name}}{qw/type options/}
+        @{$Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}}{qw/type options/}
           = ($accessor_type, $accessor_options);
     }
     
@@ -205,22 +205,22 @@ sub build_class {
 
     # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
-        my $attrs = $Object::Simple::CLASS_INFOS->{$class}{attrs};
+        my $attrs = $Object::Simple::CLASS_INFOS->{$class}{accessors};
         foreach my $accessor_name (keys %$attrs) {
             
             # Extend super class accessor options
             my $base_class = $class;
-            while ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}{extend}) {
+            while ($Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend}) {
                 my ($super_accessor_options, $attr_found_class)
                   = Object::Simple::Functions::get_super_accessor_options($base_class, $accessor_name);
                 
-                delete $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}{extend};
+                delete $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend};
                 
                 last unless $super_accessor_options;
                 
-                $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}
+                $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}
                   = {%{$super_accessor_options}, 
-                     %{$Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}}};
+                     %{$Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}}};
                 
                 $base_class = $attr_found_class;
             }
@@ -367,16 +367,16 @@ sub call_super {
     croak("Cannot locate method '$method' via base class of $base_class");
 }
 
-# Specify class attribute is exsist?
+# Class attribute is exsist?
 sub exists_class_attr {
     my ($class, $attr) = @_;
-    return exists $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{value};
+    return exists $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{value};
 }
 
-# Delete specify class attribute
+# Delete class attribute
 sub delete_class_attr {
     my ($class, $attr) = @_;
-    return delete $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{value};
+    return delete $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{value};
 }
 
 package Object::Simple::Functions;
@@ -412,8 +412,8 @@ sub get_super_accessor_options {
     # Get super class accessor option 
     no strict 'refs';
     while($base_class = ${"${base_class}::ISA"}[0]) {
-        return ($Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options}, $base_class)
-          if $Object::Simple::CLASS_INFOS->{$base_class}{attrs}{$accessor_name}{options};
+        return ($Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}, $base_class)
+          if $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options};
     }
     
     # Not found
@@ -501,10 +501,10 @@ sub include_mixin_classes {
     # Merge attr to caller class
     my %attrs;
     foreach my $class (@$mixin_classes, $caller_class) {
-        %attrs = (%attrs, %{$Object::Simple::CLASS_INFOS->{$class}{attrs}})
-            if $Object::Simple::CLASS_INFOS->{$class}{attrs};
+        %attrs = (%attrs, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}})
+            if $Object::Simple::CLASS_INFOS->{$class}{accessors};
     }
-    $Object::Simple::CLASS_INFOS->{$caller_class}{attrs} = \%attrs;
+    $Object::Simple::CLASS_INFOS->{$caller_class}{accessors} = \%attrs;
 }
 
 sub mixin_method_deparse_possibility {
@@ -550,8 +550,8 @@ sub merge_self_and_super_attrs {
     # Get merged accessor options 
     my $attrs = {};
     foreach my $class (reverse @$self_and_super_classes) {
-        $attrs = {%{$attrs}, %{$Object::Simple::CLASS_INFOS->{$class}{attrs}}}
-            if defined $Object::Simple::CLASS_INFOS->{$class}{attrs};
+        $attrs = {%{$attrs}, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}}}
+            if defined $Object::Simple::CLASS_INFOS->{$class}{accessors};
     }
     
     # Cached
@@ -666,13 +666,13 @@ sub create_accessor {
     
     # Get accessor options
     my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger)
-      = @{$Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}}{
+      = @{$Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{options}}{
             qw/auto_build read_only weak type convert deref trigger/
         };
     
     # chained
-    my $chained =   exists $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{chained}
-                  ? $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{chained}
+    my $chained =   exists $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{options}{chained}
+                  ? $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{options}{chained}
                   : 1;
     
     # Passed value expression
@@ -694,7 +694,7 @@ sub create_accessor {
     my $strage;
     if ($accessor_type eq 'ClassAttr') {
         # Strage package Varialbe in case class accessor
-        $strage = "\$Object::Simple::CLASS_INFOS->{\$self}{attrs}{'$attr'}{value}";
+        $strage = "\$Object::Simple::CLASS_INFOS->{\$self}{accessors}{'$attr'}{value}";
         $code .=
                 qq/    Carp::croak("${class}::$attr must be called from class, not instance")\n/ .
                 qq/      if ref \$self;\n/;
@@ -714,7 +714,7 @@ sub create_accessor {
         
         if(ref $auto_build eq 'CODE') {
             $code .=
-                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{attrs}{'$attr'}{options}{auto_build}->(\$self);\n/;
+                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$attr'}{options}{auto_build}->(\$self);\n/;
         }
         else {
             my $build_method;
@@ -758,7 +758,7 @@ sub create_accessor {
         if ($convert) {
             if(ref $convert eq 'CODE') {
                 $code .=
-                qq/        \$value = \$Object::Simple::CLASS_INFOS->{'$class'}{attrs}{'$attr'}{options}{convert}->($value);\n/;
+                qq/        \$value = \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$attr'}{options}{convert}->($value);\n/;
             }
             else {
                 require Scalar::Util;
@@ -795,7 +795,7 @@ sub create_accessor {
               unless ref $trigger eq 'CODE';
             
             $code .=
-                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{attrs}{'$attr'}{options}{trigger}->(\$self, $value);\n/;
+                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$attr'}{options}{trigger}->(\$self, $value);\n/;
         }
         
         # Return value or instance for chained/weak
@@ -863,7 +863,7 @@ sub create_class_object_accessor {
 # Create accessor for output
 sub create_output_accessor {
     my ($class, $attr) = @_;
-    my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target};
+    my $target = $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{options}{target};
     
     my $code =  qq/{\n/ .
                 qq/    my (\$self, \$output) = \@_;\n/ .
@@ -878,7 +878,7 @@ sub create_output_accessor {
 # Create accessor for delegate
 sub create_translate_accessor {
     my ($class, $attr) = @_;
-    my $target = $Object::Simple::CLASS_INFOS->{$class}{attrs}{$attr}{options}{target} || '';
+    my $target = $Object::Simple::CLASS_INFOS->{$class}{accessors}{$attr}{options}{target} || '';
     
     croak("${class}::$attr '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
       unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
@@ -1491,19 +1491,19 @@ If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
 =head2 CLASS_INFOS package variable
 
     $CLASS_INFOS data structure
-    $class base         $base
-           mixins       [$mixin1, $mixin2]
-           mixin        $mixin  methods  $method
-           methods      $method derive
-           constructor  $constructor
+    $class base             $base
+           mixins           [$mixin1, $mixin2]
+           mixin            $mixin  methods  $method
+           methods          $method derive
+           constructor      $constructor
            
-           attrs        $attr   type     $type
-                                value    $value
-                                options  {default => $default, ..}
+           accessors        $accessor   type     $type
+                                        value    $value
+                                        options  {default => $default, ..}
            
-           marged_attrs $attr   type     $type
-                                value    $value
-                                options  {default => $default, ..}
+           marged_accessors $accessor   type     $type
+                                        value    $value
+                                        options  {default => $default, ..}
 
 This variable data structure will be change. so You do not directory access this variable.
 Please only use to undarstand Object::Simple well.
