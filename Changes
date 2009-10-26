@@ -1,3 +1,5 @@
+2.0603
+  initialize_class_object_attr accessor_name is automatically set.
 2.0602
   fix initialize_class_object_attr method is fail when accessor deref options is specified
 2.0601

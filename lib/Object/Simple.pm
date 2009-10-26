@@ -5,7 +5,7 @@ use warnings;
  
 use Carp 'croak';
 
-our $VERSION = '2.0602';
+our $VERSION = '2.0603';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -89,7 +89,7 @@ sub new {
         }
     }
 }
- 
+
 # Build class(create accessor, include mixin class, and create constructor)
 my %VALID_BUILD_CLASS_OPTIONS = map {$_ => 1} qw(all class);
 
@@ -382,71 +382,6 @@ sub delete_class_attr {
     return delete $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{value};
 }
 
-# Initialize ClassObjectAttr
-sub initialize_class_object_attr {
-    my $invocant = shift;
-    my $options = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-    
-    # accessor_name option
-    my $accessor_name = delete $options->{accessor_name};
-    croak("'accessor_name' options must be specified to initialize_class_object_attr")
-      unless $accessor_name;
-    
-    # clone option
-    my $clone   = delete $options->{clone};
-    
-    # clone is undefined
-    croak("'clone' options must be specified to initialize_class_object_attr")
-      unless defined $clone;
-    
-    # Check clone option
-    unless (ref $clone eq 'CODE') {
-        if ($clone eq 'scalar') {
-            $clone = sub {shift};
-        }
-        elsif ($clone eq 'array') {
-            $clone = sub {my $value = shift; return \@{$value || []}};
-        }
-        elsif ($clone eq 'hash') {
-            $clone = sub {my $value = shift; return \%{$value || {}}};
-        }
-        else {
-            croak("'clone' option must be 'scalar', 'array', 'hash', or code reference");
-        }
-    }
-    
-    # default options
-    my $default_exist = exists $options->{default};
-    my $default = delete $options->{default};
-    
-    # Check default option
-    if ($default_exist && (my $default_type = ref $default)) {
-        croak("'default' option must be scalar, or code ref")
-          unless $default_type eq 'CODE'
-    }
-    
-    # get Default value when it is code ref
-    $default = $default->() if ref $default eq 'CODE';
-    
-    # Called from object
-    if (my $class = ref $invocant) {
-        $invocant->$accessor_name($clone->(scalar $class->$accessor_name));
-    }
-    else {
-        # Called from class
-        my $super =  do {
-            no strict 'refs';
-            ${"${invocant}::ISA"}[0];
-        };
-        my $value = eval{$super->can($accessor_name)}
-                       ? $clone->(scalar $super->$accessor_name)
-                       : $default;
-                          
-        $invocant->$accessor_name($value);
-    }
-}
-
-
 package Object::Simple::Functions;
 use strict;
 use warnings;
@@ -726,6 +661,7 @@ sub create_constructor {
 
 # Valid type
 my %VALID_VARIABLE_TYPE = map {$_ => 1} qw/array hash/;
+my %VALID_INITIALIZE_OPTIONS_KEYS = map {$_ => 1} qw/clone default/;
 
 # Create accessor.
 sub create_accessor {
@@ -733,9 +669,9 @@ sub create_accessor {
     my ($class, $accessor_name, $accessor_type) = @_;
     
     # Get accessor options
-    my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger)
+    my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize)
       = @{$Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}}{
-            qw/auto_build read_only weak type convert deref trigger/
+            qw/auto_build read_only weak type convert deref trigger initialize/
         };
     
     # chained
@@ -776,7 +712,40 @@ sub create_accessor {
     $code .=    qq/    my \$value;\n/ if $type || $convert;
     
     # Automatically call build method
-    if($auto_build){
+    if ($initialize) {
+        
+        # Check initialize data type
+        craok("'initialize' option must be hash reference (${class}::$accessor_name)")
+          unless ref $initialize eq 'HASH';
+        
+        # Check initialize valid key
+        foreach my $key (keys %$initialize) {
+            croak("'initialize' option must has 'clone', or 'default' (${class}::$accessor_name)")
+              unless $VALID_INITIALIZE_OPTIONS_KEYS{$key};
+        }
+        
+        # Check clone option
+        my $clone = $initialize->{clone};
+        croak("'initialize'-'clone' opiton must be 'scalar', 'array', 'hash', or code reference (${class}::$accessor_name)")
+          if !defined $clone ||
+             !($clone eq 'scalar' || $clone eq 'array' ||
+               $clone eq 'hash' || ref $clone eq 'CODE');
+        
+        # Check default option
+        croak("'initialize'-'default' option must be scalar, or code ref (${class}::$accessor_name)")
+          if exists $initialize->{default} && 
+             !(!ref $initialize->{default} || ref $initialize->{default} eq 'CODE');
+        
+        $code .=
+                qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
+                qq/        Object::Simple::Functions::initialize_class_object_attr(\n/ .
+                qq/            \$self,\n/ .
+                qq/            '$accessor_name',\n/ .
+                qq/            \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{initialize}\n/ .
+                qq/        );\n/ .
+                qq/    }\n/;
+    }
+    elsif ($auto_build){
         $code .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/;
         
@@ -963,18 +932,64 @@ sub create_translate_accessor {
     return $code;
 }
 
+# Initialize ClassObjectAttr
+sub initialize_class_object_attr {
+    my $invocant      = shift;
+    my $accessor_name = shift;
+    my $options = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    
+    # clone option
+    my $clone   = $options->{clone};
+    
+    # Check clone option
+    unless (ref $clone eq 'CODE') {
+        if ($clone eq 'scalar') {
+            $clone = sub {shift};
+        }
+        elsif ($clone eq 'array') {
+            $clone = sub {my $value = shift; return \@{$value || []}};
+        }
+        elsif ($clone eq 'hash') {
+            $clone = sub {my $value = shift; return \%{$value || {}}};
+        }
+    }
+    
+    # default options
+    my $default = $options->{default};
+    
+    # get Default value when it is code ref
+    $default = $default->() if ref $default eq 'CODE';
+    
+    # Called from object
+    if (my $class = ref $invocant) {
+        $invocant->$accessor_name($clone->(scalar $class->$accessor_name));
+    }
+    else {
+        # Called from class
+        my $super =  do {
+            no strict 'refs';
+            ${"${invocant}::ISA"}[0];
+        };
+        my $value = eval{$super->can($accessor_name)}
+                       ? $clone->(scalar $super->$accessor_name)
+                       : $default;
+                          
+        $invocant->$accessor_name($value);
+    }
+}
+
+
 # Valid accessor options(Attr)
 my %VALID_OBJECT_ACCESSOR_OPTIONS 
   = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate extend);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_ACCESSOR_OPTIONS
-  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend);
+  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend initialize);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_OBJECT_ACCESSOR_OPTIONS
-  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend);
-
+  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend initialize);
 
 # Valid class output accessor options(Output)
 my %VALID_OUTPUT_OPTIONS
@@ -1037,7 +1052,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0602
+Version 2.0603
  
 =head1 FEATURES
  
@@ -1211,27 +1226,20 @@ If You do not pass class name to build_class, caller class is build.
     # Initialize Class attribute or Object attribute
     sub method : ClassObjectAttr {atuo_build => sub {
         shift->Object::Simple::initialize_class_object_attr(
-                                            {accessor_name => $accessor_name,   
-                                             clone         => $clone_method,    
+                                            {clone         => $clone_method,    
                                              default       => $default_value });
     }
     
     # Sample
     sub constraints : ClassObjectAttr {atuo_build => sub {
         shift->Object::Simple::initialize_class_object_attr(
-                                            {accessor_name => 'constraints', 
-                                             clone         => 'hash',        
+                                            {clone         => 'hash',        
                                              default       => sub { {} } }); 
     }
     
 It is normally used from auto_build to initialize class-object accessor value
 This method clone super class value to this class when invocant is class
 and clone clas value to object value when invacant is object
-
-Accessor name is specified to 'accessor_name' option.
-
-   # Sample
-   accessor_name => 'constraints'
 
 Clone option must be specified.The following is clone options
 

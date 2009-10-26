@@ -740,20 +740,18 @@ use T47;
 
 {
     is(T47->new->m4, 6, 'user clone method');
+    is(T47->m6, 3);
+    T47->m8;
+    ok(!T47->m8, 'default is undef');
 }
 
 {
-    eval{T47->m5};
-    like($@, qr/'clone' option must be 'scalar', 'array', 'hash', or code reference/, 'noexis clone option');
+    eval "use T47_Error1";
+    like($@, qr/\Q'initialize'-'clone' opiton must be 'scalar', 'array', 'hash', or code reference (T47_Error1::m5)/, 'noexis clone option');
     
-    eval{T47->m6};
-    like($@, qr/'accessor_name' options must be specified to initialize_class_object_attr/, 'no accessor_name option');
-
-    eval{T47->m7};
-    like($@, qr/'default' option must be scalar, or code ref/, 'no dfault option');
+    eval "use T47_Error2";
+    like($@, qr/\Q'initialize'-'default' option must be scalar, or code ref (T47_Error2::m7)/, 'no dfault option');
     
-    eval{T47->m8};
-    ok(!T47->m8, 'default is undef');
 }
 
 {
