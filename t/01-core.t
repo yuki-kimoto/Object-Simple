@@ -752,6 +752,12 @@ use T47;
     eval "use T47_Error2";
     like($@, qr/\Q'initialize'-'default' option must be scalar, or code ref (T47_Error2::m7)/, 'no dfault option');
     
+    eval "use T47_Error3";
+    like($@, qr/\Q'initialize' option must be 'clone', or 'default' (T47_Error3::m1)/, 'no dfault option');
+    
+    eval "use T47_Error4";
+    like($@, qr/\Q'initialize' option must be hash reference (T47_Error4::m1)/, 'no dfault option');
+    
 }
 
 {

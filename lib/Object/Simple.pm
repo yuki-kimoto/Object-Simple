@@ -5,7 +5,7 @@ use warnings;
  
 use Carp 'croak';
 
-our $VERSION = '2.0603';
+our $VERSION = '2.0701';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -715,12 +715,12 @@ sub create_accessor {
     if ($initialize) {
         
         # Check initialize data type
-        craok("'initialize' option must be hash reference (${class}::$accessor_name)")
+        croak("'initialize' option must be hash reference (${class}::$accessor_name)")
           unless ref $initialize eq 'HASH';
         
         # Check initialize valid key
         foreach my $key (keys %$initialize) {
-            croak("'initialize' option must has 'clone', or 'default' (${class}::$accessor_name)")
+            croak("'initialize' option must be 'clone', or 'default' (${class}::$accessor_name)")
               unless $VALID_INITIALIZE_OPTIONS_KEYS{$key};
         }
         
@@ -1052,7 +1052,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0603
+Version 2.0701
  
 =head1 FEATURES
  
@@ -1220,48 +1220,6 @@ When build_class is called, your module is setuped.
     4. Create constructor
     
 If You do not pass class name to build_class, caller class is build.
-
-=head2 initialize_class_object_attr
-
-    # Initialize Class attribute or Object attribute
-    sub method : ClassObjectAttr {atuo_build => sub {
-        shift->Object::Simple::initialize_class_object_attr(
-                                            {clone         => $clone_method,    
-                                             default       => $default_value });
-    }
-    
-    # Sample
-    sub constraints : ClassObjectAttr {atuo_build => sub {
-        shift->Object::Simple::initialize_class_object_attr(
-                                            {clone         => 'hash',        
-                                             default       => sub { {} } }); 
-    }
-    
-It is normally used from auto_build to initialize class-object accessor value
-This method clone super class value to this class when invocant is class
-and clone clas value to object value when invacant is object
-
-Clone option must be specified.The following is clone options
-
-    # clone option
-    1. 'scalar'     # Normal copy
-    2. 'array'      # array ref shallow copy : sub{ \@{shift} }
-    3. 'hash'       # hash ref shallow copy  : sub{ \%{shift} }
-    4. code ref     # your clone method, for exsample : 
-                    #   sub { shift->clone }
-    
-    # Samples
-    clone => 'scalar'
-    clone => 'array'
-    clone => 'hash'
-    clone => sub { shift->clone }
-
-Default value must be specified. default value must be scalar or code ref
-
-    # Sapmles
-    default => 'good life' # scalar 
-    default => sub { [] }  # array ref
-    default => sub { {} }  # hash
 
 =head2 exists_class_attr
     
@@ -1473,6 +1431,47 @@ If you overwrite only default value, do the following
     sub authors { extend => 1, default => sub {['peter', 'miki']} }
     
     Object::Simple->build_class;
+
+=head2 initialize
+
+This accessor options is only used 
+when accessor type is 'ClassAttr', or 'ClassObjectAttr'.
+
+    # Initialize Class attribute or Object attribute
+    sub method : ClassObjectAttr {
+        initialize => {clone => $clone_method, default => $default_value }
+    }
+    
+    # Sample
+    sub constraints : ClassObjectAttr {
+        initialize => {clone => 'hash', default => sub { {} } }; 
+    }
+    
+If 'initialize' option is specified and when access this attribute,
+super class value is cloned when invocant is class
+and class attribute is cloned when invacant is object
+
+'clone' option must be specified.The following is clone options
+
+    # clone option
+    1. 'scalar'     # Normal copy
+    2. 'array'      # array ref shallow copy : sub{ \@{shift} }
+    3. 'hash'       # hash ref shallow copy  : sub{ \%{shift} }
+    4. code ref     # your clone method, for exsample : 
+                    #   sub { shift->clone }
+    
+    # Samples
+    clone => 'scalar'
+    clone => 'array'
+    clone => 'hash'
+    clone => sub { shift->clone }
+
+'default' must be scalar or code ref
+
+    # Sapmles
+    default => 'good life' # scalar 
+    default => sub { [] }  # array ref
+    default => sub { {} }  # hash
 
 =head1 SPECIAL ACCESSOR
 
