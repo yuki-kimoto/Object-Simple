@@ -1,3 +1,6 @@
+2.0604
+  add initialize accessor option for ClassObjectAttr
+  delete initialize_class_object_attr is deleted(not backward compatibility)
 2.0603
   initialize_class_object_attr accessor_name is automatically set.
 2.0602
