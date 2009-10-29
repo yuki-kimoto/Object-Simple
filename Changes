@@ -1,4 +1,6 @@
-2.0604
+2.0702
+  fix initialize clone 'array' or 'hash' reference copy
+2.0701
   add initialize accessor option for ClassObjectAttr
   delete initialize_class_object_attr is deleted(not backward compatibility)
 2.0603

@@ -6,7 +6,13 @@ use lib 't/01-core';
 
 BEGIN{ use_ok( 'Object::Simple' ) }
 can_ok( 'Object::Simple', qw( new ) ); 
- 
+
+# Function for test name
+my $test;
+sub test{
+    $test = shift;
+}
+
 use Book;
 # new method
 {
@@ -765,5 +771,10 @@ use T47;
     is_deeply({$o->m9}, {a => 1, b => 2}, 'deref hash');
     is_deeply([$o->m10], [1, 2], 'deref array');
 }
+
+test 'ClassObjectAttr initiailize';
+isnt(scalar T47->m2, scalar T47_2->m2, "$test : array not copy reforecne");
+isnt(scalar T47->m3, scalar T47_2->m3, "$test : hash not copy reforecne");
+
 
 __END__

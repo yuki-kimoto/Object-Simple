@@ -5,7 +5,7 @@ use warnings;
  
 use Carp 'croak';
 
-our $VERSION = '2.0701';
+our $VERSION = '2.0702';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -947,10 +947,10 @@ sub initialize_class_object_attr {
             $clone = sub {shift};
         }
         elsif ($clone eq 'array') {
-            $clone = sub {my $value = shift; return \@{$value || []}};
+            $clone = sub { return [@{shift || [] }] };
         }
         elsif ($clone eq 'hash') {
-            $clone = sub {my $value = shift; return \%{$value || {}}};
+            $clone = sub { return { %{shift || {} } } };
         }
     }
     
@@ -1052,7 +1052,7 @@ Object::Simple - Light Weight Minimal Object System
  
 =head1 VERSION
  
-Version 2.0701
+Version 2.0702
  
 =head1 FEATURES
  
@@ -1455,8 +1455,8 @@ and class attribute is cloned when invacant is object
 
     # clone option
     1. 'scalar'     # Normal copy
-    2. 'array'      # array ref shallow copy : sub{ \@{shift} }
-    3. 'hash'       # hash ref shallow copy  : sub{ \%{shift} }
+    2. 'array'      # array ref shallow copy : sub{ [@{shift}] }
+    3. 'hash'       # hash ref shallow copy  : sub{ {%{shift}} }
     4. code ref     # your clone method, for exsample : 
                     #   sub { shift->clone }
     
