@@ -1,3 +1,6 @@
+2.0801
+  fix    : when  undef value pass new, default value is set
+  change : trigger second argument receive old value(not backword compatible)
 2.0702
   fix initialize clone 'array' or 'hash' reference copy
 2.0701

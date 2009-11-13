@@ -1089,53 +1089,64 @@ writing new and accessors repeatedly.
     use Book;
     my $book = Book->new(title => 'a', author => 'b', price => 1000);
     
-    # Default value
-    sub author : Attr { default => 'Kimoto' }
+    # Default value (number or string)
+    sub author : Attr { default => 'taro' }
     
-    #Automatically build
-    sub author : Attr { auto_build => 1 }
-    sub build_author{ 
+    # Default value (reference)
+    sub persons : Attr { default => sub { ['taro', 'ken'] } }
+    
+    # Automatically build
+    sub author : Attr { auto_build => sub {
         my $self = shift;
-        $self->author( $self->title . "b" );
-    }
+        $self->author($self->title . "b");
+    }}
     
     # Read only accessor
     sub year : Attr { read_only => 1 }
     
-    # weak reference
+    # Weak reference
     sub parent : Attr { weak => 1 }
     
-    # method chaine
+    # Method chaine (default is true)
     sub title : Attr { chained => 1 }
     
-    # variable type
+    # Variable type
     sub authors : Attr { type => 'array' }
     sub country : Attr { type => 'hash' }
     
-    # convert to object
+    # Convert to object
     sub url : Attr { convert => 'URI' }
     sub url : Attr { convert => sub{ ref $_[0] ? $_[0] : URI->new($_[0]) } }
     
-    # derefference of returned value
+    # Derefference of returned value
     sub authors    : Attr { type => 'array', deref => 1 }
     sub country_id : Attr { type => 'hash',  deref => 1 }
     
-    # trigger option
-    sub error : Attr { trigger => sub{ $_[0]->state('error') } }
+    # Trigger when value is set
+    sub error : Attr { trigger => sub{
+        my $self = shift;
+        $self->state('error');
+    }}
     sub state : Attr {}
     
-    # define accessor for class variable
+    # Define accessor for class attriute
     sub options : ClassAttr {
         type => 'array',
         auto_build => sub { shift->options([]) }
     }
     
-    # define translate accessor
+    # Define accessor for both object attribute and class attribute
+    sub options : ClassObjectAttr {
+        type => 'array',
+        auto_build => sub { shift->options([]) }
+    }
+    
+    # Define translate accessor
     sub person : Attr { default => sub{ Person->new } }
     sub name   : Translate { target => 'person->name' }
     sub age    : Translate { target => 'person->age' }
     
-    # define accessor to output attribute value
+    # Define accessor to output attribute value
     sub errors    : Attr   {}
     sub errors_to : Output { target => 'errors' }
     
@@ -1159,20 +1170,20 @@ writing new and accessors repeatedly.
  
 =head2 new
 
-    # New passing hash
+    # New (receive hash)
     $self = $class->new($key1 => $val1, $key1 => $val2, ...);
     
     # Sample
     my $book = Book->new(title => 'Perl', author => 'Taro', price => 200);
     
     
-    # New pssing hash ref
+    # New (recieve hash reference)
     $self = $class->new({$key1 => $val1, $key1 => $val2, ...});
     
     # Sample
     my $book = Book->new({title => 'Perl', author => 'Taro', price => 200});
 
-Object::Simple has new method. so you do not defined new method by yourself.
+Object::Simple have new method. so you do not defined new method by yourself.
 new can receive hash or hash reference
 
 You can also override new
@@ -1197,7 +1208,7 @@ You can also override new
     sub new {
         my ($class, $title, $author) = @_;
         my $self = $class->Object::Simple::new(title => $title,
-                                              author => $author);
+                                               author => $author);
         
         return $self;
     }
