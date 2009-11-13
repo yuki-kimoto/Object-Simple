@@ -1,38 +1,21 @@
 WHAT IS THIS?
 
-Object::Simple is framework that simplify Object Oriented Perl.
-If you use Object::Simple, You can write accessor very very simple way.
+Object::Simple is simple,fast,useful class builder.
+
+You can defined various type of accessors very easy way.
+and prepared new method is available.
 
 INSTALLATION
 
-To install this module, run the following commands:
+cpan Object::Simple
 
-	perl Build.PL
-	perl Build
-	perl Build test
-	perl Build install
+SAMPLES
 
-SUPPORT AND DOCUMENTATION
+package Book;
+use Object::Simple;
 
-After installing, you can find documentation for this module with the
-perldoc command.
-
-    perldoc Simo
-
-You can also look for information at:
-
-    RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Simo
-
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Simo
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/Simo
-
-    Search CPAN
-        http://search.cpan.org/dist/Simo/
-
+sub title  : Attr { default => 'Perl' }
+sub author : Attr { default => 'taro' }
 
 COPYRIGHT AND LICENCE
 

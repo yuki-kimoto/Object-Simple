@@ -5,8 +5,8 @@ use Scalar::Util qw(isweak);
 sub m1 : Attr {
     default => 5,
     trigger => sub{
-        my ($self, $val) = @_;
-        $self->m2($val * 2);
+        my ($self) = @_;
+        $self->m2($self->m1 * 2);
     }
 }
 
