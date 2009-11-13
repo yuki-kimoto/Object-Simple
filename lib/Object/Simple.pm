@@ -619,11 +619,13 @@ sub create_constructor {
         if(defined $accessors->{$accessor_name}{options}{default}) {
             if(ref $accessors->{$accessor_name}{options}{default} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$accessor_name'} ||= \$CLASS_INFOS->{'$class'}{merged_accessors}{'$accessor_name'}{options}{default}->();\n/;
+                qq/    \$self->{'$accessor_name'} = \$CLASS_INFOS->{'$class'}{merged_accessors}{'$accessor_name'}{options}{default}->()\n/ .
+                qq/      unless exists \$self->{'$accessor_name'};\n/;
             }
             elsif(!ref $accessors->{$accessor_name}{options}{default}) {
                 $code .=
-                qq/    \$self->{'$accessor_name'} ||= \$CLASS_INFOS->{'$class'}{merged_accessors}{'$accessor_name'}{options}{default};\n/;
+                qq/    \$self->{'$accessor_name'} = \$CLASS_INFOS->{'$class'}{merged_accessors}{'$accessor_name'}{options}{default}\n/ .
+                qq/      unless exists \$self->{'$accessor_name'};\n/;
             }
             else {
                 croak("Value of 'default' option must be a code reference or constant value(${class}::$accessor_name)");
@@ -807,6 +809,12 @@ sub create_accessor {
             $value = '$value';
         }
         
+        # Save old value
+        if ($trigger) {
+            $code .=
+                qq/        my \$old = $strage;\n/;
+        }
+        
         # Set value
         $code .=
                 qq/        $strage = $value;\n/;
@@ -824,7 +832,7 @@ sub create_accessor {
               unless ref $trigger eq 'CODE';
             
             $code .=
-                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{trigger}->(\$self);\n/;
+                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{trigger}->(\$self, \$old);\n/;
         }
         
         # Return self if chained

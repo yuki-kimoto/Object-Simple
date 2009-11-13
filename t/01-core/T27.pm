@@ -18,6 +18,11 @@ sub m4 : Attr {}
 sub m5 : Attr { weak => 1, trigger => sub { $_[0]->m6(1) if isweak $_[0]->{'m5'} } }
 sub m6 : Attr {}
 
+sub m7 : Attr { trigger => sub {
+    my ($self, $old) = @_;
+    $self->m7_check($self->m7 + $old) if $old;
+}}
 
+sub m7_check : Attr {}
 
 Object::Simple->build_class;

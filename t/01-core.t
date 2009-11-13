@@ -132,6 +132,13 @@ use T3;
     is_deeply( $t1->x, $t2->x, 'default value is same' );
     
 }
+
+use T3_2;
+{
+    my $t = T3_2->new(m1 => undef, m2 => undef);
+    ok(!$t->m1, 'default new set undef');
+    ok(!$t->m2, 'default code ref new set undef');
+}
  
 use T4;
 {
@@ -427,6 +434,13 @@ use T27;
 {
     my $t = T27->new(m3 => undef);
     is($t->m4, 1, 'trigger when set undef from constructor');
+}
+
+{
+    my $t = T27->new;
+    $t->m7(1);
+    $t->m7(2);
+    is($t->m7_check, 3, 'trigger old value');
 }
 
 {
