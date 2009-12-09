@@ -21,7 +21,7 @@ sub m5 {
 
 sub m6 {
     my $self = shift;
-    $self->Object::Simple::call_super('m6', @_) * 3;
+    $self->call_super('m6', @_) * 3;
 }
 
 

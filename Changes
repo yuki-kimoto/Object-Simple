@@ -1,5 +1,14 @@
+2.0901
+  add 'class_attr' method.
+  discuraged 'delete_class_attr' method
+  descuraged 'exists_class_attr' method
+  update document
+2.0803
+  update document
+2.0802
+  delete document about Translate accessor and Output accessor, these will be deleted in future
 2.0801
-  fix    : when  undef value pass new, default value is set
+  fix    : when  undef value is passed to new, default value is set
   change : trigger second argument receive old value(not backword compatible)
 2.0702
   fix initialize clone 'array' or 'hash' reference copy
@@ -80,59 +89,45 @@
 2.0004
   change: add 'trigger' accessor option
   change: to be flexible Base class do not load when import method call
-  
 2.0003
   change method name 'end' to 'build_class'
-  
 2.0002
   change: when attribute value having 'array' or 'hash' option is set undef value, undef value is set.
   change: mixin method search order is like Ruby.  1. this class, 2. Mixin class last 3. Mixin class first, 4 Base class
-  
 2.0001
   add accessor option 'type', 'convert', 'deref'
   mixins option change like Moose role
   add 'mixins_rename' option
-  
 1.0003
   bag fix: occur compile error if a class having auto_build option and its name contain :: is loaded,
-  
 1.0002
   remove attroption name
   bag fix: not resist constructor if class name contain ::
-
 1.0001
   first stabule release
-
 0.0209
   add create_constructor.
   
 0.0208
   add unimport methods to difine user's MODIFY_CODE_ATTRIBUTES
-
 0.0207
   renamae $META hash key
-
 0.0206
   optimize new methods
-
 0.0205
   add mixins select options 
   
 0.0204
   document is updated
-
 0.0203
   remove many options 'type', 'setter_return', 'required'
   remove method 'error'
   add options 'chained'
-  
 0.0202
   mixin format is changed.
   remove _arrange_args and _init method
-  
 0.0201
   first release
-  
 0.01_02
 rename Object::Simple::Error attribute 'pkg' to 'class' 
 delete attribute key before pass args to _init 

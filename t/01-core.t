@@ -205,7 +205,7 @@ use T10;
 }
  
 eval "use T15";
-like($@, qr/Accessor type 'A' is not exist. Accessor type must be 'Attr', 'ClassAttr', 'ClassObjectAttr', 'Output', or 'Translate'/, 'Not exist accessor name');
+like($@, qr/Accessor type 'A' is not exist. Accessor type must be 'Attr', 'ClassAttr', 'ClassObjectAttr'/, 'Not exist accessor name');
  
 {
     use T16;
@@ -568,8 +568,20 @@ use T30;
     
     my $p = {};
     T37->m3($p);
-    ok(Scalar::Util::isweak($Object::Simple::CLASS_INFOS->{'T37'}{accessors}{'m3'}{value}), 'class accessor weak package variable');
+    ok(Scalar::Util::isweak(T37->class_attrs->{m3}), 'class accessor weak class attr');
     is(T37->m3, $p, 'class accessor weak get');
+    
+    my $o = T37->new;
+    ok(Scalar::Util::isweak($o->class_attrs->{m3}), 'class accessor weak class attr');
+    ok($o->exists_class_attr('m3'), 'class accessor exists from object');
+    ok($o->class_attrs->{m3}, 'class accessor exists from object');
+    
+    is_deeply($o->delete_class_attr('m3'), {}, 'class accessor delete from object');
+    ok(!defined $o->class_attrs->{m3}, 'class accessor delete from object');
+    
+    T37->m3($p);
+    is_deeply($o->delete_class_attr('m3'), {}, 'class accessor delete from object');
+    ok(!defined $o->class_attrs->{m3}, 'class accessor delete from object');
     
     eval{T37->m4(4)};
     like( $@, qr/T37::m4 is read only/, 'read_only die' );

@@ -13,8 +13,8 @@ sub initialize {
     my $self = shift;
     
     $self->SUPER::initialize;
-    foreach my $initialize (@{Object::Simple->mixin_methods('initialize')}) {
-        $initialize->($self, 3);
+    foreach my $initialize (@{$self->mixin_methods('initialize')}) {
+        $self->$initialize(3);
     }
     $self->m2(2);
 }
