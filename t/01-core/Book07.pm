@@ -1,4 +1,4 @@
-package Book;
+package Book07;
 use Object::Simple;
 
 sub new{

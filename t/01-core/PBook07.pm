@@ -1,5 +1,5 @@
-package PBook;
-use base 'Book';
+package PBook07;
+use base 'Book07';
 use Object::Simple;
 
 sub new{

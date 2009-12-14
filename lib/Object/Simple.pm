@@ -5,8 +5,6 @@ use warnings;
  
 use Carp 'croak';
 
-our $VERSION = '2.0901';
-
 # Meta imformation
 our $CLASS_INFOS = {};
 
@@ -688,9 +686,9 @@ sub create_accessor {
     my ($class, $accessor_name, $accessor_type) = @_;
     
     # Get accessor options
-    my ($auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize)
+    my ($build, $auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize)
       = @{$Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}}{
-            qw/auto_build read_only weak type convert deref trigger initialize/
+            qw/build auto_build read_only weak type convert deref trigger initialize/
         };
     
     # chained
@@ -770,7 +768,7 @@ sub create_accessor {
         
         if(ref $auto_build eq 'CODE') {
             $code .=
-                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{auto_build}->(\$self, {accessor_name => '$accessor_name'});\n/;
+                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{auto_build}->(\$self);\n/;
         }
         else {
             my $build_method;
@@ -783,6 +781,34 @@ sub create_accessor {
         }
         
         $code .=
+                qq/    }\n/;
+    }
+    elsif ($build) {
+        
+        # Invalid 'build' option
+        croak "'build' option must be scalar or code ref (${class}::$accessor_name)"
+          unless !ref $build || ref $build eq 'CODE';
+        
+        # Build
+        $code .=
+                qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
+                qq/        \$self->$accessor_name(\n/;
+        
+        # Code ref
+        if (ref $build) {
+            $code .=
+                qq/            scalar \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{build}->(\$self)\n/;
+        }
+        
+        # Scalar
+        else {
+            $code .=
+                qq/            scalar \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{build}\n/;
+        }
+        
+        # Close
+        $code .=
+                qq/        )\n/ .
                 qq/    }\n/;
     }
     
@@ -1000,15 +1026,15 @@ sub initialize_class_object_attr {
 
 # Valid accessor options(Attr)
 my %VALID_OBJECT_ACCESSOR_OPTIONS 
-  = map {$_ => 1} qw(default chained weak read_only auto_build type convert deref trigger translate extend);
+  = map {$_ => 1} qw(default chained weak read_only build auto_build type convert deref trigger translate extend);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_ACCESSOR_OPTIONS
-  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend initialize);
+  = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_OBJECT_ACCESSOR_OPTIONS
-  = map {$_ => 1} qw(chained weak read_only auto_build type convert deref trigger translate extend initialize);
+  = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize);
 
 ### Output accessor will be deleted in future ###
 # Valid class output accessor options(Output)
@@ -1074,6 +1100,10 @@ Object::Simple - Simple class builder
 =head1 Version
  
 Version 2.0803
+
+=cut
+
+our $VERSION = '2.1001';
  
 =head1 Features
  
@@ -1110,17 +1140,13 @@ writing new and accessors repeatedly.
     use Book;
     my $book = Book->new(title => 'a', author => 'b', price => 1000);
     
-    # Default value (number or string)
-    sub author  : Attr { default => 'taro' }
+    # Default
+    sub author  : Attr { default => 'Good new' }
+    sub persons : Attr { default => sub {['Ken', 'Taro']} }
     
-    # Default value (reference)
-    sub persons : Attr { default => sub {['taro', 'ken']} }
-    
-    # Automatically build
-    sub author  : Attr { auto_build => sub {
-        my $self = shift;
-        $self->author($self->title . "b");
-    }}
+    # Build
+    sub title   : Attr { build => 'Good news' }
+    sub authors : Attr { build => sub{['Ken', 'Taro']} }
     
     # Read only accessor
     sub year   : Attr { read_only => 1 }
@@ -1320,33 +1346,27 @@ If you want to build class, you must call 'build_class'
  
 You can define attribute default value.
  
-    sub title : Attr {default => 'Good news'}
+    sub title    : Attr {default => 'Good news'}
  
 If you define default values using reference or Object,
 you need wrapping it by sub{}.
  
     sub authors : Attr { default => sub{['Ken', 'Taro']} }
- 
-=head2 auto_build
- 
-When accessor is called first,a methods is called to build attribute.
- 
-    sub author : Attr { auto_build => 1 }
-    sub build_author{
+
+=head2 build
+
+Create attribute when accessed first. Usage is almost same as 'default'.
+
+    sub title   : Attr { build => 'Good news' }
+    sub authors : Attr { build => sub{['Ken', 'Taro']} }
+
+'build' subroutine receive $self. using other attribute, you can build this attribute.
+
+    sub title : Attr { build => sub {
         my $self = shift;
-        $self->atuhor( Person->new );
-    }
- 
-Builder method name is build_ATTRIBUTE_NAME by default;
- 
-You can specify build method .
- 
-    sub author : Attr { auto_build => 1 }
-    sub create_author{
-        my $self = shift;
-        $self->atuhor( Person->new );
-    }
- 
+        return Some::Module->new($self->authors);
+    }}
+
 =head2 read_only
  
 You can create read only accessor
@@ -1652,6 +1672,7 @@ You can create custamizable module easy way.
 
 L<Validator::Custom>, L<DBIx::Custom>
 
+
 =head1 Discoraged options and methods
 
 The following options and methods are discuraged now.
@@ -1679,6 +1700,36 @@ Check existence of class attribute
 This is discuraged now. instead, you write this
     
     exists $class->class_attrs->{$attr};
+
+=head2 auto_build
+
+'auto_build' options is now discoraged.
+
+Instead of 'auto_build', use 'build'. 'build' is more simple than 'auto_build'.
+
+    sub author : Attr { auto_build => sub { shift->author(Some::Module->new) } }
+    
+    sub author : Attr { build => sub { Some::Module->new } }
+
+The following is original document.
+
+When accessor is called first,a methods is called to build attribute.
+ 
+    sub author : Attr { auto_build => 1 }
+    sub build_author{
+        my $self = shift;
+        $self->atuhor( Person->new );
+    }
+ 
+Builder method name is build_ATTRIBUTE_NAME by default;
+ 
+You can specify build method .
+ 
+    sub author : Attr { auto_build => 1 }
+    sub create_author{
+        my $self = shift;
+        $self->atuhor( Person->new );
+    }
 
 =head2 delete_class_attr methods
 

@@ -7,11 +7,12 @@ use lib 't/01-core';
 BEGIN{ use_ok( 'Object::Simple' ) }
 can_ok( 'Object::Simple', qw( new ) ); 
 
-# Function for test name
+# Test name
 my $test;
-sub test{
-    $test = shift;
-}
+sub test{$test = shift}
+
+my $o;
+
 
 use Book;
 # new method
@@ -792,15 +793,63 @@ use T47;
     
 }
 
-{
-    my $o = T47->new;
-    is_deeply({$o->m9}, {a => 1, b => 2}, 'deref hash');
-    is_deeply([$o->m10], [1, 2], 'deref array');
-}
+test 'deref';
+$o = T47->new;
+is_deeply({$o->m9}, {a => 1, b => 2}, "$test : hash");
+is_deeply([$o->m10], [1, 2], "$test : array");
+
 
 test 'ClassObjectAttr initiailize';
 isnt(scalar T47->m2, scalar T47_2->m2, "$test : array not copy reforecne");
 isnt(scalar T47->m3, scalar T47_2->m3, "$test : hash not copy reforecne");
 
+
+test 'Super new';
+use PBook07;
+my $pbook = PBook07->new( title => 'a', author => 'b' );
+is_deeply( $pbook, { title => 'a', author => 'b' }, "$test : super new");
+
+
+test 'Auto strict';
+package Book813;
+use Object::Simple;
+eval'$no_exist = 3;';
+package main;
+ok($@, $test);
+
+
+test 'Parant-Child';
+package Parent820;
+use Object::Simple;
+sub children : Attr {}
+Object::Simple->build_class;
+package Child820;
+use Object::Simple;
+sub parent : Attr {}
+Object::Simple->build_class;
+package main;
+$o = Parent820->new(children => 1);
+is($o->children, 1, 'Parent is ok');
+$o = Child820->new(parent => 1);
+is($o->parent, 1, 'Child is ok');
+
+
+test 'builder accessor option';
+use T48;
+$o = T48->new;
+is($o->m1, 1, "$test : attr scalar");
+is($o->m2, 14, "$test : attr code ref");
+is(T48->m3, 3, "$test : class attr scalar");
+is(T48->m4, 28, "$test : class attr code ref");
+is($o->m5, 5, "$test : class object attr scalar : object");
+is(T48->m5, 5, "$test : class object attr scalar : class");
+is($o->m6, 42, "$test : class object attr code ref : object");
+is(T48->m6, 42, "$test : class object attr code ref : class");
+
+
+test 'build accessor option error';
+eval "use T48_Error1";
+like($@, qr/\Q'build' option must be scalar or code ref (T48_Error1::m1)/,
+     "$test");
 
 __END__

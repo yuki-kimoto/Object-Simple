@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 6;
+use Test::More 'no_plan';
 
 use lib 't/03-extend1';
 
