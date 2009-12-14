@@ -8,6 +8,9 @@ use Carp 'croak';
 # Meta imformation
 our $CLASS_INFOS = {};
 
+# Object::Simple::Util
+our $UTIL = 'Object::Simple::Util';
+
 # Classes which need to build
 our @BUILD_NEED_CLASSES;
 
@@ -47,7 +50,7 @@ sub import {
     warnings->import;
     
     # Define MODIFY_CODE_ATTRIBUTES subroutine of caller class
-    Object::Simple::Functions::define_MODIFY_CODE_ATTRIBUTES($caller_class);
+    $UTIL->define_MODIFY_CODE_ATTRIBUTES($caller_class);
     
     # Push classes which need build
     push @BUILD_NEED_CLASSES, $caller_class;
@@ -78,7 +81,7 @@ sub new {
         if $CLASS_INFOS->{$class}{constructor};
     
     # Search super class constructor if constructor is not resited
-    foreach my $super_class (@{Object::Simple::Functions::get_leftmost_isa($class)}) {
+    foreach my $super_class (@{$UTIL->get_leftmost_isa($class)}) {
         if($CLASS_INFOS->{$super_class}{constructor}) {
             $CLASS_INFOS->{$class}{constructor}
               = $CLASS_INFOS->{$super_class}{constructor};
@@ -147,9 +150,8 @@ sub build_class {
                           : {@accessor_options};
         
         # Check accessor option
-        Object::Simple::Functions::check_accessor_option($accessor_name, 
-                                                         $class, $accessor_options,
-                                                         $accessor_type);
+        $UTIL->check_accessor_option($accessor_name, $class, $accessor_options,
+                                     $accessor_type);
         
         # Resist accessor type and accessor options
         @{$Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}}{qw/type options/}
@@ -194,12 +196,15 @@ sub build_class {
             }
         }
         
+        # Check if inherit is available
+        
+        
         # Inherit Object::Simple
         push @{"${class}::ISA"}, 'Object::Simple';
         
         # Include mixin classes
-        Object::Simple::Functions::include_mixin_classes($class)
-            if $Object::Simple::CLASS_INFOS->{$class}{mixins};
+        $UTIL->include_mixin_classes($class)
+          if $Object::Simple::CLASS_INFOS->{$class}{mixins};
     }
 
     # Create constructor and resist accessor code
@@ -211,7 +216,7 @@ sub build_class {
             my $base_class = $class;
             while ($Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend}) {
                 my ($super_accessor_options, $accessor_found_class)
-                  = Object::Simple::Functions::get_super_accessor_options($base_class, $accessor_name);
+                  = $UTIL->get_super_accessor_options($base_class, $accessor_name);
                 
                 delete $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend};
                 
@@ -232,25 +237,25 @@ sub build_class {
                 # Create translate accessor
                 $accessor_code 
                   .= "package $class;\nsub $accessor_name " 
-                  . Object::Simple::Functions::create_translate_accessor($class, $accessor_name);
+                  . $UTIL->create_translate_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'Output') {
                 ### Output accessor will be deleted in future ###
                 # Create output accessor
                 $accessor_code
                   .= "package $class;\nsub $accessor_name " 
-                  . Object::Simple::Functions::create_output_accessor($class, $accessor_name);
+                  . $UTIL->create_output_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'ClassObjectAttr') {
                 # Create class and object hibrid accessor
                 $accessor_code
-                  .= Object::Simple::Functions::create_class_object_accessor($class, $accessor_name);
+                  .= $UTIL->create_class_object_accessor($class, $accessor_name);
             }
             else {
                 # Create normal accessor or class accessor
                 $accessor_code
                   .= "package $class;\nsub $accessor_name " 
-                  . Object::Simple::Functions::create_accessor($class, $accessor_name, $accessor_type);
+                  . $UTIL->create_accessor($class, $accessor_name, $accessor_type);
             }
         }
     }
@@ -264,8 +269,7 @@ sub build_class {
     
     # Create constructor
     foreach my $class (@build_need_classes) {
-        my $constructor_code
-          = Object::Simple::Functions::create_constructor($class);
+        my $constructor_code = $UTIL->create_constructor($class);
         
         eval $constructor_code;
         croak("$constructor_code\n:$@") if $@; # never occured
@@ -282,8 +286,7 @@ sub build_class {
 
 # Resit accessor information
 sub resist_accessor_info {
-    shift;
-    my ($class, $accessor_name, $accessor_options, $accessor_type) = @_;
+    my ($self, $class, $accessor_name, $accessor_options, $accessor_type) = @_;
     
     # Rearrange accessor options
     my $accessor_options_  = ref $accessor_options eq 'HASH'
@@ -397,14 +400,18 @@ sub delete_class_attr {
     return delete $Object::Simple::CLASS_INFOS->{$class}{class_attrs}{$accessor_name};
 }
 
-package Object::Simple::Functions;
+package Object::Simple::Util;
 use strict;
 use warnings;
 use Carp 'croak';
 
+# Object::Simple::Util
+our $UTIL = 'Object::Simple::Util';
+
 # Get leftmost self and parent classes
 sub get_leftmost_isa {
-    my $class = shift;
+    my ($self, $class) = @_;
+    
     my @leftmost_isa;
     
     # Sortcut
@@ -422,7 +429,7 @@ sub get_leftmost_isa {
 
 # Get upper accessor options
 sub get_super_accessor_options {
-    my ($class, $accessor_name) = @_;
+    my ($self, $class, $accessor_name) = @_;
     
     # Base class
     my $base_class = $class;
@@ -440,7 +447,7 @@ sub get_super_accessor_options {
 
 # Include mixin classes
 sub include_mixin_classes {
-    my $caller_class = shift;
+    my ($self, $caller_class) = @_;
     
     # Get mixin classes
     my $mixin_classes = $Object::Simple::CLASS_INFOS->{$caller_class}{mixins};
@@ -466,7 +473,7 @@ sub include_mixin_classes {
         }
         
         my $deparse_possibility
-          = Object::Simple::Functions::mixin_method_deparse_possibility($mixin_class);
+          = $UTIL->mixin_method_deparse_possibility($mixin_class);
         
         my $deparse;
         if ($deparse_possibility) {
@@ -526,7 +533,7 @@ sub include_mixin_classes {
 }
 
 sub mixin_method_deparse_possibility {
-    my $mixin_class = shift;
+    my ($self, $mixin_class) = @_;
     
     # Has mixin classes
     return 1
@@ -554,16 +561,14 @@ sub mixin_method_deparse_possibility {
  
 # Merge self and super accessor option
 sub merge_self_and_super_accessors {
-    
-    my $class = shift;
+    my ($self, $class) = @_;
     
     # Return cache if cached 
     return $Object::Simple::CLASS_INFOS->{$class}{merged_accessors}
       if $Object::Simple::CLASS_INFOS->{$class}{merged_accessors};
     
     # Get self and super classed
-    my $self_and_super_classes
-      = Object::Simple::Functions::get_leftmost_isa($class);
+    my $self_and_super_classes = $UTIL->get_leftmost_isa($class);
     
     # Get merged accessor options 
     my $accessors = {};
@@ -580,10 +585,10 @@ sub merge_self_and_super_accessors {
 
 # Create constructor
 sub create_constructor {
-    my $class = shift;
+    my ($self, $class) = @_;
     
     # Get merged accessors
-    my $accessors = merge_self_and_super_accessors($class);
+    my $accessors = $UTIL->merge_self_and_super_accessors($class);
     my $object_accessors = {};
     my $translate_accessors = {};
     
@@ -683,7 +688,7 @@ my %VALID_INITIALIZE_OPTIONS_KEYS = map {$_ => 1} qw/clone default/;
 # Create accessor.
 sub create_accessor {
     
-    my ($class, $accessor_name, $accessor_type) = @_;
+    my ($self, $class, $accessor_name, $accessor_type) = @_;
     
     # Get accessor options
     my ($build, $auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize)
@@ -755,7 +760,7 @@ sub create_accessor {
         
         $code .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
-                qq/        Object::Simple::Functions::initialize_class_object_attr(\n/ .
+                qq/        $UTIL->initialize_class_object_attr(\n/ .
                 qq/            \$self,\n/ .
                 qq/            '$accessor_name',\n/ .
                 qq/            \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{initialize}\n/ .
@@ -914,11 +919,11 @@ sub create_accessor {
 
 # Create class and object hibrid accessor
 sub create_class_object_accessor {
-    my ($class, $accessor_name) = @_;
-    my $object_accessor = Object::Simple::Functions::create_accessor($class, $accessor_name, 'Attr');
+    my ($self, $class, $accessor_name) = @_;
+    my $object_accessor = $UTIL->create_accessor($class, $accessor_name, 'Attr');
     $object_accessor = join("\n    ", split("\n", $object_accessor));
     
-    my $class_accessor  = Object::Simple::Functions::create_accessor($class, $accessor_name, 'ClassAttr');
+    my $class_accessor  = $UTIL->create_accessor($class, $accessor_name, 'ClassAttr');
     $class_accessor = join("\n    ", split("\n", $class_accessor));
     
     my $code = qq/{\n/ .
@@ -943,7 +948,7 @@ sub create_class_object_accessor {
 ### Output accessor will be deleted in future ###
 # Create accessor for output
 sub create_output_accessor {
-    my ($class, $accessor_name) = @_;
+    my ($self, $class, $accessor_name) = @_;
     my $target = $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}{target};
     
     my $code =  qq/{\n/ .
@@ -959,7 +964,7 @@ sub create_output_accessor {
 ### Translate accessor will be deleted in future ###
 # Create accessor for delegate
 sub create_translate_accessor {
-    my ($class, $accessor_name) = @_;
+    my ($self, $class, $accessor_name) = @_;
     my $target = $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}{target} || '';
     
     croak("${class}::$accessor_name '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
@@ -979,6 +984,7 @@ sub create_translate_accessor {
 
 # Initialize ClassObjectAttr
 sub initialize_class_object_attr {
+    my $self          = shift;
     my $invocant      = shift;
     my $accessor_name = shift;
     my $options = ref $_[0] eq 'HASH' ? $_[0] : {@_};
@@ -1056,7 +1062,7 @@ my $VALID_ACCESSOR_OPTIONS = {
 
 # Check accessor options
 sub check_accessor_option {
-    my ( $accessor_name, $class, $accessor_options, $accessor_type ) = @_;
+    my ($self, $accessor_name, $class, $accessor_options, $accessor_type ) = @_;
     
     my $valid_accessor_options = $VALID_ACCESSOR_OPTIONS->{$accessor_type};
     
@@ -1069,7 +1075,7 @@ sub check_accessor_option {
 # Define MODIFY_CODE_ATTRIBUTRS subroutine
 my %VALID_ACCESSOR_TYPES = map {$_ => 1} qw/Attr ClassAttr ClassObjectAttr Output Translate/;
 sub define_MODIFY_CODE_ATTRIBUTES {
-    my $class = shift;
+    my ($self, $class) = @_;
     
     # MODIFY_CODE_ATTRIBUTES
     my $code = sub {
@@ -1099,7 +1105,7 @@ Object::Simple - Simple class builder
  
 =head1 Version
  
-Version 2.0803
+Version 2.1001
 
 =cut
 
