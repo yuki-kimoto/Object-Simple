@@ -306,8 +306,9 @@ my %VALID_INITIALIZE_OPTIONS_KEYS = map {$_ => 1} qw/clone default/;
 
 # Create accessor.
 sub create_accessor {
-    
     my ($self, $class, $accessor_name, $accessor_type) = @_;
+    
+    # Accessor type
     $accessor_type ||= '';
     
     # Class infos
@@ -541,12 +542,11 @@ sub create_accessor {
 }
 
 sub create_class_accessor  { shift->create_accessor(@_[0 .. 1], 'ClassAttr') }
-sub create_object_accessor { shift->create_accessor(@_[0 .. 1], 'Attr') }
 
 # Create class and object hibrid accessor
 sub create_class_object_accessor {
     my ($self, $class, $accessor_name) = @_;
-    my $object_accessor = $self->create_object_accessor($class, $accessor_name);
+    my $object_accessor = $self->create_accessor($class, $accessor_name);
     $object_accessor = join("\n    ", split("\n", $object_accessor));
     
     my $class_accessor  = $self->create_class_accessor($class, $accessor_name);
