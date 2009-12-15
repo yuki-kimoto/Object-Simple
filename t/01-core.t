@@ -793,6 +793,49 @@ use T47;
     
 }
 
+test 'clone options';
+use T49;
+$o = T49->m1;
+is(T49->m1, 1, "$test : scalar class");
+is_deeply(T49->m2, [1, 2], "$test : array class");
+is_deeply(T49->m3, {a => 1, b => 2}, "$test : hash class");
+
+$o = T49->new;
+is($o->m1, 1, "$test : scalar object");
+is_deeply($o->m2, [1, 2], "$test : array object");
+is_deeply($o->m3, {a => 1, b => 2}, "$test : hash object");
+
+$o = T49_2->m1;
+is(T49_2->m1, 1, "$test : scalar sub class");
+is_deeply(T49_2->m2, [1, 2], "$test : array sub class");
+is_deeply(T49_2->m3, {a => 1, b => 2}, "$test : hash sub class");
+
+$o = T49_2->new;
+is($o->m1, 1, "$test : scalar sub object");
+is_deeply($o->m2, [1, 2], "$test : array sub object");
+is_deeply($o->m3, {a => 1, b => 2}, "$test : hash sub object");
+
+T49_2->m1(2);
+is(T49->m1, 1, "$test : no effect");
+is(T49_2->m1, 2, "$test : no effect 2");
+$o = T49_2->new;
+$o->m1;
+is($o->m1, 2, "$test : copied class");
+
+$o = T49_4->new;
+is($o->m1, 2, "$test : scalar multi inherit object");
+is_deeply($o->m2, [1, 2], "$test : multi inherit object");
+is_deeply($o->m3, {a => 1, b => 2}, "$test : hash multi inherit object");
+
+
+is(T49->new->m4, 6, "$test :user clone method");
+is(T49->m6, 3);
+T49->m8;
+ok(!T49->m8, "$test : build is undef");
+
+eval "use T49_Error1";
+like($@, qr/\Q'clone' opiton must be 'scalar', 'array', 'hash', or code reference (T49_Error1::m5)/, 'noexis clone option');
+
 test 'deref';
 $o = T47->new;
 is_deeply({$o->m9}, {a => 1, b => 2}, "$test : hash");

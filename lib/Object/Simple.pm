@@ -752,24 +752,22 @@ If you overwrite only default value, do the following
     
     Object::Simple->build_class;
 
-=head2 initialize
+=head2 clone
 
 This accessor options is only used 
 when accessor type is 'ClassAttr', or 'ClassObjectAttr'.
 
-Initialize Class attribute or Object attribute
+Clone Class attribute or Object attribute
 
     sub method : ClassObjectAttr {
-        initialize => {clone => $clone_method, default => $default_value }
+        clone => $clone_method, build => $default_value }
     }
     
 Sample
 
-    sub constraints : ClassObjectAttr {
-        initialize => {clone => 'hash', default => sub { {} } }; 
-    }
+    sub constraints : ClassObjectAttr { clone => 'hash', build => sub {{}} }
     
-If 'initialize' option is specified and when access this attribute,
+If 'clone' option is specified and when access this attribute,
 super class value is cloned when invocant is class
 and class attribute is cloned when invacant is object
 
@@ -789,12 +787,6 @@ Samples
     clone => 'array'
     clone => 'hash'
     clone => sub { shift->clone }
-
-'default' must be scalar or code ref
-
-    default => 'good life' # scalar 
-    default => sub {[]}  # array ref
-    default => sub {{}}  # hash
 
 =head1 Special accessors
 
@@ -1015,6 +1007,54 @@ You can specify build method .
         my $self = shift;
         $self->atuhor( Person->new );
     }
+    
+=head2 initialize
+
+is now discoraged. instead of 'initialize', use 'clone'.
+
+The following is original document.
+
+This accessor options is only used 
+when accessor type is 'ClassAttr', or 'ClassObjectAttr'.
+
+Initialize Class attribute or Object attribute
+
+    sub method : ClassObjectAttr {
+        initialize => {clone => $clone_method, default => $default_value }
+    }
+    
+Sample
+
+    sub constraints : ClassObjectAttr {
+        initialize => {clone => 'hash', default => sub { {} } }; 
+    }
+    
+If 'initialize' option is specified and when access this attribute,
+super class value is cloned when invocant is class
+and class attribute is cloned when invacant is object
+
+'clone' option must be specified.The following is clone options
+
+The following is clone options
+
+    1. 'scalar'     # Normal copy
+    2. 'array'      # array ref shallow copy : sub{ [@{shift}] }
+    3. 'hash'       # hash ref shallow copy  : sub{ {%{shift}} }
+    4. code ref     # your clone method, for exsample : 
+                    #   sub { shift->clone }
+
+Samples
+
+    clone => 'scalar'
+    clone => 'array'
+    clone => 'hash'
+    clone => sub { shift->clone }
+
+'default' must be scalar or code ref
+
+    default => 'good life' # scalar 
+    default => sub {[]}  # array ref
+    default => sub {{}}  # hash
 
 =head2 delete_class_attr methods
 

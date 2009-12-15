@@ -312,8 +312,8 @@ sub create_accessor {
     $accessor_type ||= '';
     
     # Get accessor options
-    my ($build, $auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize)
-      = @{$options}{qw/build auto_build read_only weak type convert deref trigger initialize/};
+    my ($build, $auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize, $clone)
+      = @{$options}{qw/build auto_build read_only weak type convert deref trigger initialize clone/};
     
     # chained
     my $chained =   exists $options->{chained} ? $options->{chained} : 1;
@@ -351,7 +351,11 @@ sub create_accessor {
     
     # Create temporary variable if there is type or convert option
     $source .=    qq/    my \$value;\n/ if $type || $convert;
-    
+
+    # Invalid 'build' option
+    croak "'build' option must be scalar or code ref (${class}::$accessor_name)"
+      unless !ref $build || ref $build eq 'CODE';
+
     # Automatically call build method
     if ($initialize) {
         
@@ -379,10 +383,24 @@ sub create_accessor {
         
         $source .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
-                qq/        Object::Simple::Util->initialize_class_object_attr(\n/ .
+                qq/        Object::Simple::Util->clone_prototype(\n/ .
                 qq/            \$self,\n/ .
                 qq/            '$accessor_name',\n/ .
                 qq/            \$options->{initialize}\n/ .
+                qq/        );\n/ .
+                qq/    }\n/;
+    }
+    elsif ($clone) {
+        
+        croak("'clone' opiton must be 'scalar', 'array', 'hash', or code reference (${class}::$accessor_name)")
+          if !($clone eq 'scalar' || $clone eq 'array' || $clone eq 'hash' || ref $clone eq 'CODE');
+        
+        $source .=
+                qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
+                qq/        Object::Simple::Util->clone_prototype(\n/ .
+                qq/            \$self,\n/ .
+                qq/            '$accessor_name',\n/ .
+                qq/            \$options\n/ .
                 qq/        );\n/ .
                 qq/    }\n/;
     }
@@ -408,10 +426,6 @@ sub create_accessor {
                 qq/    }\n/;
     }
     elsif ($build) {
-        
-        # Invalid 'build' option
-        croak "'build' option must be scalar or code ref (${class}::$accessor_name)"
-          unless !ref $build || ref $build eq 'CODE';
         
         # Build
         $source .=
@@ -619,8 +633,8 @@ sub create_translate_accessor {
     return $code;
 }
 
-# Initialize ClassObjectAttr
-sub initialize_class_object_attr {
+# Clone prototype
+sub clone_prototype {
     my $self          = shift;
     my $invocant      = shift;
     my $accessor_name = shift;
@@ -642,8 +656,10 @@ sub initialize_class_object_attr {
         }
     }
     
-    # default options
-    my $default = $options->{default};
+    # build options
+    my $default = exists $options->{default}
+                ? $options->{default}
+                : $options->{build};
     
     # get Default value when it is code ref
     $default = $default->() if ref $default eq 'CODE';
@@ -666,18 +682,17 @@ sub initialize_class_object_attr {
     }
 }
 
-
 # Valid accessor options(Attr)
 my %VALID_OBJECT_ACCESSOR_OPTIONS 
   = map {$_ => 1} qw(default chained weak read_only build auto_build type convert deref trigger translate extend);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_ACCESSOR_OPTIONS
-  = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize);
+  = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize clone);
 
 # Valid class accessor options(ClassAttr)
 my %VALID_CLASS_OBJECT_ACCESSOR_OPTIONS
-  = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize);
+  = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize clone);
 
 ### Output accessor will be deleted in future ###
 # Valid class output accessor options(Output)
@@ -800,7 +815,7 @@ Object::Simple::Util - Object::Simple utility
 
 =head2 include_mixin_classes
 
-=head2 initialize_class_object_attr
+=head2 clone_prototype
 
 =head2 merge_self_and_super_accessors
 
