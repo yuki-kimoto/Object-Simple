@@ -9,7 +9,7 @@ use Carp 'croak';
 our $CLASS_INFOS = {};
 
 # Object::Simple::Util
-our $UTIL = 'Object::Simple::Util';
+our $U = 'Object::Simple::Util';
 
 # Classes which need to build
 our @BUILD_NEED_CLASSES;
@@ -40,17 +40,17 @@ sub import {
     }
     
     # Resist base class to meta information
-    $Object::Simple::CLASS_INFOS->{$caller_class}{base} = $options{base};
+    $U->class_infos->{$caller_class}{base} = $options{base};
     
     # Regist mixin classes to meta information
-    $Object::Simple::CLASS_INFOS->{$caller_class}{mixins} = $options{mixins};
+    $U->class_infos->{$caller_class}{mixins} = $options{mixins};
     
     # Adapt strict and warnings pragma to caller class
     strict->import;
     warnings->import;
     
     # Define MODIFY_CODE_ATTRIBUTES subroutine of caller class
-    $UTIL->define_MODIFY_CODE_ATTRIBUTES($caller_class);
+    $U->define_MODIFY_CODE_ATTRIBUTES($caller_class);
     
     # Push classes which need build
     push @BUILD_NEED_CLASSES, $caller_class;
@@ -76,17 +76,20 @@ sub new {
     # Convert to class name
     my $class = ref $invocant || $invocant;
     
+    # Class infos
+    my $class_infos = $U->class_infos;
+    
     # Call constructor
-    return $CLASS_INFOS->{$class}{constructor}->($class,@_)
-        if $CLASS_INFOS->{$class}{constructor};
+    return $class_infos->{$class}{constructor}->($class,@_)
+        if $class_infos->{$class}{constructor};
     
     # Search super class constructor if constructor is not resited
-    foreach my $super_class (@{$UTIL->get_leftmost_isa($class)}) {
-        if($CLASS_INFOS->{$super_class}{constructor}) {
-            $CLASS_INFOS->{$class}{constructor}
-              = $CLASS_INFOS->{$super_class}{constructor};
+    foreach my $super_class (@{$U->get_leftmost_isa($class)}) {
+        if($class_infos->{$super_class}{constructor}) {
+            $class_infos->{$class}{constructor}
+              = $class_infos->{$super_class}{constructor};
             
-            return $CLASS_INFOS->{$class}{constructor}->($class,@_);
+            return $class_infos->{$class}{constructor}->($class,@_);
         }
     }
 }
@@ -103,6 +106,9 @@ sub build_all_classes {
 # Build class
 sub build_class {
     my ($self, $options) = @_;
+    
+    # Class infos
+    my $class_infos = $U->class_infos;
     
     # passed class name
     unless (ref $options) {
@@ -150,11 +156,11 @@ sub build_class {
                           : {@accessor_options};
         
         # Check accessor option
-        $UTIL->check_accessor_option($accessor_name, $class, $accessor_options,
+        $U->check_accessor_option($accessor_name, $class, $accessor_options,
                                      $accessor_type);
         
         # Resist accessor type and accessor options
-        @{$Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}}{qw/type options/}
+        @{$class_infos->{$class}{accessors}{$accessor_name}}{qw/type options/}
           = ($accessor_type, $accessor_options);
     }
     
@@ -183,7 +189,7 @@ sub build_class {
         
         # Inherit base class
         no strict 'refs';
-        if( my $base_class = $Object::Simple::CLASS_INFOS->{$class}{base}) {
+        if( my $base_class = $class_infos->{$class}{base}) {
             @{"${class}::ISA"} = ();
             push @{"${class}::ISA"}, $base_class;
             
@@ -196,35 +202,32 @@ sub build_class {
             }
         }
         
-        # Check if inherit is available
-        
-        
         # Inherit Object::Simple
         push @{"${class}::ISA"}, 'Object::Simple';
         
         # Include mixin classes
-        $UTIL->include_mixin_classes($class)
-          if $Object::Simple::CLASS_INFOS->{$class}{mixins};
+        $U->include_mixin_classes($class)
+          if $class_infos->{$class}{mixins};
     }
 
     # Create constructor and resist accessor code
     foreach my $class (@build_need_classes) {
-        my $accessors = $Object::Simple::CLASS_INFOS->{$class}{accessors};
+        my $accessors = $class_infos->{$class}{accessors};
         foreach my $accessor_name (keys %$accessors) {
             
             # Extend super class accessor options
             my $base_class = $class;
-            while ($Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend}) {
+            while ($class_infos->{$base_class}{accessors}{$accessor_name}{options}{extend}) {
                 my ($super_accessor_options, $accessor_found_class)
-                  = $UTIL->get_super_accessor_options($base_class, $accessor_name);
+                  = $U->get_super_accessor_options($base_class, $accessor_name);
                 
-                delete $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}{extend};
+                delete $class_infos->{$base_class}{accessors}{$accessor_name}{options}{extend};
                 
                 last unless $super_accessor_options;
                 
-                $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}
+                $class_infos->{$base_class}{accessors}{$accessor_name}{options}
                   = {%{$super_accessor_options}, 
-                     %{$Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}}};
+                     %{$class_infos->{$base_class}{accessors}{$accessor_name}{options}}};
                 
                 $base_class = $accessor_found_class;
             }
@@ -237,25 +240,25 @@ sub build_class {
                 # Create translate accessor
                 $accessor_code 
                   .= "package $class;\nsub $accessor_name " 
-                  . $UTIL->create_translate_accessor($class, $accessor_name);
+                  . $U->create_translate_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'Output') {
                 ### Output accessor will be deleted in future ###
                 # Create output accessor
                 $accessor_code
                   .= "package $class;\nsub $accessor_name " 
-                  . $UTIL->create_output_accessor($class, $accessor_name);
+                  . $U->create_output_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'ClassObjectAttr') {
                 # Create class and object hibrid accessor
                 $accessor_code
-                  .= $UTIL->create_class_object_accessor($class, $accessor_name);
+                  .= $U->create_class_object_accessor($class, $accessor_name);
             }
             else {
                 # Create normal accessor or class accessor
                 $accessor_code
                   .= "package $class;\nsub $accessor_name " 
-                  . $UTIL->create_accessor($class, $accessor_name, $accessor_type);
+                  . $U->create_accessor($class, $accessor_name, $accessor_type);
             }
         }
     }
@@ -269,12 +272,12 @@ sub build_class {
     
     # Create constructor
     foreach my $class (@build_need_classes) {
-        my $constructor_code = $UTIL->create_constructor($class);
+        my $constructor_code = $U->create_constructor($class);
         
         eval $constructor_code;
         croak("$constructor_code\n:$@") if $@; # never occured
         
-        $Object::Simple::CLASS_INFOS->{$class}{constructor}
+        $class_infos->{$class}{constructor}
           = \&{"Object::Simple::Constructor::${class}::new"};
     }
     
@@ -307,14 +310,17 @@ sub call_mixin {
     my $mixin_class = shift || '';
     my $method      = shift || '';
     
+    # Class infos
+    my $class_infos = $U->class_infos;
+    
     # Caller class
     my $caller_class = caller;
     
     # Method not exist
     croak(qq/"${mixin_class}::$method from $caller_class" is not exist/)
-      unless $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
+      unless $class_infos->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
     
-    return $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method}->($self, @_);
+    return $class_infos->{$caller_class}{mixin}{$mixin_class}{methods}{$method}->($self, @_);
 }
 
 # Get mixin methods
@@ -323,12 +329,15 @@ sub mixin_methods {
     my $method       = shift || '';
     my $caller_class = caller;
     
+    # Class infos
+    my $class_infos = $U->class_infos;
+    
     my $methods = [];
-    foreach my $mixin_class (@{$Object::Simple::CLASS_INFOS->{$caller_class}{mixins}}) {
+    foreach my $mixin_class (@{$class_infos->{$caller_class}{mixins}}) {
         
         push @$methods,
-             $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method}
-          if $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
+             $class_infos->{$caller_class}{mixin}{$mixin_class}{methods}{$method}
+          if $class_infos->{$caller_class}{mixin}{$mixin_class}{methods}{$method};
     }
     return $methods;
 }
@@ -347,15 +356,18 @@ sub call_super {
     }
     $base_class  ||= caller;
     
+    # Class info
+    my $class_infos = $U->class_infos;
+    
     # Call last mixin method
     my $mixin_found = $mixin_base_class ? 0 : 1;
-    if ($Object::Simple::CLASS_INFOS->{$base_class}{mixins}) {
-        foreach my $mixin_class (reverse @{$Object::Simple::CLASS_INFOS->{$base_class}{mixins}}) {
+    if ($class_infos->{$base_class}{mixins}) {
+        foreach my $mixin_class (reverse @{$class_infos->{$base_class}{mixins}}) {
             if ($mixin_base_class && $mixin_base_class eq $mixin_class) {
                 $mixin_found = 1;
             }
-            elsif ($mixin_found && $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{$method}) {
-                return $Object::Simple::CLASS_INFOS->{$base_class}{mixin}{$mixin_class}{methods}{$method}->($self, @_);
+            elsif ($mixin_found && $class_infos->{$base_class}{mixin}{$mixin_class}{methods}{$method}) {
+                return $class_infos->{$base_class}{mixin}{$mixin_class}{methods}{$method}->($self, @_);
             }
         }
     }
@@ -379,7 +391,7 @@ sub class_attrs {
     
     my $class = ref $invocant || $invocant;
     
-    return $Object::Simple::CLASS_INFOS->{$class}{class_attrs};
+    return $U->class_infos->{$class}{class_attrs};
 }
 
 # Class attribute is exsist?
@@ -388,7 +400,7 @@ sub exists_class_attr {
     
     my $class = ref $invocant || $invocant;
 
-    return exists $Object::Simple::CLASS_INFOS->{$class}{class_attrs}{$accessor_name};
+    return exists $U->class_infos->{$class}{class_attrs}{$accessor_name};
 }
 
 # Delete class attribute
@@ -397,7 +409,7 @@ sub delete_class_attr {
 
     my $class = ref $invocant || $invocant;
 
-    return delete $Object::Simple::CLASS_INFOS->{$class}{class_attrs}{$accessor_name};
+    return delete $U->class_infos->{$class}{class_attrs}{$accessor_name};
 }
 
 package Object::Simple::Util;
@@ -405,8 +417,7 @@ use strict;
 use warnings;
 use Carp 'croak';
 
-# Object::Simple::Util
-our $UTIL = 'Object::Simple::Util';
+sub class_infos { $Object::Simple::CLASS_INFOS };
 
 # Get leftmost self and parent classes
 sub get_leftmost_isa {
@@ -437,8 +448,8 @@ sub get_super_accessor_options {
     # Get super class accessor option 
     no strict 'refs';
     while($base_class = ${"${base_class}::ISA"}[0]) {
-        return ($Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options}, $base_class)
-          if $Object::Simple::CLASS_INFOS->{$base_class}{accessors}{$accessor_name}{options};
+        return ($self->class_infos->{$base_class}{accessors}{$accessor_name}{options}, $base_class)
+          if $self->class_infos->{$base_class}{accessors}{$accessor_name}{options};
     }
     
     # Not found
@@ -449,8 +460,10 @@ sub get_super_accessor_options {
 sub include_mixin_classes {
     my ($self, $caller_class) = @_;
     
+    my $class_infos = $self->class_infos;
+    
     # Get mixin classes
-    my $mixin_classes = $Object::Simple::CLASS_INFOS->{$caller_class}{mixins};
+    my $mixin_classes = $class_infos->{$caller_class}{mixins};
     
     croak("mixins must be array reference ($caller_class)") 
       unless ref $mixin_classes eq 'ARRAY';
@@ -473,7 +486,7 @@ sub include_mixin_classes {
         }
         
         my $deparse_possibility
-          = $UTIL->mixin_method_deparse_possibility($mixin_class);
+          = $self->mixin_method_deparse_possibility($mixin_class);
         
         my $deparse;
         if ($deparse_possibility) {
@@ -487,7 +500,7 @@ sub include_mixin_classes {
             next unless defined &{"${mixin_class}::$method"};
             
             my $derive_class
-              = $Object::Simple::CLASS_INFOS->{$mixin_class}{methods}{$method}{derive};
+              = $class_infos->{$mixin_class}{methods}{$method}{derive};
             
             my $deparse_method = $derive_class
                                ? \&{"${derive_class}::$method"}
@@ -514,31 +527,34 @@ sub include_mixin_classes {
                 $code_ref = \&{"${mixin_class}::$method"};
             }
             
-            $Object::Simple::CLASS_INFOS->{$caller_class}{mixin}{$mixin_class}{methods}{$method} = $code_ref;
+            $class_infos->{$caller_class}{mixin}{$mixin_class}{methods}{$method} = $code_ref;
             
             next if defined &{"${caller_class}::$method"};
             *{"${caller_class}::$method"} = $code_ref;
-            $Object::Simple::CLASS_INFOS->{$caller_class}{methods}{$method}{derive} = 
-              $Object::Simple::CLASS_INFOS->{$mixin_class}{methods}{$method}{derive} || $mixin_class;
+            $class_infos->{$caller_class}{methods}{$method}{derive} = 
+              $class_infos->{$mixin_class}{methods}{$method}{derive} || $mixin_class;
         }
     }
     
     # Merge accessor to caller class
     my %accessors;
     foreach my $class (@$mixin_classes, $caller_class) {
-        %accessors = (%accessors, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}})
-            if $Object::Simple::CLASS_INFOS->{$class}{accessors};
+        %accessors = (%accessors, %{$class_infos->{$class}{accessors}})
+          if $class_infos->{$class}{accessors};
     }
-    $Object::Simple::CLASS_INFOS->{$caller_class}{accessors} = \%accessors;
+    $class_infos->{$caller_class}{accessors} = \%accessors;
 }
 
 sub mixin_method_deparse_possibility {
     my ($self, $mixin_class) = @_;
     
+    # Class infos
+    my $class_infos = $self->class_infos;
+    
     # Has mixin classes
     return 1
-      if ref $Object::Simple::CLASS_INFOS->{$mixin_class}{mixins} &&
-         @{$Object::Simple::CLASS_INFOS->{$mixin_class}{mixins}};
+      if ref $class_infos->{$mixin_class}{mixins} &&
+         @{$class_infos->{$mixin_class}{mixins}};
     
     # Call SUPER method
     my $module_path = join('/', split(/::/, $mixin_class)) . '.pm';
@@ -563,22 +579,25 @@ sub mixin_method_deparse_possibility {
 sub merge_self_and_super_accessors {
     my ($self, $class) = @_;
     
+    # Class infos
+    my $class_infos = $self->class_infos;
+    
     # Return cache if cached 
-    return $Object::Simple::CLASS_INFOS->{$class}{merged_accessors}
-      if $Object::Simple::CLASS_INFOS->{$class}{merged_accessors};
+    return $class_infos->{$class}{merged_accessors}
+      if $class_infos->{$class}{merged_accessors};
     
     # Get self and super classed
-    my $self_and_super_classes = $UTIL->get_leftmost_isa($class);
+    my $self_and_super_classes = $self->get_leftmost_isa($class);
     
     # Get merged accessor options 
     my $accessors = {};
     foreach my $class (reverse @$self_and_super_classes) {
-        $accessors = {%{$accessors}, %{$Object::Simple::CLASS_INFOS->{$class}{accessors}}}
-            if defined $Object::Simple::CLASS_INFOS->{$class}{accessors};
+        $accessors = {%{$accessors}, %{$class_infos->{$class}{accessors}}}
+            if defined $class_infos->{$class}{accessors};
     }
     
     # Cached
-    $Object::Simple::CLASS_INFOS->{$class}{merged_accessors} = $accessors;
+    $class_infos->{$class}{merged_accessors} = $accessors;
     
     return $accessors;
 }
@@ -588,7 +607,7 @@ sub create_constructor {
     my ($self, $class) = @_;
     
     # Get merged accessors
-    my $accessors = $UTIL->merge_self_and_super_accessors($class);
+    my $accessors = $self->merge_self_and_super_accessors($class);
     my $object_accessors = {};
     my $translate_accessors = {};
     
@@ -690,15 +709,18 @@ sub create_accessor {
     
     my ($self, $class, $accessor_name, $accessor_type) = @_;
     
+    # Class infos
+    my $class_infos = $self->class_infos;
+    
     # Get accessor options
     my ($build, $auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize)
-      = @{$Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}}{
+      = @{$class_infos->{$class}{accessors}{$accessor_name}{options}}{
             qw/build auto_build read_only weak type convert deref trigger initialize/
         };
     
     # chained
-    my $chained =   exists $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}{chained}
-                  ? $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}{chained}
+    my $chained =   exists $class_infos->{$class}{accessors}{$accessor_name}{options}{chained}
+                  ? $class_infos->{$class}{accessors}{$accessor_name}{options}{chained}
                   : 1;
     
     # Passed value expression
@@ -760,7 +782,7 @@ sub create_accessor {
         
         $code .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
-                qq/        $UTIL->initialize_class_object_attr(\n/ .
+                qq/        Object::Simple::Util->initialize_class_object_attr(\n/ .
                 qq/            \$self,\n/ .
                 qq/            '$accessor_name',\n/ .
                 qq/            \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{initialize}\n/ .
@@ -920,10 +942,10 @@ sub create_accessor {
 # Create class and object hibrid accessor
 sub create_class_object_accessor {
     my ($self, $class, $accessor_name) = @_;
-    my $object_accessor = $UTIL->create_accessor($class, $accessor_name, 'Attr');
+    my $object_accessor = $self->create_accessor($class, $accessor_name, 'Attr');
     $object_accessor = join("\n    ", split("\n", $object_accessor));
     
-    my $class_accessor  = $UTIL->create_accessor($class, $accessor_name, 'ClassAttr');
+    my $class_accessor  = $self->create_accessor($class, $accessor_name, 'ClassAttr');
     $class_accessor = join("\n    ", split("\n", $class_accessor));
     
     my $code = qq/{\n/ .
@@ -949,7 +971,7 @@ sub create_class_object_accessor {
 # Create accessor for output
 sub create_output_accessor {
     my ($self, $class, $accessor_name) = @_;
-    my $target = $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}{target};
+    my $target = $self->class_infos->{$class}{accessors}{$accessor_name}{options}{target};
     
     my $code =  qq/{\n/ .
                 qq/    my (\$self, \$output) = \@_;\n/ .
@@ -965,7 +987,7 @@ sub create_output_accessor {
 # Create accessor for delegate
 sub create_translate_accessor {
     my ($self, $class, $accessor_name) = @_;
-    my $target = $Object::Simple::CLASS_INFOS->{$class}{accessors}{$accessor_name}{options}{target} || '';
+    my $target = $self->class_infos->{$class}{accessors}{$accessor_name}{options}{target} || '';
     
     croak("${class}::$accessor_name '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
       unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
