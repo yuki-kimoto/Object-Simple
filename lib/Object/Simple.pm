@@ -240,14 +240,13 @@ sub build_class {
             if ($accessor_type eq 'Translate') {
                 ### Translate accessor will be deleted in future ###
                 # Create translate accessor
-                $accessor_code 
-                  .= "package $class;\nsub $accessor_name " 
-                  . $U->create_translate_accessor($class, $accessor_name);
+                no strict 'refs';
+                no warnings qw(redefine);
+                *{"${class}::$accessor_name"} = $U->create_translate_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'Output') {
                 # (Output accessor will be deleted in future)
                 # Create output accessor
-                
                 no strict 'refs';
                 no warnings qw(redefine);
                 *{"${class}::$accessor_name"} = $U->create_output_accessor($class, $accessor_name);

@@ -597,14 +597,19 @@ sub create_translate_accessor {
     croak("${class}::$accessor_name '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
       unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
     
-    my $code =  qq/{\n/ .
-                qq/    my \$self = shift;\n/ .
-                qq/    if (\@_) {\n/ .
-                qq/        \$self->$target(\@_);\n/ .
-                qq/        return \$self;\n/ .
-                qq/    }\n/ .
-                qq/    return wantarray ? (\$self->$target) : \$self->$target;\n/ .
-                qq/}\n\n/;
+    my $source = qq/sub {\n/ .
+                 qq/    package $class;\n/ .
+                 qq/    my \$self = shift;\n/ .
+                 qq/    if (\@_) {\n/ .
+                 qq/        \$self->$target(\@_);\n/ .
+                 qq/        return \$self;\n/ .
+                 qq/    }\n/ .
+                 qq/    return wantarray ? (\$self->$target) : \$self->$target;\n/ .
+                 qq/}\n\n/;
+                
+    my $code = eval $source;
+    
+    croak("$source\n:$@") if $@;
                 
     return $code;
 }
