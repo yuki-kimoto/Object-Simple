@@ -573,12 +573,17 @@ sub create_output_accessor {
     my ($self, $class, $accessor_name) = @_;
     my $target = $self->class_infos->{$class}{accessors}{$accessor_name}{options}{target};
     
-    my $code =  qq/{\n/ .
-                qq/    my (\$self, \$output) = \@_;\n/ .
-                qq/    my \$value = \$self->$target;\n/ .
-                qq/    \$\$output = \$value;\n/ .
-                qq/    return \$self\n/ .
-                qq/}\n\n/;
+    my $source =  qq/sub {\n/ .
+                  qq/    package $class;\n/ .
+                  qq/    my (\$self, \$output) = \@_;\n/ .
+                  qq/    my \$value = \$self->$target;\n/ .
+                  qq/    \$\$output = \$value;\n/ .
+                  qq/    return \$self\n/ .
+                  qq/}\n\n/;
+
+    my $code = eval $source;
+    
+    croak("$source\n:$@") if $@;
                 
     return $code;
 }

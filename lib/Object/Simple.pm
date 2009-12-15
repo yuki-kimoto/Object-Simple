@@ -245,11 +245,12 @@ sub build_class {
                   . $U->create_translate_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'Output') {
-                ### Output accessor will be deleted in future ###
+                # (Output accessor will be deleted in future)
                 # Create output accessor
-                $accessor_code
-                  .= "package $class;\nsub $accessor_name " 
-                  . $U->create_output_accessor($class, $accessor_name);
+                
+                no strict 'refs';
+                no warnings qw(redefine);
+                *{"${class}::$accessor_name"} = $U->create_output_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'ClassObjectAttr') {
                 # Create class and object hibrid accessor
