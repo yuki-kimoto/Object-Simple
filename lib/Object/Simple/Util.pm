@@ -223,7 +223,7 @@ sub create_constructor {
     }
     
     # Create instance
-    my $code =  qq/package Object::Simple::Constructor::${class};\n/ .
+    my $code =  qq/package Object::Simple::Constructors::${class};\n/ .
                 qq/sub new {\n/ .
                 qq/    my \$class = shift;\n/ .
                 qq/    my \$self = !(\@_ % 2)           ? {\@_}       :\n/ .
@@ -241,7 +241,7 @@ sub create_constructor {
         if ($accessors->{$accessor_name}{options}{convert}) {
             if(ref $accessors->{$accessor_name}{options}{convert} eq 'CODE') {
                 $code .=
-                qq/    \$self->{'$accessor_name'} = \$Object::Simple::CLASS_INFOS->{'$class'}{merged_accessors}{'$accessor_name'}{options}{convert}->(\$self->{'$accessor_name'})\n/ .
+                qq/    \$self->{'$accessor_name'} = Object::Simple::Util->class_infos->{'$class'}{merged_accessors}{'$accessor_name'}{options}{convert}->(\$self->{'$accessor_name'})\n/ .
                 qq/        if exists \$self->{'$accessor_name'};\n/;
             }
             else {
@@ -286,7 +286,7 @@ sub create_constructor {
     # Trigger option
     foreach my $accessor_name (@accessors_having_trigger) {
         $code .=
-            qq/    \$Object::Simple::CLASS_INFOS->{'$class'}{merged_accessors}{'$accessor_name'}{options}{trigger}->(\$self) if exists \$self->{'$accessor_name'};\n/;
+            qq/    Object::Simple::Util->class_infos->{'$class'}{merged_accessors}{'$accessor_name'}{options}{trigger}->(\$self) if exists \$self->{'$accessor_name'};\n/;
     }
     
     # Translate option
@@ -306,24 +306,17 @@ my %VALID_INITIALIZE_OPTIONS_KEYS = map {$_ => 1} qw/clone default/;
 
 # Create accessor.
 sub create_accessor {
-    my ($self, $class, $accessor_name, $accessor_type) = @_;
+    my ($self, $class, $accessor_name, $options, $accessor_type) = @_;
     
     # Accessor type
     $accessor_type ||= '';
     
-    # Class infos
-    my $class_infos = $self->class_infos;
-    
     # Get accessor options
     my ($build, $auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize)
-      = @{$class_infos->{$class}{accessors}{$accessor_name}{options}}{
-            qw/build auto_build read_only weak type convert deref trigger initialize/
-        };
+      = @{$options}{qw/build auto_build read_only weak type convert deref trigger initialize/};
     
     # chained
-    my $chained =   exists $class_infos->{$class}{accessors}{$accessor_name}{options}{chained}
-                  ? $class_infos->{$class}{accessors}{$accessor_name}{options}{chained}
-                  : 1;
+    my $chained =   exists $options->{chained} ? $options->{chained} : 1;
     
     # Passed value expression
     my $value = '$_[0]';
@@ -346,7 +339,7 @@ sub create_accessor {
     my $strage;
     if ($accessor_type eq 'ClassAttr') {
         # Strage package Varialbe in case class accessor
-        $strage = "\$Object::Simple::CLASS_INFOS->{\$self}{class_attrs}{'$accessor_name'}";
+        $strage = "Object::Simple::Util->class_infos->{\$self}{class_attrs}{'$accessor_name'}";
         $source .=
                 qq/    Carp::croak("${class}::$accessor_name must be called from class, not instance")\n/ .
                 qq/      if ref \$self;\n/;
@@ -389,7 +382,7 @@ sub create_accessor {
                 qq/        Object::Simple::Util->initialize_class_object_attr(\n/ .
                 qq/            \$self,\n/ .
                 qq/            '$accessor_name',\n/ .
-                qq/            \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{initialize}\n/ .
+                qq/            \$options->{initialize}\n/ .
                 qq/        );\n/ .
                 qq/    }\n/;
     }
@@ -399,7 +392,7 @@ sub create_accessor {
         
         if(ref $auto_build eq 'CODE') {
             $source .=
-                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{auto_build}->(\$self);\n/;
+                qq/        \$options->{auto_build}->(\$self);\n/;
         }
         else {
             my $build_method;
@@ -428,13 +421,13 @@ sub create_accessor {
         # Code ref
         if (ref $build) {
             $source .=
-                qq/            scalar \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{build}->(\$self)\n/;
+                qq/            scalar \$options->{build}->(\$self)\n/;
         }
         
         # Scalar
         else {
             $source .=
-                qq/            scalar \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{build}\n/;
+                qq/            scalar \$options->{build}\n/;
         }
         
         # Close
@@ -471,7 +464,7 @@ sub create_accessor {
         if ($convert) {
             if(ref $convert eq 'CODE') {
                 $source .=
-                qq/        \$value = \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{convert}->($value);\n/;
+                qq/        \$value = \$options->{convert}->($value);\n/;
             }
             else {
                 require Scalar::Util;
@@ -506,7 +499,7 @@ sub create_accessor {
               unless ref $trigger eq 'CODE';
             
             $source .=
-                qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{trigger}->(\$self, \$old);\n/;
+                qq/        \$options->{trigger}->(\$self, \$old);\n/;
         }
         
         # Return self if chained
@@ -547,15 +540,15 @@ sub create_accessor {
     return $code;
 }
 
-sub create_class_accessor  { shift->create_accessor(@_[0 .. 1], 'ClassAttr') }
+sub create_class_accessor  { shift->create_accessor(@_[0 .. 2], 'ClassAttr') }
 
 # Create class and object hibrid accessor
 sub create_class_object_accessor {
-    my ($self, $class, $accessor_name) = @_;
+    my ($self, $class, $accessor_name, $options) = @_;
     
-    my $object_accessor = $self->create_accessor($class, $accessor_name);
+    my $object_accessor = $self->create_accessor($class, $accessor_name, $options);
     
-    my $class_accessor  = $self->create_class_accessor($class, $accessor_name);
+    my $class_accessor  = $self->create_class_accessor($class, $accessor_name, $options);
     
     my $source = qq/sub {\n/ .
                  qq/    package $class;\n/ .
@@ -580,8 +573,9 @@ sub create_class_object_accessor {
 ### Output accessor will be deleted in future ###
 # Create accessor for output
 sub create_output_accessor {
-    my ($self, $class, $accessor_name) = @_;
-    my $target = $self->class_infos->{$class}{accessors}{$accessor_name}{options}{target};
+    my ($self, $class, $accessor_name, $options) = @_;
+    
+    my $target = $options->{target};
     
     my $source =  qq/sub {\n/ .
                   qq/    package $class;\n/ .
@@ -601,8 +595,9 @@ sub create_output_accessor {
 ### Translate accessor will be deleted in future ###
 # Create accessor for delegate
 sub create_translate_accessor {
-    my ($self, $class, $accessor_name) = @_;
-    my $target = $self->class_infos->{$class}{accessors}{$accessor_name}{options}{target} || '';
+    my ($self, $class, $accessor_name, $options) = @_;
+    
+    my $target = $options->{target} || '';
     
     croak("${class}::$accessor_name '$target' is invalid. Translate 'target' option must be like 'method1->method2'")
       unless $target =~ /^(([a-zA-Z_][\w_]*)->)+([a-zA-Z_][\w_]*)$/;
@@ -730,13 +725,18 @@ sub define_MODIFY_CODE_ATTRIBUTES {
           unless $VALID_ACCESSOR_TYPES{$accessor_type};
         
         # Add 
-        push(@Object::Simple::ACCESSOR_INFOS, [$class, $code_ref, $accessor_type]);
+        $self->add_accessor_info([$class, $code_ref, $accessor_type]);
         
         return;
     };
     
     no strict 'refs';
     *{"${class}::MODIFY_CODE_ATTRIBUTES"} = $code;
+}
+
+sub add_accessor_info { 
+    my ($self, $accessor_info) = @_;
+    push @Object::Simple::ACCESSOR_INFOS, $accessor_info;
 }
 
 # Class attributes
@@ -807,6 +807,8 @@ Object::Simple::Util - Object::Simple utility
 =head2 mixin_method_deparse_possibility
 
 =head2 create_class_accessor
+
+=head2 add_accessor_info
 
 =head1 Author
  

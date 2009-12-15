@@ -6,8 +6,6 @@ use warnings;
 use Carp 'croak';
 
 use Object::Simple::Util;
-
-# Object::Simple::Util
 our $U = 'Object::Simple::Util';
 
 # Meta imformation
@@ -30,7 +28,7 @@ sub import {
     my ($self, %options) = @_;
     
     # Shortcut
-    return unless $self eq 'Object::Simple';
+    return unless $self eq __PACKAGE__;
     
     # Get caller class
     my $caller_class = caller;
@@ -133,7 +131,7 @@ sub build_class {
     }
     
     # Parse symbol table and create accessors code
-    while (my $accessor_info = shift @Object::Simple::ACCESSOR_INFOS) {
+    while (my $accessor_info = shift @ACCESSOR_INFOS) {
         # CODE_ATTRIBUTE infomation
         my ($class, $accessor_options, $accessor_type, $accessor_name) = @$accessor_info;
         
@@ -171,17 +169,17 @@ sub build_class {
     if ($options->{all}) {
         # Select build needing class
         @build_need_classes = grep {!$ALREADY_BUILD_CLASSES{$_}}
-                                   @Object::Simple::BUILD_NEED_CLASSES;
+                                   @BUILD_NEED_CLASSES;
         
         # Clear BUILD_NEED_CLASSES
-        @Object::Simple::BUILD_NEED_CLASSES = ();
+        @BUILD_NEED_CLASSES = ();
     }
     else{
         @build_need_classes = ($build_need_class)
           unless $ALREADY_BUILD_CLASSES{$build_need_class};
     }
     
-    # Inherit base class and Object::Simple, and include mixin classes
+    # Inherit base class and this package, and include mixin classes
     foreach my $class (@build_need_classes) {
         # Delete MODIFY_CODE_ATTRIBUTES
         {
@@ -204,8 +202,8 @@ sub build_class {
             }
         }
         
-        # Inherit Object::Simple
-        push @{"${class}::ISA"}, 'Object::Simple';
+        # Inherit this package
+        push @{"${class}::ISA"}, __PACKAGE__;
         
         # Include mixin classes
         $U->include_mixin_classes($class)
@@ -236,20 +234,22 @@ sub build_class {
             
             my $accessor_type = $accessors->{$accessor_name}{type} || 'Attr';
             
+            my $options = $class_infos->{$base_class}{accessors}{$accessor_name}{options};
+            
             my $code = $accessor_type eq 'Attr'
-                     ? $U->create_accessor($class, $accessor_name)
+                     ? $U->create_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'ClassObjectAttr' 
-                     ? $U->create_class_object_accessor($class, $accessor_name)
+                     ? $U->create_class_object_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'ClassAttr' 
-                     ? $U->create_class_accessor($class, $accessor_name)
+                     ? $U->create_class_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'Output' 
-                     ? $U->create_output_accessor($class, $accessor_name)
+                     ? $U->create_output_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'Translate'
-                     ? $U->create_translate_accessor($class, $accessor_name)
+                     ? $U->create_translate_accessor($class, $accessor_name, $options)
                      
                      : undef;
 
@@ -267,7 +267,7 @@ sub build_class {
         croak("$constructor_code\n:$@") if $@; # never occured
         
         $class_infos->{$class}{constructor}
-          = \&{"Object::Simple::Constructor::${class}::new"};
+          = \&{"Object::Simple::Constructors::${class}::new"};
     }
     
     # Resist already build class
@@ -289,7 +289,7 @@ sub resist_accessor_info {
     $accessor_type ||= 'Attr';
     
     # Add accessor info
-    push @Object::Simple::ACCESSOR_INFOS,
+    push @ACCESSOR_INFOS, 
          [$class, $accessor_options_, $accessor_type, $accessor_name];
 }
 
