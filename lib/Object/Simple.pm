@@ -266,7 +266,7 @@ sub build_class {
                 # Create normal accessor
                 $accessor_code
                   .= "package $class;\nsub $accessor_name " 
-                  .  $U->create_normal_accessor($class, $accessor_name);
+                  .  $U->create_object_accessor($class, $accessor_name);
             }
         }
     }

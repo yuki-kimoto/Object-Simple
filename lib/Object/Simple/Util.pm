@@ -307,7 +307,8 @@ my %VALID_INITIALIZE_OPTIONS_KEYS = map {$_ => 1} qw/clone default/;
 # Create accessor.
 sub create_accessor {
     
-    my ($self, $accessor_type, $class, $accessor_name) = @_;
+    my ($self, $class, $accessor_name, $accessor_type) = @_;
+    $accessor_type ||= '';
     
     # Class infos
     my $class_infos = $self->class_infos;
@@ -539,13 +540,13 @@ sub create_accessor {
     return $code;
 }
 
-sub create_class_accessor  { shift->create_accessor('ClassAttr', @_) }
-sub create_normal_accessor { shift->create_accessor('Attr', @_) }
+sub create_class_accessor  { shift->create_accessor(@_[0 .. 1], 'ClassAttr') }
+sub create_object_accessor { shift->create_accessor(@_[0 .. 1], 'Attr') }
 
 # Create class and object hibrid accessor
 sub create_class_object_accessor {
     my ($self, $class, $accessor_name) = @_;
-    my $object_accessor = $self->create_normal_accessor($class, $accessor_name);
+    my $object_accessor = $self->create_object_accessor($class, $accessor_name);
     $object_accessor = join("\n    ", split("\n", $object_accessor));
     
     my $class_accessor  = $self->create_class_accessor($class, $accessor_name);
@@ -801,7 +802,7 @@ Object::Simple::Util - Object::Simple utility
 
 =head2 create_class_accessor
 
-=head2 create_normal_accessor
+=head2 create_object_accessor
 
 =head1 Author
  
