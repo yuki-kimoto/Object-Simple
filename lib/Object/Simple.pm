@@ -234,49 +234,29 @@ sub build_class {
                 $base_class = $accessor_found_class;
             }
             
-            my $accessor_type = $accessors->{$accessor_name}{type};
+            my $accessor_type = $accessors->{$accessor_name}{type} || 'Attr';
             
-            # Create accessor source code
-            if ($accessor_type eq 'Translate') {
-                ### Translate accessor will be deleted in future ###
-                # Create translate accessor
-                no strict 'refs';
-                no warnings qw(redefine);
-                *{"${class}::$accessor_name"} = $U->create_translate_accessor($class, $accessor_name);
-            }
-            elsif ($accessor_type eq 'Output') {
-                # (Output accessor will be deleted in future)
-                # Create output accessor
-                no strict 'refs';
-                no warnings qw(redefine);
-                *{"${class}::$accessor_name"} = $U->create_output_accessor($class, $accessor_name);
-            }
-            elsif ($accessor_type eq 'ClassObjectAttr') {
-                # Create class accessor
-                no strict 'refs';
-                no warnings qw(redefine);
-                *{"${class}::$accessor_name"} = $U->create_class_object_accessor($class, $accessor_name);
-            }
-            elsif ($accessor_type eq 'ClassAttr') {
-                # Create class accessor
-                no strict 'refs';
-                no warnings qw(redefine);
-                *{"${class}::$accessor_name"} = $U->create_class_accessor($class, $accessor_name);
-            }
-            else {
-                # Create normal accessor
-                no strict 'refs';
-                no warnings qw(redefine);
-                *{"${class}::$accessor_name"} = $U->create_accessor($class, $accessor_name);
-            }
+            my $code = $accessor_type eq 'Attr'
+                     ? $U->create_accessor($class, $accessor_name)
+
+                     : $accessor_type eq 'ClassObjectAttr' 
+                     ? $U->create_class_object_accessor($class, $accessor_name)
+
+                     : $accessor_type eq 'ClassAttr' 
+                     ? $U->create_class_accessor($class, $accessor_name)
+
+                     : $accessor_type eq 'Output' 
+                     ? $U->create_output_accessor($class, $accessor_name)
+
+                     : $accessor_type eq 'Translate'
+                     ? $U->create_translate_accessor($class, $accessor_name)
+                     
+                     : undef;
+
+            no strict 'refs';
+            no warnings qw(redefine);
+            *{"${class}::$accessor_name"} = $code;
         }
-    }
-    
-    # Create accessor
-    if($accessor_code){
-        no warnings qw(redefine);
-        eval $accessor_code;
-        croak("$accessor_code\n:$@") if $@; # never occured
     }
     
     # Create constructor
