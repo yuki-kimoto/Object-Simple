@@ -256,11 +256,17 @@ sub build_class {
                 $accessor_code
                   .= $U->create_class_object_accessor($class, $accessor_name);
             }
-            else {
-                # Create normal accessor or class accessor
+            elsif ($accessor_type eq 'ClassAttr') {
+                # Create class accessor
                 $accessor_code
                   .= "package $class;\nsub $accessor_name " 
-                  . $U->create_accessor($class, $accessor_name, $accessor_type);
+                  .  $U->create_class_accessor($class, $accessor_name);
+            }
+            else {
+                # Create normal accessor
+                $accessor_code
+                  .= "package $class;\nsub $accessor_name " 
+                  .  $U->create_normal_accessor($class, $accessor_name);
             }
         }
     }
