@@ -3,6 +3,20 @@ use strict;
 use warnings;
 use Carp 'croak';
 
+sub import {
+    my ($class, @functions) = shift;
+    
+    my $util = 'Object::Simple::Util';
+    
+    foreach my $function (@functions) {
+        croak "'$function' not exists in $util"
+          unless $util->can($function);
+        
+        no strict 'refs';
+        *{"${class}::$function"} = sub { $util->$function(@_) };
+    }
+}
+
 sub class_infos { $Object::Simple::CLASS_INFOS };
 
 # Get leftmost self and parent classes
