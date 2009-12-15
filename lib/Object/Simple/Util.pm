@@ -337,7 +337,9 @@ sub create_accessor {
       if $deref && !$type;
     
     # Beginning of accessor source code
-    my $code =  qq/{\n/ .
+    my $source =
+                qq/sub {\n/ .
+                qq/    package $class;\n/ .
                 qq/    my \$self = shift;\n/;
     
     # Variable to strage
@@ -345,7 +347,7 @@ sub create_accessor {
     if ($accessor_type eq 'ClassAttr') {
         # Strage package Varialbe in case class accessor
         $strage = "\$Object::Simple::CLASS_INFOS->{\$self}{class_attrs}{'$accessor_name'}";
-        $code .=
+        $source .=
                 qq/    Carp::croak("${class}::$accessor_name must be called from class, not instance")\n/ .
                 qq/      if ref \$self;\n/;
     }
@@ -355,7 +357,7 @@ sub create_accessor {
     }
     
     # Create temporary variable if there is type or convert option
-    $code .=    qq/    my \$value;\n/ if $type || $convert;
+    $source .=    qq/    my \$value;\n/ if $type || $convert;
     
     # Automatically call build method
     if ($initialize) {
@@ -382,7 +384,7 @@ sub create_accessor {
           if exists $initialize->{default} && 
              !(!ref $initialize->{default} || ref $initialize->{default} eq 'CODE');
         
-        $code .=
+        $source .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
                 qq/        Object::Simple::Util->initialize_class_object_attr(\n/ .
                 qq/            \$self,\n/ .
@@ -392,11 +394,11 @@ sub create_accessor {
                 qq/    }\n/;
     }
     elsif ($auto_build){
-        $code .=
+        $source .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/;
         
         if(ref $auto_build eq 'CODE') {
-            $code .=
+            $source .=
                 qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{auto_build}->(\$self);\n/;
         }
         else {
@@ -405,11 +407,11 @@ sub create_accessor {
                 $build_method = $1 . "build_$accessor_name";
             }
             
-            $code .=
+            $source .=
                 qq/        \$self->$build_method;\n/;
         }
         
-        $code .=
+        $source .=
                 qq/    }\n/;
     }
     elsif ($build) {
@@ -419,47 +421,47 @@ sub create_accessor {
           unless !ref $build || ref $build eq 'CODE';
         
         # Build
-        $code .=
+        $source .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
                 qq/        \$self->$accessor_name(\n/;
         
         # Code ref
         if (ref $build) {
-            $code .=
+            $source .=
                 qq/            scalar \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{build}->(\$self)\n/;
         }
         
         # Scalar
         else {
-            $code .=
+            $source .=
                 qq/            scalar \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{build}\n/;
         }
         
         # Close
-        $code .=
+        $source .=
                 qq/        )\n/ .
                 qq/    }\n/;
     }
     
     # Read only accesor
     if ($read_only){
-        $code .=
+        $source .=
                 qq/    Carp::croak("${class}::$accessor_name is read only") if \@_ > 0;\n/;
     }
     
     # Read and write accessor
     else {
-        $code .=
+        $source .=
                 qq/    if(\@_ > 0) {\n/;
         
         # Variable type
         if($type) {
             if($type eq 'array') {
-                $code .=
+                $source .=
                 qq/        \$value = ref \$_[0] eq 'ARRAY' ? \$_[0] : !defined \$_[0] ? undef : [\@_];\n/;
             }
             else {
-                $code .=
+                $source .=
                 qq/        \$value = ref \$_[0] eq 'HASH' ? \$_[0] : !defined \$_[0] ? undef : {\@_};\n/;
             }
             $value = '$value';
@@ -468,13 +470,13 @@ sub create_accessor {
         # Convert to object;
         if ($convert) {
             if(ref $convert eq 'CODE') {
-                $code .=
+                $source .=
                 qq/        \$value = \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{convert}->($value);\n/;
             }
             else {
                 require Scalar::Util;
                 
-                $code .=
+                $source .=
                 qq/        require $convert;\n/ .
                 qq/        \$value = defined $value && !Scalar::Util::blessed($value) ? $convert->new($value) : $value ;\n/;
             }
@@ -483,18 +485,18 @@ sub create_accessor {
         
         # Save old value
         if ($trigger) {
-            $code .=
+            $source .=
                 qq/        my \$old = $strage;\n/;
         }
         
         # Set value
-        $code .=
+        $source .=
                 qq/        $strage = $value;\n/;
         
         # Weaken
         if ($weak) {
             require Scalar::Util;
-            $code .=
+            $source .=
                 qq/        Scalar::Util::weaken($strage) if ref $strage;\n/;
         }
         
@@ -503,41 +505,45 @@ sub create_accessor {
             croak("'trigger' option must be code reference (${class}::$accessor_name)")
               unless ref $trigger eq 'CODE';
             
-            $code .=
+            $source .=
                 qq/        \$Object::Simple::CLASS_INFOS->{'$class'}{accessors}{'$accessor_name'}{options}{trigger}->(\$self, \$old);\n/;
         }
         
         # Return self if chained
         if ($chained) {
-            $code .=
+            $source .=
                 qq/        return \$self;\n/;
         }
         
-        $code .=
+        $source .=
                 qq/    }\n/;
     }
     
     # Dereference
     if ($deref) {
         if ($type eq 'array') {
-            $code .=
+            $source .=
                 qq/    return wantarray ? \@{$strage} : $strage;\n/;
         }
         else {
-            $code .=
+            $source .=
                 qq/    return wantarray ? \%{$strage} : $strage;\n/;
         }
     }
     
     # No dereference
     else {
-        $code .=
+        $source .=
                 qq/    return $strage;\n/;
     }
     
     # End of accessor source code
-    $code .=    qq/}\n\n/;
+    $source .=    qq/}\n\n/;
     
+    my $code = eval $source;
+    
+    croak("$source\n:$@") if $@;
+                
     return $code;
 }
 
@@ -546,28 +552,28 @@ sub create_class_accessor  { shift->create_accessor(@_[0 .. 1], 'ClassAttr') }
 # Create class and object hibrid accessor
 sub create_class_object_accessor {
     my ($self, $class, $accessor_name) = @_;
+    
     my $object_accessor = $self->create_accessor($class, $accessor_name);
-    $object_accessor = join("\n    ", split("\n", $object_accessor));
     
     my $class_accessor  = $self->create_class_accessor($class, $accessor_name);
-    $class_accessor = join("\n    ", split("\n", $class_accessor));
     
-    my $code = qq/{\n/ .
-               qq/    my \$object_accessor = sub $object_accessor;\n\n/ .
-               qq/    my \$class_accessor  = sub $class_accessor;\n\n/ .
-               qq/    package $class;\n/ .
-               qq/    sub $accessor_name {\n/ .
-               qq/        my \$invocant = shift;\n/ .
-               qq/        if (ref \$invocant) {\n/ .
-               qq/            return wantarray ? (\$object_accessor->(\$invocant, \@_))\n/ .
-               qq/                             : \$object_accessor->(\$invocant, \@_);\n/ .
-               qq/        }\n/ .
-               qq/        else {\n/ .
-               qq/            return wantarray ? (\$class_accessor->(\$invocant, \@_))\n/ .
-               qq/                             : \$class_accessor->(\$invocant, \@_);\n/ .
-               qq/        }\n/ .
-               qq/    }\n/ .
-               qq/}\n\n/;
+    my $source = qq/sub {\n/ .
+                 qq/    package $class;\n/ .
+                 qq/    my \$invocant = shift;\n/ .
+                 qq/    if (ref \$invocant) {\n/ .
+                 qq/        return wantarray ? (\$object_accessor->(\$invocant, \@_))\n/ .
+                 qq/                         : \$object_accessor->(\$invocant, \@_);\n/ .
+                 qq/    }\n/ .
+                 qq/    else {\n/ .
+                 qq/        return wantarray ? (\$class_accessor->(\$invocant, \@_))\n/ .
+                 qq/                         : \$class_accessor->(\$invocant, \@_);\n/ .
+                 qq/    }\n/ .
+                 qq/}\n\n/;
+    
+    my $code = eval $source;
+    
+    croak("$source\n:$@") if $@;
+                
     return $code;
 }
 
@@ -801,8 +807,6 @@ Object::Simple::Util - Object::Simple utility
 =head2 mixin_method_deparse_possibility
 
 =head2 create_class_accessor
-
-=head2 create_object_accessor
 
 =head1 Author
  

@@ -252,21 +252,22 @@ sub build_class {
                 *{"${class}::$accessor_name"} = $U->create_output_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'ClassObjectAttr') {
-                # Create class and object hibrid accessor
-                $accessor_code
-                  .= $U->create_class_object_accessor($class, $accessor_name);
+                # Create class accessor
+                no strict 'refs';
+                no warnings qw(redefine);
+                *{"${class}::$accessor_name"} = $U->create_class_object_accessor($class, $accessor_name);
             }
             elsif ($accessor_type eq 'ClassAttr') {
                 # Create class accessor
-                $accessor_code
-                  .= "package $class;\nsub $accessor_name " 
-                  .  $U->create_class_accessor($class, $accessor_name);
+                no strict 'refs';
+                no warnings qw(redefine);
+                *{"${class}::$accessor_name"} = $U->create_class_accessor($class, $accessor_name);
             }
             else {
                 # Create normal accessor
-                $accessor_code
-                  .= "package $class;\nsub $accessor_name " 
-                  .  $U->create_accessor($class, $accessor_name);
+                no strict 'refs';
+                no warnings qw(redefine);
+                *{"${class}::$accessor_name"} = $U->create_accessor($class, $accessor_name);
             }
         }
     }
