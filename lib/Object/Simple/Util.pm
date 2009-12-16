@@ -214,7 +214,10 @@ sub create_constructor {
     # Attr or Transalte
     foreach my $accessor (keys %$accessors) {
         my $accessor_type = $accessors->{$accessor}{type} || '';
-        if ($accessor_type eq 'Attr' || $accessor_type eq 'ClassObjectAttr') {
+        if (   $accessor_type eq 'Attr' 
+            || $accessor_type eq 'ClassObjectAttr'
+            || $accessor_type eq 'HybridAttr')
+        {
             $object_accessors->{$accessor} = $accessors->{$accessor};
         }
         elsif ($accessor_type eq 'Translate') {
@@ -557,7 +560,7 @@ sub create_accessor {
 sub create_class_accessor  { shift->create_accessor(@_[0 .. 2], 'ClassAttr') }
 
 # Create class and object hibrid accessor
-sub create_class_object_accessor {
+sub create_hybrid_accessor {
     my ($self, $class, $accessor_name, $options) = @_;
     
     my $object_accessor = $self->create_accessor($class, $accessor_name, $options);
@@ -690,25 +693,28 @@ my %VALID_OBJECT_ACCESSOR_OPTIONS
 my %VALID_CLASS_ACCESSOR_OPTIONS
   = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize clone);
 
-# Valid class accessor options(ClassAttr)
-my %VALID_CLASS_OBJECT_ACCESSOR_OPTIONS
+# Valid Hybrid accessor options(HybridAttr)
+my %VALID_HYBRID_ACCESSOR_OPTIONS
   = map {$_ => 1} qw(chained weak read_only build auto_build type convert deref trigger translate extend initialize clone);
 
-### Output accessor will be deleted in future ###
+# (Output accessor is deprecated)
 # Valid class output accessor options(Output)
-my %VALID_OUTPUT_OPTIONS
-  = map {$_ => 1} qw(target);
+my %VALID_OUTPUT_OPTIONS = map {$_ => 1} qw(target);
 
-### Translate accessor will be deleted in future ###
+# (Translate accessor is deprecated)
 # Valid translate accessor option(Translate)
-my %VALID_TRANSLATE_OPTIONS
-  = map {$_ => 1} qw(target);
+my %VALID_TRANSLATE_OPTIONS = map {$_ => 1} qw(target);
 
 my $VALID_ACCESSOR_OPTIONS = {
     Attr            => \%VALID_OBJECT_ACCESSOR_OPTIONS,
     ClassAttr       => \%VALID_CLASS_ACCESSOR_OPTIONS,
-    ClassObjectAttr => \%VALID_CLASS_OBJECT_ACCESSOR_OPTIONS,
+    HybridAttr      => \%VALID_HYBRID_ACCESSOR_OPTIONS,
+    
+    # (Deprecated)
+    ClassObjectAttr => \%VALID_HYBRID_ACCESSOR_OPTIONS,
+    # (Deprecated)
     Output          => \%VALID_OUTPUT_OPTIONS,
+    # (Deprecated)
     Translate       => \%VALID_TRANSLATE_OPTIONS
 };
 
@@ -725,7 +731,7 @@ sub check_accessor_option {
 }
 
 # Define MODIFY_CODE_ATTRIBUTRS subroutine
-my %VALID_ACCESSOR_TYPES = map {$_ => 1} qw/Attr ClassAttr ClassObjectAttr Output Translate/;
+my %VALID_ACCESSOR_TYPES = map {$_ => 1} qw/Attr ClassAttr HybridAttr ClassObjectAttr Output Translate/;
 sub define_MODIFY_CODE_ATTRIBUTES {
     my ($self, $class) = @_;
     
@@ -736,7 +742,7 @@ sub define_MODIFY_CODE_ATTRIBUTES {
         # Accessor type is not exist
         croak("Accessor type '$accessor_type' is not exist. " .
               "Accessor type must be 'Attr', 'ClassAttr', " . 
-              "'ClassObjectAttr'")
+              "'HybridAttr'")
           unless $VALID_ACCESSOR_TYPES{$accessor_type};
         
         # Add 
@@ -795,7 +801,7 @@ Object::Simple::Util - Object::Simple utility
 
 =head2 create_accessor
 
-=head2 create_class_object_accessor
+=head2 create_hybrid_accessor
 
 =head2 create_constructor
 

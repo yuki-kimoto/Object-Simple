@@ -12,68 +12,43 @@ my $test;
 sub test{$test = shift}
 
 my $o;
+my $o2;
 
-
+test 'Basic';
 use Book;
-# new method
-{
-    my $book = Book->new;
-    isa_ok( $book, 'Book', 'It is object' );
-    isa_ok( $book, 'Object::Simple', 'Inherit Object::Simple' );
-}
- 
-{
-    my $book = Book->new( title => 'a' );
-    
-    is_deeply( 
-        [ $book->title ], [ 'a' ],
-        'setter and getter and constructor' 
-    );
-}
- 
-{
-    my $book = Book->new( { title => 'a', author => 'b' } );
-    
-    is_deeply( 
-        [ $book->title, $book->author ], [ 'a', 'b' ],
-        'setter and getter and constructor' 
-    );
-}
- 
-{
-    my $book = Book->new( 'a' );
-    ok(exists $book->{a}, 'odd number new');
-    ok(!defined $book->{a},'odd number new');
-}
- 
-{
-    my $book = Book->new( noexist => 1 );
-    is($book->{ noexist }, 1, 'no exist attr set value' );
-}
- 
-{
-    my $book = Book->new( title => undef );
-    ok( exists $book->{ title } && !defined $book->{ title } , 'new undef pass' );
-}
+$o = Book->new;
+isa_ok( $o, 'Book', "$test : It is object");
+isa_ok( $o, 'Object::Simple', "$test : Inherit Object::Simple");
 
-{
-    eval{Book->title(3)};
-    ok($@, 'set from class');
-}
+$o = Book->new(title => 'a');
+is_deeply([$o->title], ['a'],"$test : setter and getter and constructor");
  
-{
-    my $t = Book->new( price => 6 );
-    my $c = $t->new;
-    is($c->price, 1, 'call new from object');
-    
-}
+$o = Book->new({title => 'a', author => 'b'});
+is_deeply([$o->title, $o->author], ['a', 'b'],"$test : setter and getter and constructor");
  
+$o = Book->new('a');
+ok(exists $o->{a}, "$test : odd number new");
+ok(!defined $o->{a},"$test : odd number new");
+ 
+$o = Book->new(noexist => 1);
+is($o->{noexist}, 1, "$test : no exist attr set value");
+
+$o = Book->new( title => undef );
+ok(exists $o->{ title } && !defined $o->{ title } , "$test : new undef pass");
+
+eval{Book->title(3)};
+ok($@, "$test : set from class");
+ 
+$o  = Book->new( price => 6 );
+$o2 = $o->new;
+is($o2->price, 1, "$test : call new from object");
+
 # reference
 {
-    my $book = Book->new;
+    my $o = Book->new;
     my $ary = [ 1 ];
-    $book->title( $ary );
-    my $ary_get = $book->title;
+    $o->title( $ary );
+    my $ary_get = $o->title;
     
     is( $ary, $ary_get, 'equel reference' );
     
@@ -81,12 +56,12 @@ use Book;
     is_deeply( $ary_get, [ 1, 2 ], 'equal reference value' );
     
     # shallow copy
-    my @ary_shallow = @{ $book->title };
+    my @ary_shallow = @{ $o->title };
     push @ary_shallow, 3;
     is_deeply( [@ary_shallow],[1, 2, 3 ], 'shallow copy' );
     is_deeply( $ary_get, [1,2 ], 'shallow copy not effective' );
     
-    push @{ $book->title }, 3;
+    push @{ $o->title }, 3;
     is_deeply( $ary_get, [ 1, 2, 3 ], 'push array' );
 }
  
@@ -206,7 +181,7 @@ use T10;
 }
  
 eval "use T15";
-like($@, qr/Accessor type 'A' is not exist. Accessor type must be 'Attr', 'ClassAttr', 'ClassObjectAttr'/, 'Not exist accessor name');
+like($@, qr/Accessor type 'A' is not exist. Accessor type must be 'Attr', 'ClassAttr', 'HybridAttr'/, 'Not exist accessor name');
  
 {
     use T16;
@@ -895,4 +870,5 @@ ok(!T49->m8, "$test : build is undef");
 
 eval "use T49_Error1";
 like($@, qr/\Q'clone' opiton must be 'scalar', 'array', 'hash', or code reference (T49_Error1::m5)/, 'noexis clone option');
+
 

@@ -6,7 +6,7 @@ use warnings;
 use Carp 'croak';
 
 use Object::Simple::Util;
-our $U = 'Object::Simple::Util';
+use constant Util => 'Object::Simple::Util';
 
 # Meta imformation
 our $CLASS_INFOS = {};
@@ -40,17 +40,17 @@ sub import {
     }
     
     # Resist base class to meta information
-    $U->class_infos->{$caller_class}{base} = $options{base};
+    Util->class_infos->{$caller_class}{base} = $options{base};
     
     # Regist mixin classes to meta information
-    $U->class_infos->{$caller_class}{mixins} = $options{mixins};
+    Util->class_infos->{$caller_class}{mixins} = $options{mixins};
     
     # Adapt strict and warnings pragma to caller class
     strict->import;
     warnings->import;
     
     # Define MODIFY_CODE_ATTRIBUTES subroutine of caller class
-    $U->define_MODIFY_CODE_ATTRIBUTES($caller_class);
+    Util->define_MODIFY_CODE_ATTRIBUTES($caller_class);
     
     # Push classes which need build
     push @BUILD_NEED_CLASSES, $caller_class;
@@ -77,14 +77,14 @@ sub new {
     my $class = ref $invocant || $invocant;
     
     # Class infos
-    my $class_infos = $U->class_infos;
+    my $class_infos = Util->class_infos;
     
     # Call constructor
     return $class_infos->{$class}{constructor}->($class,@_)
         if $class_infos->{$class}{constructor};
     
     # Search super class constructor if constructor is not resited
-    foreach my $super_class (@{$U->get_leftmost_isa($class)}) {
+    foreach my $super_class (@{Util->get_leftmost_isa($class)}) {
         if($class_infos->{$super_class}{constructor}) {
             $class_infos->{$class}{constructor}
               = $class_infos->{$super_class}{constructor};
@@ -108,7 +108,7 @@ sub build_class {
     my ($self, $options) = @_;
     
     # Class infos
-    my $class_infos = $U->class_infos;
+    my $class_infos = Util->class_infos;
     
     # passed class name
     unless (ref $options) {
@@ -156,7 +156,7 @@ sub build_class {
                           : {@accessor_options};
         
         # Check accessor option
-        $U->check_accessor_option($accessor_name, $class, $accessor_options,
+        Util->check_accessor_option($accessor_name, $class, $accessor_options,
                                      $accessor_type);
         
         # Resist accessor type and accessor options
@@ -206,7 +206,7 @@ sub build_class {
         push @{"${class}::ISA"}, __PACKAGE__;
         
         # Include mixin classes
-        $U->include_mixin_classes($class)
+        Util->include_mixin_classes($class)
           if $class_infos->{$class}{mixins};
     }
 
@@ -219,7 +219,7 @@ sub build_class {
             my $base_class = $class;
             while ($class_infos->{$base_class}{accessors}{$accessor_name}{options}{extend}) {
                 my ($super_accessor_options, $accessor_found_class)
-                  = $U->get_super_accessor_options($base_class, $accessor_name);
+                  = Util->get_super_accessor_options($base_class, $accessor_name);
                 
                 delete $class_infos->{$base_class}{accessors}{$accessor_name}{options}{extend};
                 
@@ -237,19 +237,25 @@ sub build_class {
             my $options = $class_infos->{$base_class}{accessors}{$accessor_name}{options};
             
             my $code = $accessor_type eq 'Attr'
-                     ? $U->create_accessor($class, $accessor_name, $options)
-
-                     : $accessor_type eq 'ClassObjectAttr' 
-                     ? $U->create_class_object_accessor($class, $accessor_name, $options)
+                     ? Util->create_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'ClassAttr' 
-                     ? $U->create_class_accessor($class, $accessor_name, $options)
+                     ? Util->create_class_accessor($class, $accessor_name, $options)
 
+                     : $accessor_type eq 'HybridAttr' 
+                     ? Util->create_hybrid_accessor($class, $accessor_name, $options)
+                     
+                     # (Deprecated)
+                     : $accessor_type eq 'ClassObjectAttr' 
+                     ? Util->create_hybrid_accessor($class, $accessor_name, $options)
+                     
+                     # (Deprecated)
                      : $accessor_type eq 'Output' 
-                     ? $U->create_output_accessor($class, $accessor_name, $options)
-
+                     ? Util->create_output_accessor($class, $accessor_name, $options)
+                     
+                     # (Deprecated)
                      : $accessor_type eq 'Translate'
-                     ? $U->create_translate_accessor($class, $accessor_name, $options)
+                     ? Util->create_translate_accessor($class, $accessor_name, $options)
                      
                      : undef;
 
@@ -261,7 +267,7 @@ sub build_class {
     
     # Create constructor
     foreach my $class (@build_need_classes) {
-        my $constructor_code = $U->create_constructor($class);
+        my $constructor_code = Util->create_constructor($class);
         
         eval $constructor_code;
         croak("$constructor_code\n:$@") if $@; # never occured
@@ -300,7 +306,7 @@ sub call_mixin {
     my $method      = shift || '';
     
     # Class infos
-    my $class_infos = $U->class_infos;
+    my $class_infos = Util->class_infos;
     
     # Caller class
     my $caller_class = caller;
@@ -319,7 +325,7 @@ sub mixin_methods {
     my $caller_class = caller;
     
     # Class infos
-    my $class_infos = $U->class_infos;
+    my $class_infos = Util->class_infos;
     
     my $methods = [];
     foreach my $mixin_class (@{$class_infos->{$caller_class}{mixins}}) {
@@ -346,7 +352,7 @@ sub call_super {
     $base_class  ||= caller;
     
     # Class info
-    my $class_infos = $U->class_infos;
+    my $class_infos = Util->class_infos;
     
     # Call last mixin method
     my $mixin_found = $mixin_base_class ? 0 : 1;
@@ -374,9 +380,9 @@ sub call_super {
     croak("Cannot locate method '$method' via base class of $base_class");
 }
 
-sub class_attrs       { $U->class_attrs(@_) }
-sub exists_class_attr { $U->exists_class_attr(@_) }
-sub delete_class_attr { $U->delete_class_attr(@_) }
+sub class_attrs       { Util->class_attrs(@_) }
+sub exists_class_attr { Util->exists_class_attr(@_) }
+sub delete_class_attr { Util->delete_class_attr(@_) }
 
 =head1 NAME
  
@@ -462,16 +468,10 @@ writing new and accessors repeatedly.
     sub state : Attr {}
     
     # Define accessor for class attriute
-    sub options : ClassAttr {
-        type => 'array',
-        auto_build => sub { shift->options([]) }
-    }
+    sub options : ClassAttr { type => 'array',  build => sub {[]} }
     
     # Define accessor for both object attribute and class attribute
-    sub options : ClassObjectAttr {
-        type => 'array',
-        auto_build => sub { shift->options([]) }
-    }
+    sub options : HybridAttr { type => 'array', build => sub {[]} }
     
     # Inheritance
     package Magazine;
@@ -755,17 +755,17 @@ If you overwrite only default value, do the following
 =head2 clone
 
 This accessor options is only used 
-when accessor type is 'ClassAttr', or 'ClassObjectAttr'.
+when accessor type is 'ClassAttr', or 'HybridAttr'.
 
 Clone Class attribute or Object attribute
 
-    sub method : ClassObjectAttr {
+    sub method : HybridAttr {
         clone => $clone_method, build => $default_value }
     }
     
 Sample
 
-    sub constraints : ClassObjectAttr { clone => 'hash', build => sub {{}} }
+    sub constraints : HibridAttr { clone => 'hash', build => sub {{}} }
     
 If 'clone' option is specified and when access this attribute,
 super class value is cloned when invocant is class
@@ -794,20 +794,17 @@ Samples
 
 You can also define accessor for class variable.
 
-    sub options : ClassAttr {
-        type => 'array',
-        auto_build => sub { shift->options([]) }
-    }
+    sub options : ClassAttr { type => 'array', build => sub {[]} }
 
 options set or get class variable, not some instance.
 
 you can use the same accessor options as normal accessor except 'default' option.
 
-If you define default value to class variable, you must use 'auto_build' option.
+If you define default value to class variable, you must use 'build' option.
 
 If this accessor is used subclass, it access subclass class variable, not the class it is defined. 
 
-=head2 ClassObjectAttr - Accessor for object or class variable 
+=head2 HybridAttr - Accessor for object or class variable 
 
 You can define object or class hibrid accessor.
 
@@ -1065,6 +1062,10 @@ Delete class attribute
 This is discuraged now. instead, you write this
 
     delete $class->class_attrs->{$attr};
+
+=head2 ClassObjectAttr
+
+'ClassObjectAttr' is deprecated. This is renamed to 'HybridAttr'.
 
 =head1 Similar modules
 
