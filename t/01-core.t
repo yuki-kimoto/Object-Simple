@@ -674,20 +674,20 @@ use T45;
 }
 
 use T46;
-# ClassObjectAttr
+# HybridAttr
 {
     my $o = T46->new;
     $o->m1([1,2]);
-    is_deeply(scalar $o->m1, [1, 2], 'ClassObjectAttr object accessor');
-    is_deeply([$o->m1], [1, 2], 'ClassObjectAttr object accessor list context');
+    is_deeply(scalar $o->m1, [1, 2], 'HybridAttr object accessor');
+    is_deeply([$o->m1], [1, 2], 'HybridAttr object accessor list context');
     ok(!exists $o->{m2});
-    is_deeply($o->m2, [5, 6], 'ClassObjectAttr object accessor auto_build');
+    is_deeply($o->m2, [5, 6], 'HybridAttr object accessor auto_build');
     
     T46->m1([3, 4]);
-    is_deeply(scalar T46->m1, [3, 4], 'ClassObjectAttr class accessor');
-    is_deeply([T46->m1], [3, 4], 'ClassObjectAttr class accessor list context');
+    is_deeply(scalar T46->m1, [3, 4], 'HybridAttr class accessor');
+    is_deeply([T46->m1], [3, 4], 'HybridAttr class accessor list context');
     ok(!T46->exists_class_attr('m2'));
-    is_deeply(T46->m2, [5, 6], 'ClassObjectAttr class accessor auto_build');
+    is_deeply(T46->m2, [5, 6], 'HybridAttr class accessor auto_build');
     T46->m2;
     
     ok(T46->exists_class_attr('m2'), 'key is exists');
@@ -698,7 +698,7 @@ use T46;
 
 {
     my $o = T46->new(m1 => 5, m2 => 6);
-    is_deeply($o, {m1 => 5, m2 => 6}, 'ClassObjectAttr constructor');
+    is_deeply($o, {m1 => 5, m2 => 6}, 'HybridAttr constructor');
 }
 
 use T47;
@@ -774,7 +774,7 @@ is_deeply({$o->m9}, {a => 1, b => 2}, "$test : hash");
 is_deeply([$o->m10], [1, 2], "$test : array");
 
 
-test 'ClassObjectAttr initiailize';
+test 'HybridAttr initiailize';
 isnt(scalar T47->m2, scalar T47_2->m2, "$test : array not copy reforecne");
 isnt(scalar T47->m3, scalar T47_2->m3, "$test : hash not copy reforecne");
 

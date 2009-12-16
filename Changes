@@ -1,7 +1,12 @@
-2.0910
+2.1001
   add 'build' option
-  'auto_build' is discoraged.
-
+  'auto_build' is deprecated.
+  'initialize' option is deprecated.
+  add 'clone' option
+  'ClassObjectAttr' us deprecated. it is renamed to 'HibridAttr'.
+  Object::Simple::Util is departed to other file.
+  add Object::Simple::Accessor
+  
 2.0901
   add 'class_attr' method.
   discuraged 'delete_class_attr' method

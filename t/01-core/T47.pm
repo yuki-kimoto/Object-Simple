@@ -2,13 +2,13 @@
 package T47;
 use Object::Simple;
 
-sub m1 : ClassObjectAttr { initialize => {clone => 'scalar', default => 1} }
-sub m2 : ClassObjectAttr { initialize => {clone => 'array', default => sub {['1', '2']} } }
-sub m3 : ClassObjectAttr { initialize => {clone => 'hash', default => sub {{a => 1, b => 2}} } }
-sub m4 : ClassObjectAttr { initialize => {clone => sub { $_[0] * 2 }, default => sub {3} } }
-sub m6 : ClassObjectAttr { initialize => {clone => 'scalar', default => 3 } }
-sub m8 : ClassObjectAttr { initialize => {clone => 'scalar' } }
-sub m9 : ClassObjectAttr {
+sub m1 : HybridAttr { initialize => {clone => 'scalar', default => 1} }
+sub m2 : HybridAttr { initialize => {clone => 'array', default => sub {['1', '2']} } }
+sub m3 : HybridAttr { initialize => {clone => 'hash', default => sub {{a => 1, b => 2}} } }
+sub m4 : HybridAttr { initialize => {clone => sub { $_[0] * 2 }, default => sub {3} } }
+sub m6 : HybridAttr { initialize => {clone => 'scalar', default => 3 } }
+sub m8 : HybridAttr { initialize => {clone => 'scalar' } }
+sub m9 : HybridAttr {
     type => 'hash',
     deref => 1, 
     initialize => {
@@ -17,7 +17,7 @@ sub m9 : ClassObjectAttr {
     }
 }
 
-sub m10 : ClassObjectAttr {
+sub m10 : HybridAttr {
     type => 'array',
     deref => 1,
     initialize => {
