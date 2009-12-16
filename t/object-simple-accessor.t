@@ -45,6 +45,7 @@ is($o->m6_2, 3, "$test : hybrid_attr : set and get object 2");
 T1->m6_2(4);
 is(T1->m6_2, 4, "$test : hybrid_attr : set and get class 2");
 
+test 'accessor default';
 
 
 
