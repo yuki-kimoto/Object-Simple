@@ -388,15 +388,15 @@ sub delete_class_attr { Util->delete_class_attr(@_) }
  
 Object::Simple - Simple class builder
  
-=head1 Version
- 
+=head1 VERSION
+
 Version 2.1001
 
 =cut
 
 our $VERSION = '2.1001';
  
-=head1 Features
+=head1 FEATURES
  
 =over 4
  
@@ -415,7 +415,7 @@ writing new and accessors repeatedly.
 
 =cut
  
-=head1 Synopsis
+=head1 SYNOPSIS
  
     # Class definition( Book.pm )
     package Book;
