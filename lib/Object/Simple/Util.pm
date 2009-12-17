@@ -17,7 +17,7 @@ sub import {
     }
 }
 
-sub class_infos { $Object::Simple::CLASS_INFOS };
+sub class_infos { $Object::Simple::CLASS_INFOS ||= {} };
 
 # Get leftmost self and parent classes
 sub get_leftmost_isa {

@@ -9,7 +9,7 @@ use Object::Simple::Util;
 use constant Util => 'Object::Simple::Util';
 
 # Meta imformation
-our $CLASS_INFOS = {};
+our $CLASS_INFOS;
 
 # Classes which need to build
 our @BUILD_NEED_CLASSES;

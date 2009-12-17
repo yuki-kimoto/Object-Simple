@@ -6,6 +6,7 @@
   'ClassObjectAttr' us deprecated. it is renamed to 'HibridAttr'.
   Object::Simple::Util is departed to other file.
   add Object::Simple::Accessor
+  add Object::Simple::Base
   
 2.0901
   add 'class_attr' method.

@@ -49,7 +49,7 @@ sub _create_accessor {
     }
 }
 
-my %VALID_ACCESSOR_OPTIONS       = map { $_ => 1 } qw/build type deref/;
+my %VALID_ACCESSOR_OPTIONS        = map { $_ => 1 } qw/build type deref/;
 my %VALID_CLASS_ACCESSOR_OPTIONS  = map { $_ => 1 } qw/build type deref clone/;
 my %VALID_HYBRID_ACCESSOR_OPTIONS = map { $_ => 1 } qw/build type deref clone/;
 
@@ -72,6 +72,13 @@ sub _check_options {
     }
 }
 
+=head1 Functions
+
+=head2 attr
+
+=head2 class_attr
+
+=head2 hybrid_attr
 
 =head1 Author
  
