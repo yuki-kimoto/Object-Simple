@@ -2,7 +2,7 @@ use Test::More  tests => 4;
 use strict;
 use warnings;
 
-use lib 't/02-core';
+use lib 't/object-simple_class_define_one_file';
 
 package T1;
 use Object::Simple;

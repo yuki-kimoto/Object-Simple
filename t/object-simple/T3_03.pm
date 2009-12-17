@@ -1,5 +1,5 @@
-package T3;
-use Object::Simple(base => T2);
+package T3_03;
+use Object::Simple(base => 'T2_03');
 
 sub new {
     my $self = shift->SUPER::new(@_);

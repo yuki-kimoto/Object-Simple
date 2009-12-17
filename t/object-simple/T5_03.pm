@@ -1,5 +1,5 @@
-package T5;
-use Object::Simple( base => 'T6' );
+package T5_03;
+use Object::Simple( base => 'T6_03' );
 
 sub m1  : Attr {default => 1}
 

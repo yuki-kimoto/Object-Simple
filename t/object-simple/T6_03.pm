@@ -1,4 +1,4 @@
-package T6;
+package T6_03;
 use Object::Simple;
 
 sub m3  : Attr {default => 3}

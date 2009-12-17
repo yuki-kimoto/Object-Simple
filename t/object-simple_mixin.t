@@ -2,7 +2,7 @@ use Test::More 'no_plan';
 use strict;
 use warnings;
 
-use lib 't/02-mixins';
+use lib 't/object-simple_mixin';
 
 use T1;
 {

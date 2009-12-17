@@ -887,3 +887,25 @@ $o2 = PBook_04->new;
 $o2->title;
 is( $o->title, 1, 'method invoked after super class dose' );
 
+use Book_03;
+use PBook_03;
+$o = Book_03->new;
+$o2 = PBook_03->new;
+$o->title;
+is( $o2->title, 1, 'method invoked atfter super class dose' );
+
+use T2_03;
+$o = T2_03->new;
+is_deeply($o, {m1 => 1, m2 => 2, title => 1}, 'use base');
+
+use T3_03;
+$o = T3_03->new(m4 => 4);
+is_deeply($o, {m1 => 1, m2 => 2, m3 => 3, m4 => 4, title => 1}, 'use base');
+
+ok($Object::Simple::CLASS_INFOS->{T3_03}{constructor}, 'cache constructor');
+$o = T3_03->new(m4 => 4);
+is_deeply($o, {m1 => 1, m2 => 2, m3 => 3, m4 => 4, title => 1}, 'use base');
+
+use T4_03;
+$o = T4_03->new;
+is_deeply($o, {m1 => 1, m2 => 2, m3 => 3}, 'inheritance');

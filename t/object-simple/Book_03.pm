@@ -1,4 +1,4 @@
-package Book;
+package Book_03;
 use Object::Simple;
 
 sub title : Attr { default => 1 }
