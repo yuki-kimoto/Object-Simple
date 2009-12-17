@@ -2,7 +2,7 @@ use Test::More 'no_plan';
 use strict;
 use warnings;
  
-use lib 't/01-core';
+use lib 't/object-simple';
 
 BEGIN{ use_ok( 'Object::Simple' ) }
 can_ok( 'Object::Simple', qw( new ) ); 
@@ -871,4 +871,19 @@ ok(!T49->m8, "$test : build is undef");
 eval "use T49_Error1";
 like($@, qr/\Q'clone' opiton must be 'scalar', 'array', 'hash', or code reference (T49_Error1::m5)/, 'noexis clone option');
 
+
+test 'extend';
+use Book_05;
+use PBook_05;
+$o = Book_05->new;
+$o2 = PBook_05->new;
+$o2->title;
+is($o2->title, 1, "$test : method invoked after super class dose");
+
+use Book_04;
+use PBook_04;
+$o = Book_04->new;
+$o2 = PBook_04->new;
+$o2->title;
+is( $o->title, 1, 'method invoked after super class dose' );
 
