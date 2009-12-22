@@ -15,6 +15,18 @@ my $builder = Module::Build->new(
     },
     add_to_cleanup      => [ 'Object-Simple-*' ],
     create_makefile_pl => 'traditional',
+    meta_merge => {
+        resources => {
+            repository => "http://github.com/yuki-kimoto/object-simple",
+            homepage => "http://github.com/yuki-kimoto/object-simple",
+        },
+        # TODO : Yuki Kimoto should fill those.
+        keywords =>
+        [
+            
+        ],
+    },
+    
 );
 
 $builder->create_build_script();
