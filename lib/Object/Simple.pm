@@ -14,10 +14,10 @@ our $CLASS_INFOS;
 # Classes which need to build
 our @BUILD_NEED_CLASSES;
 
-# Already build class;
+# Already built classes;
 our %ALREADY_BUILD_CLASSES;
  
-# Attribute infomation resisted by MODIFY_CODE_ATTRIBUTES handler
+# Attribute information resisted by MODIFY_CODE_ATTRIBUTES handler
 our @ACCESSOR_INFOS;
  
 # Valid import option
@@ -410,7 +410,7 @@ our $VERSION = '2.1101';
  
 =back
  
-By using Object::Simple, you will become free from the bitter work of
+By using Object::Simple, you will be exempt from the bitter work of
 repeatedly writing the new() constructor and the accessors.
 
 =cut
@@ -425,7 +425,8 @@ repeatedly writing the new() constructor and the accessors.
     sub author : Attr {}
     sub price  : Attr {}
     
-    Object::Simple->build_class; # End of module. Don't forget to call 'build_class' method
+    Object::Simple->build_class; 
+    # End of module. Don't forget to call 'build_class' method
     
     # Using class
     use Book;
@@ -492,16 +493,16 @@ repeatedly writing the new() constructor and the accessors.
  
 =head2 new
 
-Object::Simple prepare 'new' method for subclass.
-So you do not have to define 'new'.
-'new' can receive hash or hash reference
+Object::Simple defines a 'new' method for the subclass, so you do not need
+to define 'new'. 'new' accepts a hash or a hash reference.
 
     $book = Book->new(title => 'Good life', author => 'Ken', price => 200);
     $book = Book->new({title => 'Good life', author => 'Ken', price => 200});
 
-You can also override 'new' for initialize or arrange of arguments.
+You can also override 'new' for finer-grained initialization or arranging
+the arguments.
 
-The following is initializing sample.
+The following is an initialization sample.
 
     sub new {
         my $self = shift->SUPER::new(@_);
@@ -517,7 +518,7 @@ The following is initializing sample.
         # write what you want
     }
     
-The following is arange of argument sample
+The following sample arranges the arguments differently:
 
     sub new {
         my ($class, $title, $author) = @_;
@@ -530,7 +531,8 @@ The following is arange of argument sample
  
 =head2 build_class
 
-You must call build_class at end of script. Class is build completely by this method.
+You must call build_class at the end of the package. The class will be 
+completely constructed by this invocation.
 
     Object::Simple->build_class;
 
