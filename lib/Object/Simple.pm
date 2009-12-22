@@ -386,7 +386,7 @@ sub delete_class_attr { Util->delete_class_attr(@_) }
 
 =head1 NAME
  
-Object::Simple - Simple class builder
+Object::Simple - a simple class builder
  
 =head1 VERSION
 
@@ -400,18 +400,18 @@ our $VERSION = '2.1101';
  
 =over 4
  
-=item 1. You can define accessors in very simple way.
+=item 1. You can define accessors in a very simple way.
  
-=item 2. new method is prepared.
+=item 2. The "new()" method is already defined.
  
-=item 3. You can define variouse accessor option(default, type, chained, weak)
+=item 3. You can define various accessor option (default, type, chained, weak).
 
-=item 4. you can use Mixin system like Ruby
+=item 4. you can use a mixin system like Ruby's.
  
 =back
  
-If you use Object::Simple, you are free from bitter work 
-writing new and accessors repeatedly.
+By using Object::Simple, you will become free from the bitter work of
+repeatedly writing the new() constructor and the accessors.
 
 =cut
  
@@ -1079,7 +1079,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
  
 Github L<http://github.com/yuki-kimoto/>
 
-I develope this module at L<http://github.com/yuki-kimoto/object-simple>
+I develop this module at L<http://github.com/yuki-kimoto/object-simple> .
 
 Please tell me bug if you find.
 
