@@ -342,7 +342,7 @@ sub create_accessor {
     my $strage;
     if ($accessor_type eq 'ClassAttr') {
         # Strage package Varialbe in case class accessor
-        $strage = "Object::Simple::Util->class_infos->{\$self}{class_attrs}{'$accessor_name'}";
+        $strage = "Object::Simple::Util->class_attrs(\$self)->{'$accessor_name'}";
         $source .=
                 qq/    Carp::croak("${class}::$accessor_name must be called from class, not instance")\n/ .
                 qq/      if ref \$self;\n/;
@@ -766,7 +766,11 @@ sub class_attrs {
     
     my $class = ref $invocant || $invocant;
     
-    return $self->class_infos->{$class}{class_attrs};
+    no strict 'refs';
+    ${"${class}::CLASS_ATTRS"} ||= {};
+    my $class_attrs = ${"${class}::CLASS_ATTRS"};
+    
+    return $class_attrs;
 }
 
 # Class attribute is exsist?
@@ -775,7 +779,7 @@ sub exists_class_attr {
     
     my $class = ref $invocant || $invocant;
 
-    return exists $self->class_infos->{$class}{class_attrs}{$accessor_name};
+    return exists $self->class_attrs($class)->{$accessor_name};
 }
 
 # Delete class attribute
@@ -784,7 +788,7 @@ sub delete_class_attr {
 
     my $class = ref $invocant || $invocant;
 
-    return delete $self->class_infos->{$class}{class_attrs}{$accessor_name};
+    return delete $self->class_attrs($class)->{$accessor_name};
 }
 
 sub init_attrs {

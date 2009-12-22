@@ -1,3 +1,5 @@
+2.1101
+  add 'Object::Simple::Util::init_attrs'
 2.1002
   add 'new' function to 'Object::Simple::Accessor';
 2.1001
