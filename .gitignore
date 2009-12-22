@@ -3,6 +3,7 @@
 Build
 MANIFEST
 META.yml
+MYMETA.yml
 Makefile.PL
 _build/*
 blib/*
