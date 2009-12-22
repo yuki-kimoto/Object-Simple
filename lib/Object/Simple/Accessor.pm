@@ -8,7 +8,16 @@ use Object::Simple::Util;
 use constant Util => 'Object::Simple::Util';
 use base 'Exporter';
 
-our @EXPORT_OK = qw/attr class_attr hybrid_attr/;
+our @EXPORT_OK = qw/new attr class_attr hybrid_attr/;
+
+sub new {
+    my $class = shift;
+
+    # Instantiate
+    return bless
+      exists $_[0] ? exists $_[1] ? {@_} : {%{$_[0]}} : {},
+      ref $class || $class;
+}
 
 sub attr        { _create_accessor(shift, 'attr',        @_) }
 sub class_attr  { _create_accessor(shift, 'class_attr',  @_) }
@@ -25,9 +34,10 @@ sub _create_accessor {
     
     # Arrange options
     my $options = @options > 1 ? {@options} : {build => $options[0]};
-
-    # Check options
-    _check_options($type, $options);
+    
+    # Upgrade
+    my $default = delete $options->{default};
+    $options->{build} = $default if $default;
     
     foreach my $attr (@$attrs) {
         
@@ -47,38 +57,32 @@ sub _create_accessor {
         no strict 'refs';
         *{"${class}::$attr"} = $code;
     }
+    return $class;
 }
 
-my %VALID_ACCESSOR_OPTIONS        = map { $_ => 1 } qw/build type deref/;
-my %VALID_CLASS_ACCESSOR_OPTIONS  = map { $_ => 1 } qw/build type deref clone/;
-my %VALID_HYBRID_ACCESSOR_OPTIONS = map { $_ => 1 } qw/build type deref clone/;
+=head1 NAME
 
-sub _check_options {
-    my ($type, $options) = @_;
+Object::Simple::Accessor - provide accessor creating ability
+
+=head1 SYNOPSYS
     
-    foreach my $oname (keys %$options) {
-        if ($type eq 'attr') {
-            croak "'attr' option must be 'build', 'type', or 'deref'"
-              unless $VALID_ACCESSOR_OPTIONS{$oname};
-        }
-        elsif ($type eq 'class_attr') {
-            croak "'attr' option must be 'build', 'type', 'deref', or 'clone'"
-              unless $VALID_CLASS_ACCESSOR_OPTIONS{$oname};
-        }
-        else {
-            croak "'attr' option must be 'build', 'type', 'deref', or 'clone'"
-              unless $VALID_HYBRID_ACCESSOR_OPTIONS{$oname};
-        }
-    }
-}
+    package YourModule;
+    use Object::Simple::Accessor 'attr';
+    
+    __PACKAGE__->attr(title   => 'Good day');
+    __PACKAGE__->attr(authors => sub {[]});
 
 =head1 Functions
+
+You can export these mehtod. If you want to know usage, see L<Object::Simple::Base>
 
 =head2 attr
 
 =head2 class_attr
 
 =head2 hybrid_attr
+
+=head2 new
 
 =head1 Author
  

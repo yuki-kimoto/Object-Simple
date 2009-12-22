@@ -1,3 +1,5 @@
+2.1002
+  add 'new' function to 'Object::Simple::Accessor';
 2.1001
   add 'build' option
   'auto_build' is deprecated.

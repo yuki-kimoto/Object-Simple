@@ -787,11 +787,28 @@ sub delete_class_attr {
     return delete $self->class_infos->{$class}{class_attrs}{$accessor_name};
 }
 
+sub init_attrs {
+    
+    my ($self, $obj, @attrs) = @_;
+    
+    foreach my $attr (@attrs) {
+        $obj->$attr($obj->{$attr}) if exists $obj->{$attr};
+    }
+    
+    return $self;
+}
+
 =head1 NAME
  
 Object::Simple::Util - Object::Simple utility
 
 =head1 Methods
+
+=head2 init_attrs
+
+initalize attribute
+
+    Object::Simple::Util->init_attrs($self, qw/title author/);
 
 =head2 check_accessor_option
 

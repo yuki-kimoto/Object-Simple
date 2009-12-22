@@ -2,16 +2,7 @@ package Object::Simple::Base;
 use strict;
 use warnings;
 
-use Object::Simple::Accessor 'attr', 'class_attr', 'hybrid_attr';
-
-sub new {
-    my $class = shift;
-
-    # Instantiate
-    return bless
-      exists $_[0] ? exists $_[1] ? {@_} : {%{$_[0]}} : {},
-      ref $class || $class;
-}
+use Object::Simple::Accessor 'new', 'attr', 'class_attr', 'hybrid_attr';
 
 =head1 NAME
 
@@ -34,7 +25,7 @@ Object::Simple::Base - Provide constructor and accessors
     print $book->pages(5)->pages;
  
     my $my_book = Car->new(title => 'Good Day');
-    print $book->authors(['Ken', 'Tom'])->authors;    
+    print $book->authors(['Ken', 'Tom'])->authors;
 
 =head1 Methods
 

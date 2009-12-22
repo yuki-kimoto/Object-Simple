@@ -106,13 +106,16 @@ is_deeply(T1_3->m17, {a => 1, c => 1}, "$test :subclass 2 : class");
 $o = T1_3->new;
 is_deeply($o->m17, {a => 1, c => 1}, "$test :subclass 2 : object");
 
-test 'Invalid accessor option';
-eval{T1->attr(e1 => (xxx => 1))};
-ok($@, "$test : attr");
+test 'trigger';
+$o = T1->new;
+$o->m18(1);
+is($o->m19, 2, "$test : accessor");
 
-eval{T1->class_attr(e2 => (xxx => 1))};
-ok($@, "$test : attr");
+$o = T1->new(m18 => 1);
+is($o->m19, 2, "$test : constructor");
 
-eval{T1->hybrid_attr(e3 => (xxx => 1))};
-ok($@, "$test : attr");
+$o = T1->new(m1 => 1);
+
+ok(!$o->m19, "$test : constructor not set");
+
 
