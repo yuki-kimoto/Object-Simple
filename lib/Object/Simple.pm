@@ -390,7 +390,7 @@ Object::Simple - a simple class builder
  
 =head1 VERSION
 
-Version 2.1101
+Version 2.1201
 
 =cut
 
@@ -412,6 +412,12 @@ our $VERSION = '2.1201';
  
 By using Object::Simple, you will be exempt from the bitter work of
 repeatedly writing the new() constructor and the accessors.
+
+But I recommend now L<Object::Simple::Base> than L<Object::Simple>.
+
+It is more Object Oriented, more simple and easier.
+
+See L<Object::Simple::Base>
 
 =cut
  
@@ -488,7 +494,7 @@ repeatedly writing the new() constructor and the accessors.
     );
 
 =cut
- 
+
 =head1 Methods
  
 =head2 new

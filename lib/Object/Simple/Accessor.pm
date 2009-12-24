@@ -2,7 +2,6 @@ package Object::Simple::Accessor;
 
 use strict;
 use warnings;
-use Carp 'croak';
 
 use Object::Simple::Util;
 use constant Util => 'Object::Simple::Util';
@@ -53,27 +52,20 @@ sub _create_accessor {
 
 =head1 NAME
 
-Object::Simple::Accessor - provide accessor creating ability
+Object::Simple::Accessor - Provide a ability to create a accessor
 
 =head1 SYNOPSYS
     
     package YourModule;
-    use Object::Simple::Accessor 'attr';
+    use Object::Simple::Accessor qw/attr class_attr hybrid_attr/;
     
     __PACKAGE__->attr(title   => 'Good day');
     __PACKAGE__->attr(authors => sub {[]});
 
-=head1 Functions
+=head1 Export
 
-You can export these mehtod. If you want to know usage, see L<Object::Simple::Base>
-
-=head2 attr
-
-=head2 class_attr
-
-=head2 hybrid_attr
-
-=head2 new
+You can export 'attr', 'class_attr', 'hybrid_attr'.
+If you want to know the usages, see L<Object::Simple::Base>
 
 =head1 Author
  

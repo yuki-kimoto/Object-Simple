@@ -356,7 +356,7 @@ sub create_accessor {
     $source .=    qq/    my \$value;\n/ if $type || $convert;
 
     # Invalid 'build' option
-    croak "'build' option must be scalar or code ref (${class}::$accessor_name)"
+    croak "'build', or 'default' option must be scalar or code ref (${class}::$accessor_name)"
       unless !ref $build || ref $build eq 'CODE';
 
     # Automatically call build method

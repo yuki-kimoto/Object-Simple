@@ -824,7 +824,7 @@ is(T48->m6, 42, "$test : class object attr code ref : class");
 
 test 'build accessor option error';
 eval "use T48_Error1";
-like($@, qr/\Q'build' option must be scalar or code ref (T48_Error1::m1)/,
+like($@, qr/\Q'build', or 'default' option must be scalar or code ref (T48_Error1::m1)/,
      "$test");
 
 
