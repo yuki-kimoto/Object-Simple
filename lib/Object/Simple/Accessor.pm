@@ -8,16 +8,7 @@ use Object::Simple::Util;
 use constant Util => 'Object::Simple::Util';
 use base 'Exporter';
 
-our @EXPORT_OK = qw/new attr class_attr hybrid_attr/;
-
-sub new {
-    my $class = shift;
-
-    # Instantiate
-    return bless
-      exists $_[0] ? exists $_[1] ? {@_} : {%{$_[0]}} : {},
-      ref $class || $class;
-}
+our @EXPORT_OK = qw/attr class_attr hybrid_attr/;
 
 sub attr        { _create_accessor(shift, 'attr',        @_) }
 sub class_attr  { _create_accessor(shift, 'class_attr',  @_) }

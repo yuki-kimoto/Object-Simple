@@ -2,7 +2,19 @@ package Object::Simple::Base;
 use strict;
 use warnings;
 
-use Object::Simple::Accessor 'new', 'attr', 'class_attr', 'hybrid_attr';
+use Object::Simple::Accessor qw/attr class_attr hybrid_attr/;
+
+use base 'Exporter';
+our @EXPORT_OK = qw/new to_string/;
+
+sub new {
+    my $class = shift;
+
+    # Instantiate
+    return bless
+      exists $_[0] ? exists $_[1] ? {@_} : {%{$_[0]}} : {},
+      ref $class || $class;
+}
 
 =head1 NAME
 
@@ -15,7 +27,7 @@ Object::Simple::Base - Provide constructor and accessors
  
     __PACKAGE__->attr('title');
     __PACKAGE__->attr('pages' => 159);
-    __PACKAGE__->attr([qw/authors categories/] => sub {[]});
+    __PACKAGE__->attr([qw/authors categories/] => sub { [] });
  
     package main;
     use Book;
@@ -64,7 +76,7 @@ Usage is almost same as 'attr'
 
 Special option 'clone' is available for 'class_attr'.
 
-    __PACAKGE__->class_attr(name => (build => sub {[]}, clone => 'array'));
+    __PACKAGE__->class_attr(name => (build => sub {[]}, clone => 'array'));
 
 See L<Object::Simple> about 'clone' option.
 
