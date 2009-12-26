@@ -390,11 +390,11 @@ Object::Simple - a simple class builder
  
 =head1 VERSION
 
-Version 2.1201
+Version 2.1203
 
 =cut
 
-our $VERSION = '2.1201';
+our $VERSION = '2.1203';
  
 =head1 FEATURES
  
@@ -415,7 +415,7 @@ repeatedly writing the new() constructor and the accessors.
 
 But I recommend now L<Object::Simple::Base> than L<Object::Simple>.
 
-It is more Object Oriented, more simple and easier.
+It is more Object Oriented, more simple and easier, and L<Mojo::Base> compatible.
 
 See L<Object::Simple::Base>
 
