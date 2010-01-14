@@ -62,10 +62,33 @@ Object::Simple::Accessor - Provide a ability to create a accessor
     __PACKAGE__->attr(title   => 'Good day');
     __PACKAGE__->attr(authors => sub {[]});
 
-=head1 Export
+=head1 Functions
 
 You can export 'attr', 'class_attr', 'hybrid_attr'.
-If you want to know the usages, see L<Object::Simple::Base>
+
+    use Object::Simple::Accessor qw/attr class_attr hybrid_attr/;
+
+See L<Object::Simple::Base> to know the usage of these methods.
+
+=head1 Purpose
+
+L<Object::Simple::Base> provide a constructor and ability to create accessors
+to this subclass.
+    
+    package YourClass;
+    use base 'Object::Simple::Base';
+
+But construcor and a ability to create accessors is linked.
+L<Object::Simple::Accessor> provide only a ability to create accessors.
+
+If you inherit other class, you provide a avility to create accessor to the class.
+
+    package YourClass;
+    use base 'LWP::UserAgent';
+    
+    use Object::Simple::Accessor 'attr';
+    
+    __PACKAGE__->attr('foo');
 
 =head1 Author
  

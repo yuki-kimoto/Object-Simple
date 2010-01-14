@@ -16,5 +16,6 @@ plan skip_all => "Pod::Coverage $min_pc required for testing POD coverage"
     if $@;
 
 {
-    all_pod_coverage_ok({also_private => [qw/^build_all_classes unimport attr class_attr hybrid_attr$/]});
+    all_pod_coverage_ok({also_private => [qw/^(build_all_classes|unimport|attr|class_attr|hybrid_attr|class_attrs|clone_prototype|create_accessor|create_class_accessor|create_hybrid_accessor)$/]});
 }
+

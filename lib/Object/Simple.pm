@@ -5,7 +5,10 @@ use strict;
 use warnings;
 use Carp 'croak';
 
+use Object::Simple::InternalUtil;
 use Object::Simple::Util;
+
+use constant IUtil => 'Object::Simple::InternalUtil';
 use constant Util => 'Object::Simple::Util';
 
 # Meta imformation
@@ -40,17 +43,17 @@ sub import {
     }
     
     # Resist base class to meta information
-    Util->class_infos->{$caller_class}{base} = $options{base};
+    IUtil->class_infos->{$caller_class}{base} = $options{base};
     
     # Regist mixin classes to meta information
-    Util->class_infos->{$caller_class}{mixins} = $options{mixins};
+    IUtil->class_infos->{$caller_class}{mixins} = $options{mixins};
     
     # Adapt strict and warnings pragma to caller class
     strict->import;
     warnings->import;
     
     # Define MODIFY_CODE_ATTRIBUTES subroutine of caller class
-    Util->define_MODIFY_CODE_ATTRIBUTES($caller_class);
+    IUtil->define_MODIFY_CODE_ATTRIBUTES($caller_class);
     
     # Push classes which need build
     push @BUILD_NEED_CLASSES, $caller_class;
@@ -77,14 +80,14 @@ sub new {
     my $class = ref $invocant || $invocant;
     
     # Class infos
-    my $class_infos = Util->class_infos;
+    my $class_infos = IUtil->class_infos;
     
     # Call constructor
     return $class_infos->{$class}{constructor}->($class,@_)
         if $class_infos->{$class}{constructor};
     
     # Search super class constructor if constructor is not resited
-    foreach my $super_class (@{Util->get_leftmost_isa($class)}) {
+    foreach my $super_class (@{IUtil->get_leftmost_isa($class)}) {
         if($class_infos->{$super_class}{constructor}) {
             $class_infos->{$class}{constructor}
               = $class_infos->{$super_class}{constructor};
@@ -108,7 +111,7 @@ sub build_class {
     my ($self, $options) = @_;
     
     # Class infos
-    my $class_infos = Util->class_infos;
+    my $class_infos = IUtil->class_infos;
     
     # passed class name
     unless (ref $options) {
@@ -156,7 +159,7 @@ sub build_class {
                           : {@accessor_options};
         
         # Check accessor option
-        Util->check_accessor_option($accessor_name, $class, $accessor_options,
+        IUtil->check_accessor_option($accessor_name, $class, $accessor_options,
                                      $accessor_type);
         
         # Resist accessor type and accessor options
@@ -206,7 +209,7 @@ sub build_class {
         push @{"${class}::ISA"}, __PACKAGE__;
         
         # Include mixin classes
-        Util->include_mixin_classes($class)
+        IUtil->include_mixin_classes($class)
           if $class_infos->{$class}{mixins};
     }
 
@@ -219,7 +222,7 @@ sub build_class {
             my $base_class = $class;
             while ($class_infos->{$base_class}{accessors}{$accessor_name}{options}{extend}) {
                 my ($super_accessor_options, $accessor_found_class)
-                  = Util->get_super_accessor_options($base_class, $accessor_name);
+                  = IUtil->get_super_accessor_options($base_class, $accessor_name);
                 
                 delete $class_infos->{$base_class}{accessors}{$accessor_name}{options}{extend};
                 
@@ -251,11 +254,11 @@ sub build_class {
                      
                      # (Deprecated)
                      : $accessor_type eq 'Output' 
-                     ? Util->create_output_accessor($class, $accessor_name, $options)
+                     ? IUtil->create_output_accessor($class, $accessor_name, $options)
                      
                      # (Deprecated)
                      : $accessor_type eq 'Translate'
-                     ? Util->create_translate_accessor($class, $accessor_name, $options)
+                     ? IUtil->create_translate_accessor($class, $accessor_name, $options)
                      
                      : undef;
 
@@ -267,7 +270,7 @@ sub build_class {
     
     # Create constructor
     foreach my $class (@build_need_classes) {
-        my $constructor_code = Util->create_constructor($class);
+        my $constructor_code = IUtil->create_constructor($class);
         
         eval $constructor_code;
         croak("$constructor_code\n:$@") if $@; # never occured
@@ -306,7 +309,7 @@ sub call_mixin {
     my $method      = shift || '';
     
     # Class infos
-    my $class_infos = Util->class_infos;
+    my $class_infos = IUtil->class_infos;
     
     # Caller class
     my $caller_class = caller;
@@ -325,7 +328,7 @@ sub mixin_methods {
     my $caller_class = caller;
     
     # Class infos
-    my $class_infos = Util->class_infos;
+    my $class_infos = IUtil->class_infos;
     
     my $methods = [];
     foreach my $mixin_class (@{$class_infos->{$caller_class}{mixins}}) {
@@ -352,7 +355,7 @@ sub call_super {
     $base_class  ||= caller;
     
     # Class info
-    my $class_infos = Util->class_infos;
+    my $class_infos = IUtil->class_infos;
     
     # Call last mixin method
     my $mixin_found = $mixin_base_class ? 0 : 1;
@@ -380,9 +383,9 @@ sub call_super {
     croak("Cannot locate method '$method' via base class of $base_class");
 }
 
-sub class_attrs       { Util->class_attrs(@_) }
-sub exists_class_attr { Util->exists_class_attr(@_) }
-sub delete_class_attr { Util->delete_class_attr(@_) }
+sub class_attrs       { IUtil->class_attrs(@_) }
+sub exists_class_attr { IUtil->exists_class_attr(@_) }
+sub delete_class_attr { IUtil->delete_class_attr(@_) }
 
 =head1 NAME
  
@@ -390,11 +393,11 @@ Object::Simple - a simple class builder
  
 =head1 VERSION
 
-Version 2.1203
+Version 2.1204
 
 =cut
 
-our $VERSION = '2.1203';
+our $VERSION = '2.1204';
  
 =head1 FEATURES
  
@@ -413,7 +416,7 @@ our $VERSION = '2.1203';
 By using Object::Simple, you will be exempt from the bitter work of
 repeatedly writing the new() constructor and the accessors.
 
-But I recommend now L<Object::Simple::Base> than L<Object::Simple>.
+But now I recommend L<Object::Simple::Base> than L<Object::Simple>.
 
 It is more Object Oriented, more simple and easier, and L<Mojo::Base> compatible.
 
@@ -945,15 +948,6 @@ If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
 
 This variable structure will be change. so You shoud not access this variable.
 Please only use to undarstand Object::Simple well.
-
-=head1 Object::Simple sample
-
-The following modules use Object::Simple. it will be Good sample.
-
-You can create custamizable module easy way.
-
-L<Validator::Custom>, L<DBIx::Custom>
-
 
 =head1 Discoraged options and methods
 

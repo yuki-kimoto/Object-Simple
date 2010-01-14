@@ -321,6 +321,18 @@ Can import 'new' method to your package.
 
     package YourClass;
     use Object::Simple::Base 'new';
+    
+=head1 Provide only a ability to create accessor to a class.
+
+If you want to provide only a ability to create accessor a class,
+use L<Object::Simple::Accessor>.
+
+    package YourClass;
+    use base 'LWP::UserAgent';
+    
+    use Object::Simple::Accessor 'attr';
+    
+    __PACKAGE__->attr('foo');
 
 =head1 Similar module
 
