@@ -280,7 +280,7 @@ sub create_accessor {
 
 sub create_class_accessor  { shift->create_accessor(@_[0 .. 2], 'ClassAttr') }
 
-sub create_hybrid_accessor {
+sub create_dual_accessor {
     my ($self, $class, $accessor_name, $options) = @_;
     
     my $object_accessor = $self->create_accessor($class, $accessor_name, $options);

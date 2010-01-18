@@ -7,11 +7,14 @@ use Object::Simple::Util;
 use constant Util => 'Object::Simple::Util';
 use base 'Exporter';
 
-our @EXPORT_OK = qw/attr class_attr hybrid_attr/;
+our @EXPORT_OK = qw/attr class_attr dual_attr hybrid_attr/;
 
 sub attr        { _create_accessor(shift, 'attr',        @_) }
 sub class_attr  { _create_accessor(shift, 'class_attr',  @_) }
-sub hybrid_attr { _create_accessor(shift, 'hybrid_attr', @_) }
+sub dual_attr { _create_accessor(shift, 'dual_attr', @_) }
+
+# alias of daul_attr
+sub hybrid_attr { _create_accessor(shift, 'dual_attr', @_) }
 
 sub _create_accessor {
     my ($class, $type, $attrs, @options) = @_;
@@ -38,8 +41,8 @@ sub _create_accessor {
                  : $type eq 'class_attr'
                  ? Util->create_class_accessor($class, $attr, $options)
                  
-                 : $type eq 'hybrid_attr'
-                 ? Util->create_hybrid_accessor($class, $attr, $options)
+                 : $type eq 'dual_attr'
+                 ? Util->create_dual_accessor($class, $attr, $options)
                  
                  : undef;
         
@@ -57,16 +60,16 @@ Object::Simple::Accessor - Provide a ability to create a accessor
 =head1 SYNOPSYS
     
     package YourModule;
-    use Object::Simple::Accessor qw/attr class_attr hybrid_attr/;
+    use Object::Simple::Accessor qw/attr class_attr dual_attr/;
     
     __PACKAGE__->attr(title   => 'Good day');
     __PACKAGE__->attr(authors => sub {[]});
 
 =head1 Functions
 
-You can export 'attr', 'class_attr', 'hybrid_attr'.
+You can export 'attr', 'class_attr', 'dual_attr'.
 
-    use Object::Simple::Accessor qw/attr class_attr hybrid_attr/;
+    use Object::Simple::Accessor qw/attr class_attr dual_attr/;
 
 See L<Object::Simple::Base> to know the usage of these methods.
 

@@ -13,7 +13,7 @@ my $o;
 test 'methods';
 use T1;
 $o = T1->new;
-can_ok($o, qw/attr class_attr hybrid_attr/);
+can_ok($o, qw/attr class_attr dual_attr/);
 
 test 'accessor';
 $o = T1->new;
@@ -22,9 +22,9 @@ is($o->m1, 1, "$test : attr : set and get");
 T1->m2(2);
 is(T1->m2, 2, "$test : class_attr : set and get");
 $o->m3(3);
-is($o->m3, 3, "$test : hybrid_attr : set and get object");
+is($o->m3, 3, "$test : dual_attr : set and get object");
 T1->m3(4);
-is(T1->m3, 4, "$test : hybrid_attr : set and get class");
+is(T1->m3, 4, "$test : dual_attr : set and get class");
 
 test 'accessor array';
 $o = T1->new;
@@ -37,13 +37,13 @@ is(T1->m5_1, 2, "$test : class_attr : set and get 1");
 T1->m5_2(2);
 is(T1->m5_2, 2, "$test : class_attr : set and get 2");
 $o->m6_1(3);
-is($o->m6_1, 3, "$test : hybrid_attr : set and get object 1");
+is($o->m6_1, 3, "$test : dual_attr : set and get object 1");
 T1->m6_1(4);
-is(T1->m6_1, 4, "$test : hybrid_attr : set and get class 1");
+is(T1->m6_1, 4, "$test : dual_attr : set and get class 1");
 $o->m6_2(3);
-is($o->m6_2, 3, "$test : hybrid_attr : set and get object 2");
+is($o->m6_2, 3, "$test : dual_attr : set and get object 2");
 T1->m6_2(4);
-is(T1->m6_2, 4, "$test : hybrid_attr : set and get class 2");
+is(T1->m6_2, 4, "$test : dual_attr : set and get class 2");
 
 
 test 'constructor';
@@ -61,8 +61,8 @@ is($o->m8_1, '8', "$test : multi 1");
 is($o->m8_2, '8', "$test : multi 2");
 
 is(T1->m9, 9, "$test : class_attr");
-is($o->m10, 10, "$test : hybrid_attr : object");
-is(T1->m10, 10, "$test : hybrid_attr : class");
+is($o->m10, 10, "$test : dual_attr : object");
+is(T1->m10, 10, "$test : dual_attr : class");
 
 
 test 'Various options';
@@ -80,16 +80,16 @@ T1->m14(b => 1);
 is_deeply({T1->m14}, {b => 1}, "$test : class_attr : type hash and deref");
 
 $o->m15(1, 2);
-is_deeply([$o->m15], [1, 2], "$test : hybrid_attr : type arrray and deref");
+is_deeply([$o->m15], [1, 2], "$test : dual_attr : type arrray and deref");
 
 $o->m16(a => 1);
-is_deeply({$o->m16}, {a => 1}, "$test : hybrid_attr : type hash and deref");
+is_deeply({$o->m16}, {a => 1}, "$test : dual_attr : type hash and deref");
 
 T1->m15(3, 4);
-is_deeply([T1->m15], [3, 4], "$test : hybrid_attr : type array and deref");
+is_deeply([T1->m15], [3, 4], "$test : dual_attr : type array and deref");
 
 T1->m16(b => 1);
-is_deeply({T1->m16}, {b => 1}, "$test : hybrid_attr : type hash and deref");
+is_deeply({T1->m16}, {b => 1}, "$test : dual_attr : type hash and deref");
 
 
 test 'hibrid_attr';

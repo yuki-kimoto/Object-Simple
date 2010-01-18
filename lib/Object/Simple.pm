@@ -246,11 +246,11 @@ sub build_class {
                      ? Util->create_class_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'HybridAttr' 
-                     ? Util->create_hybrid_accessor($class, $accessor_name, $options)
+                     ? Util->create_dual_accessor($class, $accessor_name, $options)
                      
                      # (Deprecated)
                      : $accessor_type eq 'ClassObjectAttr' 
-                     ? Util->create_hybrid_accessor($class, $accessor_name, $options)
+                     ? Util->create_dual_accessor($class, $accessor_name, $options)
                      
                      # (Deprecated)
                      : $accessor_type eq 'Output' 
@@ -393,11 +393,11 @@ Object::Simple - a simple class builder
  
 =head1 VERSION
 
-Version 2.1204
+Version 2.1301
 
 =cut
 
-our $VERSION = '2.1204';
+our $VERSION = '2.1301';
  
 =head1 FEATURES
  
@@ -449,14 +449,8 @@ See L<Object::Simple::Base>
     sub title   : Attr { build => 'Good news' }
     sub authors : Attr { build => sub{['Ken', 'Taro']} }
     
-    # Read only accessor
-    sub year   : Attr { read_only => 1 }
-    
     # Weak reference
     sub parent : Attr { weak => 1 }
-    
-    # Method chaine (default is true)
-    sub title  : Attr { chained => 1 }
     
     # Variable type
     sub authors : Attr { type => 'array' }
@@ -476,12 +470,6 @@ See L<Object::Simple::Base>
         $self->state('error');
     }}
     sub state : Attr {}
-    
-    # Define accessor for class attriute
-    sub options : ClassAttr { type => 'array',  build => sub {[]} }
-    
-    # Define accessor for both object attribute and class attribute
-    sub options : HybridAttr { type => 'array', build => sub {[]} }
     
     # Inheritance
     package Magazine;
@@ -508,36 +496,6 @@ to define 'new'. 'new' accepts a hash or a hash reference.
     $book = Book->new(title => 'Good life', author => 'Ken', price => 200);
     $book = Book->new({title => 'Good life', author => 'Ken', price => 200});
 
-You can also override 'new' for finer-grained initialization or arranging
-the arguments.
-
-The following is an initialization sample.
-
-    sub new {
-        my $self = shift->SUPER::new(@_);
-        
-        $self->initialize;
-        
-        return $self;
-    }
-    
-    sub initialize {
-        my $self = shift;
-        
-        # write what you want
-    }
-    
-The following sample arranges the arguments differently:
-
-    sub new {
-        my ($class, $title, $author) = @_;
-        
-        # Arrange arguments
-        my $self = $class->SUPER::new(title => $title, author => $author);
-        
-        return $self;
-    }
- 
 =head2 build_class
 
 You must call build_class at the end of the package. The class will be 
@@ -555,18 +513,6 @@ The following processes is excuted.
 You can specify class name if you need.
 
     Object::Simple->build_class($class);
-
-=head2 class_attrs
-
-Get class attributes
-
-    $class_attrs = $class->class_attrs;
-    
-If you want to delete class attribute or check existents of class attribute
-You can use this method
-
-    delete $class->class_attrs->{title};
-    exists $class->class_attrs->{title};
 
 =head2 call_super
 
@@ -637,203 +583,14 @@ If you want to build class, you must call 'build_class'
     Object::Simple->build_class('Book');
 
 =head1 Accessor options
- 
-=head2 default
- 
-You can define attribute default value.
- 
-    sub title    : Attr {default => 'Good news'}
- 
-If you define default values using reference or Object,
-you need wrapping it by sub{}.
- 
-    sub authors : Attr { default => sub{['Ken', 'Taro']} }
 
-=head2 build
-
-Create attribute when accessed first. Usage is almost same as 'default'.
-
-    sub title   : Attr { build => 'Good news' }
-    sub authors : Attr { build => sub{['Ken', 'Taro']} }
-
-'build' subroutine receive $self. using other attribute, you can build this attribute.
-
-    sub title : Attr { build => sub {
-        my $self = shift;
-        return Some::Module->new($self->authors);
-    }}
-
-=head2 read_only
- 
-You can create read only accessor
-    
-    sub title: Attr { read_only => 1 }
- 
-=head2 chained
-
-Setter return value is self by default.
-So you can do method chain.
-
-    $book->title('aaa')->author('bbb')->...
-
-If you do not use method chain,You do following.
- 
-    sub title  : Attr { chained => 0 }
-    sub author : Attr { chained => 0 }
-
-Setter retrun value is current value;
-
-    my $current_value = $book->title('aaa');
-    
-=head2 weak
- 
-attribute value is weak reference.
- 
-    sub parent : Attr {weak => 1}
-
-=head2 type
-
-You can specify variable type( array, hash );
-
-    # variable type
-    sub authors    : Attr { type => 'array' }
-    sub country_id : Attr { type => 'hash' }
-
-If you specity 'array', arguments is automatically converted to array reference
-
-     $book->authors('ken', 'taro'); # ('ken', 'taro') -> ['ken', 'taro']
-     $book->authors('ken');         # ('ken')         -> ['ken']
-
-If you specity 'hash', arguments is automatically converted to hash reference
-
-     $book->country_id(Japan => 1); # (Japan => 1)    -> {Japan => 1}
-
-=head2 convert
-
-You can convert a non blessed scalar value to object.
-
-    sub url : Attr { convert => 'URI' }
-    
-    $book->url('http://somehost'); # convert to URI->new('http://somehost')
-
-You can also convert a scalar value using your convert function.
-
-    sub url : Attr { convert => sub{ ref $_[0] ? $_[0] : URI->new($_[0]) } }
-
-
-=head2 deref
-
-You can derefference returned value.You must specify it with 'type' option.
-    
-    sub authors : Attr { type => 'array', deref => 1 }
-    sub country_id : Attr { type => 'hash',  deref => 1 }
-
-    my @authors = $book->authors;
-    my %country_id = $book->country_id;
-    
-=head2 trigger
-
-You can defined trigger function when value is set.
-
-    sub error : Attr { trigger => sub{
-        my ($self, $old) = @_;
-        $self->state('error') if $self->error;
-    }}
-    sub state : Attr {}
-
-trigger function recieve two argument.
-
-    1. $self
-    2. $old : old value
-
-=head2 extend
-
-You can extend super class accessor options. 
-If you overwrite only default value, do the following
-
-    package BaseClass
-    use Object::Simple;
-    sub authors { default => sub {['taro', 'ken']}, array => 1, deref => 1 }
-    
-    Object::Simple->build_class;
-    
-    package SomeClass
-    use Object::Simple(base => 'BaseClass');
-    sub authors { extend => 1, default => sub {['peter', 'miki']} }
-    
-    Object::Simple->build_class;
-
-=head2 clone
-
-This accessor options is only used 
-when accessor type is 'ClassAttr', or 'HybridAttr'.
-
-Clone Class attribute or Object attribute
-
-    sub method : HybridAttr {
-        clone => $clone_method, build => $default_value }
-    }
-    
-Sample
-
-    sub constraints : HibridAttr { clone => 'hash', build => sub {{}} }
-    
-If 'clone' option is specified and when access this attribute,
-super class value is cloned when invocant is class
-and class attribute is cloned when invacant is object
-
-'clone' option must be specified.The following is clone options
-
-The following is clone options
-
-    1. 'scalar'     # Normal copy
-    2. 'array'      # array ref shallow copy : sub{ [@{shift}] }
-    3. 'hash'       # hash ref shallow copy  : sub{ {%{shift}} }
-    4. code ref     # your clone method, for exsample : 
-                    #   sub { shift->clone }
-
-Samples
-
-    clone => 'scalar'
-    clone => 'array'
-    clone => 'hash'
-    clone => sub { shift->clone }
-
-=head1 Special accessors
-
-=head2 ClassAttr - Accessor for class variable
-
-You can also define accessor for class variable.
-
-    sub options : ClassAttr { type => 'array', build => sub {[]} }
-
-options set or get class variable, not some instance.
-
-you can use the same accessor options as normal accessor except 'default' option.
-
-If you define default value to class variable, you must use 'build' option.
-
-If this accessor is used subclass, it access subclass class variable, not the class it is defined. 
-
-=head2 HybridAttr - Accessor for object or class variable 
-
-You can define object or class hibrid accessor.
-
-If you invoke method from object, data is saved into object
-    
-    $obj->m1('a'); # save into object
-
-If you invoke method from class, data is saved into class
-
-    $class->m1('a'); # save into class
-
-This is very useful.
+See L<Object::Simple::Base>
 
 =head1 Inheritance
  
     # Inheritance
     package Magazine;
-    use Object::Simple( base => 'Book' );
+    use Object::Simple(base => 'Book');
  
 Object::Simple do not support multiple inheritance because it is so complex.
  
@@ -862,218 +619,13 @@ Object::Simple mixin merge mixin class attribute.
 
     # using mixin class
     package Some::Class;
-    use Object::Simple( mixins => [ 'Some::Mixin' ] );
+    use Object::Simple(mixins => ['Some::Mixin']);
     
     sub m1 : Attr {}
     
     Object::Simple->build_class;
 
 Because Some::Mixin is mixined, Some::Class has two attribute m1 and m2.
-
-=head1 Method searching order
-
-Method searching order is like Ruby.
-
-If method names is crashed, method search order is the following
-
-1. This class
-
-2. Mixin class2
-
-3. Mixin class1
-
-4. Base class
-
-     +--------------+
-   4 | Base class   |
-     +--------------+
-           |
-     +--------------+
-   3 | Mixin class1 |
-     +--------------+
-           |
-     +--------------+
-   2 | Mixin class2 |
-     +--------------+
-           |
-     +--------------+
-   1 | This class   |
-     +--------------+
-
-    #       1
-    package ThisClass;
-    #                       4                       3              2
-    Object::Simple(base => 'BaseClass', mixins => ['MixinClass1', 'MixinClass2']);
-
-=head1 Using your MODIFY_CODE_ATTRIBUTES subroutine
- 
-Object::Simple define own MODIFY_CODE_ATTRIBUTES subroutine.
-If you use your MODIFY_CODE_ATTRIBUTES subroutine, do 'no Object::Simple;'
- 
-    package T19;
-    use Object::Simple;
-    
-    sub m1 : Attr {}
-    
-    no Object::Simple; # unimport MODIFY_CODE_ATTRIBUTES
-    
-    # defined MODIFY_CODE_ATTRIBUTES
-    sub MODIFY_CODE_ATTRIBUTES {
-        my ($class, $ref, @attrs) = @_;
-        # do what you want
-        return;
-    }
-    
-    sub m2 : YourAttribute {}
-    
-    Object::Simple->build_class;
-
-=head1 Internal
-
-=head2 CLASS_INFOS package variable
-
-    $CLASS_INFOS data structure
-    $class base             $base
-           mixins           [$mixin1, $mixin2]
-           mixin            $mixin  methods  $method
-           methods          $method derive
-           class_attrs
-           constructor      $constructor
-           
-           accessors        $accessor   type     $type
-                                        options  {default => $default, ..}
-           
-           marged_accessors $accessor   type     $type
-                                        options  {default => $default, ..}
-
-This variable structure will be change. so You shoud not access this variable.
-Please only use to undarstand Object::Simple well.
-
-=head1 Discoraged options and methods
-
-The following options and methods are discuraged now.
-
-Do not use these. This will be removed in future.
-
-=head2 Translate accessor option
-
-Translate accessor is discuraged now, because it is a little complex for reader
-
-    sub attr : Translate { target => 'aaa' }
-
-=head2 Output accessor options
-
-Output accessor is discuraged now, because it is a little complex for reader
-
-    sub attr : Output { target => 'aaa' }
-
-=head2 exists_class_attr methods
-    
-Check existence of class attribute
-
-    $class->exists_class_attr($attr);
-
-This is discuraged now. instead, you write this
-    
-    exists $class->class_attrs->{$attr};
-
-=head2 auto_build
-
-'auto_build' options is now discoraged.
-
-Instead of 'auto_build', use 'build'. 'build' is more simple than 'auto_build'.
-
-    sub author : Attr { auto_build => sub { shift->author(Some::Module->new) } }
-    
-    sub author : Attr { build => sub { Some::Module->new } }
-
-The following is original document.
-
-When accessor is called first,a methods is called to build attribute.
- 
-    sub author : Attr { auto_build => 1 }
-    sub build_author{
-        my $self = shift;
-        $self->atuhor( Person->new );
-    }
- 
-Builder method name is build_ATTRIBUTE_NAME by default;
- 
-You can specify build method .
- 
-    sub author : Attr { auto_build => 1 }
-    sub create_author{
-        my $self = shift;
-        $self->atuhor( Person->new );
-    }
-    
-=head2 initialize
-
-is now discoraged. instead of 'initialize', use 'clone'.
-
-The following is original document.
-
-This accessor options is only used 
-when accessor type is 'ClassAttr', or 'ClassObjectAttr'.
-
-Initialize Class attribute or Object attribute
-
-    sub method : ClassObjectAttr {
-        initialize => {clone => $clone_method, default => $default_value }
-    }
-    
-Sample
-
-    sub constraints : ClassObjectAttr {
-        initialize => {clone => 'hash', default => sub { {} } }; 
-    }
-    
-If 'initialize' option is specified and when access this attribute,
-super class value is cloned when invocant is class
-and class attribute is cloned when invacant is object
-
-'clone' option must be specified.The following is clone options
-
-The following is clone options
-
-    1. 'scalar'     # Normal copy
-    2. 'array'      # array ref shallow copy : sub{ [@{shift}] }
-    3. 'hash'       # hash ref shallow copy  : sub{ {%{shift}} }
-    4. code ref     # your clone method, for exsample : 
-                    #   sub { shift->clone }
-
-Samples
-
-    clone => 'scalar'
-    clone => 'array'
-    clone => 'hash'
-    clone => sub { shift->clone }
-
-'default' must be scalar or code ref
-
-    default => 'good life' # scalar 
-    default => sub {[]}  # array ref
-    default => sub {{}}  # hash
-
-=head2 delete_class_attr methods
-
-Delete class attribute
-
-    $class->delete_class_attr($attr);
-
-This is discuraged now. instead, you write this
-
-    delete $class->class_attrs->{$attr};
-
-=head2 ClassObjectAttr
-
-'ClassObjectAttr' is deprecated. This is renamed to 'HybridAttr'.
-
-=head1 Similar modules
-
-The following is various class builders.
- 
-L<Class::Accessor>,L<Class::Accessor::Fast>, L<Moose>, L<Mouse>, L<Mojo::Base>
 
 =head1 Author
  

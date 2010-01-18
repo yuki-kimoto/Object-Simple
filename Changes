@@ -1,3 +1,5 @@
+2.1301
+  rename Object::Simple::Base 'hybrid_attr' to 'dual_attr' (not backword compatible)
 2.1204
   Object::Simple::Util is divided into Object::Simple::InternalUtil
   Update document
