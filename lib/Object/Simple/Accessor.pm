@@ -7,14 +7,11 @@ use Object::Simple::Util;
 use constant Util => 'Object::Simple::Util';
 use base 'Exporter';
 
-our @EXPORT_OK = qw/attr class_attr dual_attr hybrid_attr/;
+our @EXPORT_OK = qw/attr class_attr dual_attr/;
 
 sub attr        { _create_accessor(shift, 'attr',        @_) }
 sub class_attr  { _create_accessor(shift, 'class_attr',  @_) }
 sub dual_attr { _create_accessor(shift, 'dual_attr', @_) }
-
-# alias of daul_attr
-sub hybrid_attr { _create_accessor(shift, 'dual_attr', @_) }
 
 sub _create_accessor {
     my ($class, $type, $attrs, @options) = @_;
