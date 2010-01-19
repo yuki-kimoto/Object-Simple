@@ -21,6 +21,27 @@ __PACKAGE__->attr([qw/m8_1 m8_2/] => (default => sub { 8 }));
 __PACKAGE__->class_attr(m9 => (default => 9))
            ->dual_attr(m10 => (default => 10));
 
+__PACKAGE__->attr('m11', trigger => sub {
+    my ($self, $old) = @_;
+    
+    if ($old && $old eq $self->m11) {
+        $self->m11_2('trigger ok');
+    }
+});
+__PACKAGE__->attr('m11_2');
+
+
+__PACKAGE__->attr('m12', default => 1, trigger => sub {
+    my ($self, $old) = @_;
+    
+    if ($old && $old eq $self->m12) {
+        $self->m12_2('trigger ok');
+    }
+});
+__PACKAGE__->attr('m12_2');
+
+
+
 __PACKAGE__->dual_attr('m17', default => sub { {a => 1} }, clone => 'hash');
 __PACKAGE__->attr('m18' => (trigger => sub { shift->m19(2) }));
 __PACKAGE__->attr('m19');

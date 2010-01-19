@@ -90,13 +90,13 @@ sub create_accessor {
         # Code ref
         if (ref $default) {
             $source .=
-                qq/            scalar \$options->{default}->(\$self)\n/;
+                qq/            \$options->{default}->(\$self)\n/;
         }
         
         # Scalar
         else {
             $source .=
-                qq/            scalar \$options->{default}\n/;
+                qq/            \$options->{default}\n/;
         }
         
         # Close
@@ -218,7 +218,7 @@ sub clone_prototype {
     
     # Called from object
     if (my $class = ref $invocant) {
-        $invocant->$accessor_name($clone->(scalar $class->$accessor_name));
+        $invocant->$accessor_name($clone->($class->$accessor_name));
     }
     else {
         # Called from class
@@ -227,7 +227,7 @@ sub clone_prototype {
             ${"${invocant}::ISA"}[0];
         };
         my $value = eval{$super->can($accessor_name)}
-                       ? $clone->(scalar $super->$accessor_name)
+                       ? $clone->($super->$accessor_name)
                        : $default;
                           
         $invocant->$accessor_name($value);

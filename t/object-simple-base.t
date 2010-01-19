@@ -64,6 +64,16 @@ is(T1->m9, 9, "$test : class_attr");
 is($o->m10, 10, "$test : dual_attr : object");
 is(T1->m10, 10, "$test : dual_attr : class");
 
+test 'trigger';
+$o->m11(1);
+ok(!$o->m11_2, 'yet trigger');
+$o->m11(1);
+is($o->m11_2, 'trigger ok', 'trigger');
+
+$o->m12;
+$o->m12(1);
+is($o->m12_2, 'trigger ok', 'default and trigger');
+
 
 test 'dual_attr';
 is_deeply(T1_2->m17, {a => 1}, "$test : subclass 1 : class");
