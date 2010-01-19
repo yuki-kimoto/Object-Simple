@@ -26,9 +26,6 @@ sub class_attrs {
     return $class_attrs;
 }
 
-my %VALID_VARIABLE_TYPE = map {$_ => 1} qw/array hash/;
-my %VALID_INITIALIZE_OPTIONS_KEYS = map {$_ => 1} qw/clone default/;
-
 sub create_accessor {
     my ($self, $class, $accessor_name, $options, $accessor_type) = @_;
     
@@ -36,22 +33,11 @@ sub create_accessor {
     $accessor_type ||= '';
     
     # Get accessor options
-    my ($build, $auto_build, $read_only, $weak, $type, $convert, $deref, $trigger, $initialize, $clone)
-      = @{$options}{qw/build auto_build read_only weak type convert deref trigger initialize clone/};
-    
-    # chained
-    my $chained =   exists $options->{chained} ? $options->{chained} : 1;
+    my ($default, $convert, $trigger, $clone)
+      = @{$options}{qw/default convert trigger clone/};
     
     # Passed value expression
     my $value = '$_[0]';
-    
-    # Check type
-    croak("'type' option must be 'array' or 'hash' (${class}::$accessor_name)")
-      if $type && !$VALID_VARIABLE_TYPE{$type};
-    
-    # Check deref
-    croak("'deref' option must be specified with 'type' option (${class}::$accessor_name)")
-      if $deref && !$type;
     
     # Beginning of accessor source code
     my $source =
@@ -61,7 +47,7 @@ sub create_accessor {
     
     # Variable to strage
     my $strage;
-    if ($accessor_type eq 'ClassAttr') {
+    if ($accessor_type eq 'class') {
         # Strage package Varialbe in case class accessor
         $strage = "Object::Simple::Util->class_attrs(\$self)->{'$accessor_name'}";
         $source .=
@@ -74,47 +60,13 @@ sub create_accessor {
     }
     
     # Create temporary variable if there is type or convert option
-    $source .=    qq/    my \$value;\n/ if $type || $convert;
+    $source .=    qq/    my \$value;\n/ if $convert;
 
-    # Invalid 'build' option
-    croak "'build', or 'default' option must be scalar or code ref (${class}::$accessor_name)"
-      unless !ref $build || ref $build eq 'CODE';
+    # Invalid 'default' option
+    croak "'default' option must be scalar or code ref (${class}::$accessor_name)"
+      unless !ref $default || ref $default eq 'CODE';
 
-    # Automatically call build method
-    if ($initialize) {
-        
-        # Check initialize data type
-        croak("'initialize' option must be hash reference (${class}::$accessor_name)")
-          unless ref $initialize eq 'HASH';
-        
-        # Check initialize valid key
-        foreach my $key (keys %$initialize) {
-            croak("'initialize' option must be 'clone', or 'default' (${class}::$accessor_name)")
-              unless $VALID_INITIALIZE_OPTIONS_KEYS{$key};
-        }
-        
-        # Check clone option
-        my $clone = $initialize->{clone};
-        croak("'initialize'-'clone' opiton must be 'scalar', 'array', 'hash', or code reference (${class}::$accessor_name)")
-          if !defined $clone ||
-             !($clone eq 'scalar' || $clone eq 'array' ||
-               $clone eq 'hash' || ref $clone eq 'CODE');
-        
-        # Check default option
-        croak("'initialize'-'default' option must be scalar, or code ref (${class}::$accessor_name)")
-          if exists $initialize->{default} && 
-             !(!ref $initialize->{default} || ref $initialize->{default} eq 'CODE');
-        
-        $source .=
-                qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
-                qq/        Object::Simple::Util->clone_prototype(\n/ .
-                qq/            \$self,\n/ .
-                qq/            '$accessor_name',\n/ .
-                qq/            \$options->{initialize}\n/ .
-                qq/        );\n/ .
-                qq/    }\n/;
-    }
-    elsif ($clone) {
+    if ($clone) {
         
         croak("'clone' opiton must be 'scalar', 'array', 'hash', or code reference (${class}::$accessor_name)")
           if !($clone eq 'scalar' || $clone eq 'array' || $clone eq 'hash' || ref $clone eq 'CODE');
@@ -128,28 +80,7 @@ sub create_accessor {
                 qq/        );\n/ .
                 qq/    }\n/;
     }
-    elsif ($auto_build){
-        $source .=
-                qq/    if(\@_ == 0 && ! exists $strage) {\n/;
-        
-        if(ref $auto_build eq 'CODE') {
-            $source .=
-                qq/        \$options->{auto_build}->(\$self);\n/;
-        }
-        else {
-            my $build_method;
-            if( $accessor_name =~ s/^(_*)// ){
-                $build_method = $1 . "build_$accessor_name";
-            }
-            
-            $source .=
-                qq/        \$self->$build_method;\n/;
-        }
-        
-        $source .=
-                qq/    }\n/;
-    }
-    elsif ($build) {
+    elsif ($default) {
         
         # Build
         $source .=
@@ -157,15 +88,15 @@ sub create_accessor {
                 qq/        \$self->$accessor_name(\n/;
         
         # Code ref
-        if (ref $build) {
+        if (ref $default) {
             $source .=
-                qq/            scalar \$options->{build}->(\$self)\n/;
+                qq/            scalar \$options->{default}->(\$self)\n/;
         }
         
         # Scalar
         else {
             $source .=
-                qq/            scalar \$options->{build}\n/;
+                qq/            scalar \$options->{default}\n/;
         }
         
         # Close
@@ -174,99 +105,49 @@ sub create_accessor {
                 qq/    }\n/;
     }
     
-    # Read only accesor
-    if ($read_only){
-        $source .=
-                qq/    Carp::croak("${class}::$accessor_name is read only") if \@_ > 0;\n/;
-    }
+    $source .=
+            qq/    if(\@_ > 0) {\n/;
     
-    # Read and write accessor
-    else {
-        $source .=
-                qq/    if(\@_ > 0) {\n/;
-        
-        # Variable type
-        if($type) {
-            if($type eq 'array') {
-                $source .=
-                qq/        \$value = ref \$_[0] eq 'ARRAY' ? \$_[0] : !defined \$_[0] ? undef : [\@_];\n/;
-            }
-            else {
-                $source .=
-                qq/        \$value = ref \$_[0] eq 'HASH' ? \$_[0] : !defined \$_[0] ? undef : {\@_};\n/;
-            }
-            $value = '$value';
-        }
-        
-        # Convert to object;
-        if ($convert) {
-            if(ref $convert eq 'CODE') {
-                $source .=
-                qq/        \$value = \$options->{convert}->($value);\n/;
-            }
-            else {
-                require Scalar::Util;
-                
-                $source .=
-                qq/        require $convert;\n/ .
-                qq/        \$value = defined $value && !Scalar::Util::blessed($value) ? $convert->new($value) : $value ;\n/;
-            }
-            $value = '$value';
-        }
-        
-        # Save old value
-        if ($trigger) {
+    # Convert to object;
+    if ($convert) {
+        if(ref $convert eq 'CODE') {
             $source .=
-                qq/        my \$old = $strage;\n/;
-        }
-        
-        # Set value
-        $source .=
-                qq/        $strage = $value;\n/;
-        
-        # Weaken
-        if ($weak) {
-            require Scalar::Util;
-            $source .=
-                qq/        Scalar::Util::weaken($strage) if ref $strage;\n/;
-        }
-        
-        # Trigger
-        if ($trigger) {
-            croak("'trigger' option must be code reference (${class}::$accessor_name)")
-              unless ref $trigger eq 'CODE';
-            
-            $source .=
-                qq/        \$options->{trigger}->(\$self, \$old);\n/;
-        }
-        
-        # Return self if chained
-        if ($chained) {
-            $source .=
-                qq/        return \$self;\n/;
-        }
-        
-        $source .=
-                qq/    }\n/;
-    }
-    
-    # Dereference
-    if ($deref) {
-        if ($type eq 'array') {
-            $source .=
-                qq/    return wantarray ? \@{$strage} : $strage;\n/;
+            qq/        \$value = \$options->{convert}->($value);\n/;
         }
         else {
+            require Scalar::Util;
+            
             $source .=
-                qq/    return wantarray ? \%{$strage} : $strage;\n/;
+            qq/        require $convert;\n/ .
+            qq/        \$value = defined $value && !Scalar::Util::blessed($value) ? $convert->new($value) : $value ;\n/;
         }
+        $value = '$value';
     }
     
-    # No dereference
-    else {
+    # Save old value
+    if ($trigger) {
         $source .=
-                qq/    return $strage;\n/;
+            qq/        my \$old = $strage;\n/;
     }
+    
+    # Set value
+    $source .=
+            qq/        $strage = $value;\n/;
+    
+    # Trigger
+    if ($trigger) {
+        croak("'trigger' option must be code reference (${class}::$accessor_name)")
+          unless ref $trigger eq 'CODE';
+        
+        $source .=
+            qq/        \$options->{trigger}->(\$self, \$old);\n/;
+    }
+    
+    $source .=
+            qq/    }\n/;
+    
+    $source .=
+                qq/    return $strage;\n/;
     
     # End of accessor source code
     $source .=    qq/}\n\n/;
@@ -278,7 +159,7 @@ sub create_accessor {
     return $code;
 }
 
-sub create_class_accessor  { shift->create_accessor(@_[0 .. 2], 'ClassAttr') }
+sub create_class_accessor  { shift->create_accessor(@_[0 .. 2], 'class') }
 
 sub create_dual_accessor {
     my ($self, $class, $accessor_name, $options) = @_;
@@ -329,10 +210,8 @@ sub clone_prototype {
         }
     }
     
-    # build options
-    my $default = exists $options->{default}
-                ? $options->{default}
-                : $options->{build};
+    # default options
+    my $default = $options->{default};
     
     # get Default value when it is code ref
     $default = $default->() if ref $default eq 'CODE';

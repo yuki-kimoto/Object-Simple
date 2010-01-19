@@ -9,9 +9,9 @@ use base 'Exporter';
 
 our @EXPORT_OK = qw/attr class_attr dual_attr/;
 
-sub attr        { _create_accessor(shift, 'attr',        @_) }
-sub class_attr  { _create_accessor(shift, 'class_attr',  @_) }
-sub dual_attr { _create_accessor(shift, 'dual_attr', @_) }
+sub attr       { _create_accessor(shift, 'attr',       @_) }
+sub class_attr { _create_accessor(shift, 'class_attr', @_) }
+sub dual_attr  { _create_accessor(shift, 'dual_attr',  @_)   }
 
 sub _create_accessor {
     my ($class, $type, $attrs, @options) = @_;
@@ -23,11 +23,7 @@ sub _create_accessor {
     $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
     
     # Arrange options
-    my $options = @options > 1 ? {@options} : {build => $options[0]};
-    
-    # Upgrade
-    my $default = delete $options->{default};
-    $options->{build} = $default if $default;
+    my $options = @options > 1 ? {@options} : {default => $options[0]};
     
     foreach my $attr (@$attrs) {
         

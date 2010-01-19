@@ -239,17 +239,17 @@ sub build_class {
             my $options = $class_infos->{$base_class}{accessors}{$accessor_name}{options};
             
             my $code = $accessor_type eq 'Attr'
-                     ? Util->create_accessor($class, $accessor_name, $options)
+                     ? OldUtil->create_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'ClassAttr' 
-                     ? Util->create_class_accessor($class, $accessor_name, $options)
+                     ? OldUtil->create_class_accessor($class, $accessor_name, $options)
 
                      : $accessor_type eq 'HybridAttr' 
-                     ? Util->create_dual_accessor($class, $accessor_name, $options)
+                     ? OldUtil->create_dual_accessor($class, $accessor_name, $options)
                      
                      # (Deprecated)
                      : $accessor_type eq 'ClassObjectAttr' 
-                     ? Util->create_dual_accessor($class, $accessor_name, $options)
+                     ? OldUtil->create_dual_accessor($class, $accessor_name, $options)
                      
                      # (Deprecated)
                      : $accessor_type eq 'Output' 
