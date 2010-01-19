@@ -1,8 +1,8 @@
 package M17;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub initialize{
     die "";
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

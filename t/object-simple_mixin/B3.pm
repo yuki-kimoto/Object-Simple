@@ -1,5 +1,5 @@
 package B3;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub m1 : Attr {};
 
@@ -10,5 +10,5 @@ sub initialize {
 
 
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;
 

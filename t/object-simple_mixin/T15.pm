@@ -1,5 +1,5 @@
 package T15;
-use Object::Simple( base => 'B4', mixins => ['M18', 'M19']);
+use Object::Simple::Old( base => 'B4', mixins => ['M18', 'M19']);
 
 sub m1 {
     my $self = shift;
@@ -63,4 +63,4 @@ sub B4  : Attr {}
 sub B5  : Attr {}
 
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

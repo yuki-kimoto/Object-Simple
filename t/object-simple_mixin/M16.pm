@@ -1,5 +1,5 @@
 package M16;
-use Object::Simple;
+use Object::Simple::Old;
 use File::Basename 'basename';
 
 sub m2 : Attr { default => 2 }
@@ -14,4 +14,4 @@ sub m4 {
     return 4;
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

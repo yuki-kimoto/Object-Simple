@@ -29,8 +29,8 @@ Object::Simple::Base - a base class to provide constructor and accessors
     __PACKAGE__->attr(pages => 159);
     __PACKAGE__->attr([qw/authors categories/] => sub { [] });
     
-    __PACKAGE__->class_attr('aaa');
-    __PACKAGE__->dual_attr('bbb');
+    __PACKAGE__->class_attr('foo');
+    __PACKAGE__->dual_attr('bar');
  
     package main;
     use Book;
@@ -41,6 +41,11 @@ Object::Simple::Base - a base class to provide constructor and accessors
  
     my $my_book = Car->new(title => 'Good Day');
     print $book->authors(['Ken', 'Tom'])->authors;
+    
+    Book->foo('a');
+    
+    Book->bar('b');
+    $book->bar('c');
 
 =head1 Methods
 

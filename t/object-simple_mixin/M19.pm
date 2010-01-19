@@ -1,5 +1,5 @@
 package M19;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub m1 { $_[0]->M19($_[1]) }
 
@@ -8,4 +8,4 @@ sub m7 {
     return $_[0] + $_[1];
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

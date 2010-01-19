@@ -1,4 +1,4 @@
 package T3;
-use Object::Simple( a => ['B1'] );
+use Object::Simple::Old( a => ['B1'] );
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

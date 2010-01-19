@@ -1,10 +1,10 @@
 package T2;
-use Object::Simple(
+use Object::Simple::Old(
     mixins => [
         'M1',
         'M3',
     ]
 );
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;
 

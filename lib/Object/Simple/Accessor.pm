@@ -33,7 +33,7 @@ sub _create_accessor {
         
         # Create accessor
         my $code = $type eq 'attr'
-                 ? Util->create_accessor($class, $attr, $options)
+                 ? Object::Simple::Util->create_accessor($class, $attr, $options)
                  
                  : $type eq 'class_attr'
                  ? Util->create_class_accessor($class, $attr, $options)

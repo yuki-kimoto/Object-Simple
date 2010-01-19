@@ -1,10 +1,10 @@
 package T12;
-use Object::Simple(base => 'B3', mixins => ['M10', 'M11']);
+use Object::Simple::Old(base => 'B3', mixins => ['M10', 'M11']);
 
 sub m2 : Attr {}
 
 sub new {
-    my $self = shift->Object::Simple::new(@_);
+    my $self = shift->Object::Simple::Old::new(@_);
     $self->initialize;
     return $self;
 }
@@ -21,4 +21,4 @@ sub initialize {
 
 
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

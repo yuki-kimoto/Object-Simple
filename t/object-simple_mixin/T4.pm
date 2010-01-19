@@ -1,4 +1,4 @@
 package T4;
-use Object::Simple( base => 'nnnnnnnnnnnnnnnnnnnnnnnnnn' );
+use Object::Simple::Old( base => 'nnnnnnnnnnnnnnnnnnnnnnnnnn' );
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

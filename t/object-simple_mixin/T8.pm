@@ -1,4 +1,4 @@
 package T8;
-use Object::Simple(mixins => ['()()(']);
+use Object::Simple::Old(mixins => ['()()(']);
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

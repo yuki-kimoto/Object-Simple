@@ -1,5 +1,5 @@
 package M9;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub new {
     my $self = shift->SUPER::new(@_);
@@ -16,4 +16,4 @@ sub m5 : Attr { default => 5 }
 
 sub m6 : Attr {}
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

@@ -1,4 +1,4 @@
 package T5;
-use Object::Simple( base => ';;;;' );
+use Object::Simple::Old( base => ';;;;' );
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

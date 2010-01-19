@@ -1,5 +1,9 @@
 package T1;
 use base 'Object::Simple::Base';
+
+use strict;
+use warnings;
+
 use Object::Simple::Util;
 
 my $p= __PACKAGE__;

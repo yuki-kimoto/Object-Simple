@@ -1,5 +1,5 @@
 package M10;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub m3 : Attr {}
 
@@ -8,4 +8,4 @@ sub initialize {
     $self->m3($val);
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

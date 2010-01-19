@@ -1,8 +1,8 @@
 package M18;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub m1 { die "" }
 sub m2 { $_[0]->M18($_[1]) }
 
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

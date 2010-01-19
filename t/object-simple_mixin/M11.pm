@@ -1,5 +1,5 @@
 package M11;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub m4 : Attr {}
 
@@ -8,4 +8,4 @@ sub initialize {
     $self->m4(4);
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

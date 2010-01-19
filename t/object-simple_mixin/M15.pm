@@ -1,7 +1,7 @@
 package M15;
-use Object::Simple(mixins => ['M16']);
+use Object::Simple::Old(mixins => ['M16']);
 use File::Basename 'fileparse';
 
 sub m1 : Attr { default => 1 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

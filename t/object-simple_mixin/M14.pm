@@ -1,4 +1,4 @@
 package M14;
-use Object::Simple(base => M17);
+use Object::Simple::Old(base => M17);
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

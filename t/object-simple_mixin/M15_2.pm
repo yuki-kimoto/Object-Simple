@@ -1,5 +1,5 @@
 package M15_2;
-use Object::Simple;
+use Object::Simple::Old;
 use File::Basename 'fileparse';
 
 sub m1 : Attr { default => 1 }
@@ -11,4 +11,4 @@ sub m3 : {
     return fileparse($val);
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

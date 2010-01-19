@@ -1,4 +1,4 @@
 package T6;
-use Object::Simple( mixins => ['nnnnnnnnnnnnnnnnnnnnnnnnn'] );
+use Object::Simple::Old( mixins => ['nnnnnnnnnnnnnnnnnnnnnnnnn'] );
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;

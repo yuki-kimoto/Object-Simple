@@ -1,5 +1,5 @@
 package M8;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub m1 : Attr { default => 2 }
 sub m2 : Attr { default => 4 }
@@ -13,5 +13,5 @@ sub m5 {
     return 3;
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;
 

@@ -1,5 +1,5 @@
 package M12;
-use Object::Simple;
+use Object::Simple::Old;
 
 sub m6 : Attr {}
 
@@ -8,4 +8,4 @@ sub initialize {
     $self->m6(6);
 }
 
-Object::Simple->build_class;
+Object::Simple::Old->build_class;
