@@ -21,21 +21,26 @@ our $VERSION = '3.0101';
     
     package Book;
     use base 'Object::Simple::Base';
-    
+ 
     __PACKAGE__->attr('title');
     __PACKAGE__->attr(pages => 159);
     __PACKAGE__->attr([qw/authors categories/] => sub { [] });
     
+    __PACKAGE__->class_attr('foo');
     __PACKAGE__->class_attr(foo => 1);
-    __PACKAGE__->dual_attr(bar => 2);
+    __PACAKGE__->class_attr('foo', default => 1, inherit => 'scalar');
+    
+    __PACKAGE__->dual_attr('bar');
+    __PACAKGE__->dual_attr(bar => 2);
+    __PACAKGE__->dual_attr('bar', default => 1, inherit => 'scalar');
     
     package main;
     use Book;
-    
+ 
     my $book = Book->new;
     print $book->pages;
     print $book->pages(5)->pages;
-    
+ 
     my $my_book = Car->new(title => 'Good Day');
     print $book->authors(['Ken', 'Tom'])->authors;
     
@@ -52,7 +57,7 @@ By using Object::Simple, you will be exempt from the bitter work of
 repeatedly writing the new() constructor and the accessors.
 
 L<Object::Simple> contains three classes.
-L<Object::Simple::Base>, L<Object::Simple::Accessor>, L<Object::Simple::Util>.
+L<Object::Simple::Base>, L<Object::Simple::Accessor>
 L<Object::Simple> itself is just a name space.
 
 L<Object::Simple::Base> is a base class of a class.
@@ -64,8 +69,6 @@ L<Object::Simple::Base> is a good select.
 
 L<Object::Simple::Accessor> provides accessor creating methods(attr(), class_attr(), dual_attr()) to L<Mojo::Base>.
 This is useful to provide only a accessor creating ability to your class.
-
-L<Object::Simple::Util> is a utility class for OO.
 
 =head1 Copyright & license
  

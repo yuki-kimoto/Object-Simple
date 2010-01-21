@@ -1,5 +1,6 @@
 3.0101
-  'Object::Simple' rename to 'Object::Simple::Old'. 'Object::Simple' became just a name space.
+  'Object::Simple' rename to 'Object::Simple::Old'. 'Object::Simple' became just a name space.(not backword compatible)
+  Simplified 'Object::Simple::Base'(not backword compatible)
 2.1301
   rename Object::Simple::Base 'hybrid_attr' to 'dual_attr' (not backword compatible)
 2.1204

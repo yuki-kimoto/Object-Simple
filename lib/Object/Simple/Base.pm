@@ -4,9 +4,6 @@ use warnings;
 
 use Object::Simple::Accessor qw/attr class_attr dual_attr/;
 
-use base 'Exporter';
-our @EXPORT_OK = ('new');
-
 sub new {
     my $class = shift;
 
@@ -30,8 +27,13 @@ Object::Simple::Base - a base class to provide constructor and accessors
     __PACKAGE__->attr([qw/authors categories/] => sub { [] });
     
     __PACKAGE__->class_attr('foo');
+    __PACKAGE__->class_attr(foo => 1);
+    __PACAKGE__->class_attr('foo', default => 1, inherit => 'scalar');
+    
     __PACKAGE__->dual_attr('bar');
- 
+    __PACAKGE__->dual_attr(bar => 2);
+    __PACAKGE__->dual_attr('bar', default => 1, inherit => 'scalar');
+    
     package main;
     use Book;
  
@@ -84,33 +86,6 @@ Instance initialization
         return $self;
     }
 
-If you use one of "convert" or "trigger" options,
-It will be better to initialize attributes.
-    
-    __PACAKGE__->attr('url', convert => 'URI');
-    __PACKAGE__->attr('error', trigger => sub { .. });
-    
-    sub new {
-        my $self = shift->SUPER::new(@_);
-        
-        foreach my $attr (qw/url error/) {
-            $self->$attr($self->{$attr}) if exists $self->{$attr};
-        }
-        
-        return $self;
-    }
-
-This is a little bitter work. "init_attrs" of Object::Simple::Util is useful.
-    
-    use Object::Simple::Util;
-    sub new {
-        my $self = shift->SUPER::new(@_);
-        
-        Object::Simple::Util->init_attrs($self, qw/url error/);
-        
-        return $self;
-    }
-
 =head2 attr
 
 Create accessor.
@@ -127,9 +102,9 @@ that must be wrapped with sub { }.
     __PACKAGE__->attr([qw/name1 name2/] => 'foo');
     __PACKAGE__->attr([qw/name1 name2/] => sub { ... });
 
-Various options can be specified.
+Options can be specified.
 
-    __PACKAGE__->attr('name', default => sub {[]}, trigger => sub { .. });
+    __PACKAGE__->attr('name', default => sub {[]}, inherit => 'hash');
 
 =head2 class_attr
 
@@ -205,33 +180,22 @@ Default value can be written by more simple way.
     __PACKAGE__->attr(ua      => sub { LWP::UserAgent->new });
 
 
-=head2 trigger
-
-Define a subroutine, which is called when the value is set.
-This function is received the instance as first argument, 
-the old value as second argument.
-
-    __PACKAGE__->attr('error', trigger => sub{
-        my ($self, $old) = @_;
-        $self->state('error') if $self->error;
-    });
-
-=head2 clone
+=head2 inherit
 
 Package variable of super class is copied to the class at first access, If the accessor is for class.
 Package variable is copied to the instance, If the accessor is for instance.
 
-"clone" is available by "class_attr", and "dual_attr".
+"inherit" is available by "class_attr", and "dual_attr".
 This options is generally used with "default" value.
 
-    __PACKAGE__->dual_attr('contraints', clone => 'hash', default => sub { {} });
+    __PACKAGE__->dual_attr('contraints', default => sub { {} }, inherit => 'hash');
     
-"scalar", "array", "hash" is specified as "clone" options.
+"scalar", "array", "hash" is specified as "inherit" options.
 
-Any subroutine for clone is also available.
+Any subroutine for inherit is also available.
 
     __PACKAGE__->dual_attr('url', default => sub { URI->new }, 
-                                  clone   => sub { shift->clone });
+                                  inherit   => sub { shift->clone });
 
 =head1 Prototype system
 
@@ -246,12 +210,12 @@ L<Object::Simple::Base> provide a prototype system like JavaScript.
     | Class2 | -> |instance2 |
     +--------+    +----------+
 
-"Class1" has "title" accessor using "dual_attr" with "clone" options.
+"Class1" has "title" accessor using "dual_attr" with "inherit" options.
 
     package Class1;
     use base 'Object::Simple::Base';
     
-    __PACKAGE__->dual_attr('title', default => 'Good day', clone => 'scalar');
+    __PACKAGE__->dual_attr('title', default => 'Good day', inherit => 'scalar');
 
 "title" can be changed in "Class2".
 
@@ -272,13 +236,6 @@ This prototype system is used in L<Validator::Custom> and L<DBIx::Custom>.
 
 See L<Validator::Custom> and L<DBIx::Custom>.
 
-=head1 Export
-
-Can import 'new' method to your package.
-
-    package YourClass;
-    use Object::Simple::Base 'new';
-    
 =head1 Provide only a ability to create accessor to a class.
 
 If you want to provide only a ability to create accessor a class,

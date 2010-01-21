@@ -64,17 +64,6 @@ is(T1->m9, 9, "$test : class_attr");
 is($o->m10, 10, "$test : dual_attr : object");
 is(T1->m10, 10, "$test : dual_attr : class");
 
-test 'trigger';
-$o->m11(1);
-ok(!$o->m11_2, 'yet trigger');
-$o->m11(1);
-is($o->m11_2, 'trigger ok', 'trigger');
-
-$o->m12;
-$o->m12(1);
-is($o->m12_2, 'trigger ok', 'default and trigger');
-
-
 test 'dual_attr';
 is_deeply(T1_2->m17, {a => 1}, "$test : subclass 1 : class");
 
@@ -88,17 +77,4 @@ T1_2->m17->{c} = 1;
 is_deeply(T1_3->m17, {a => 1, c => 1}, "$test :subclass 2 : class");
 $o = T1_3->new;
 is_deeply($o->m17, {a => 1, c => 1}, "$test :subclass 2 : object");
-
-test 'trigger';
-$o = T1->new;
-$o->m18(1);
-is($o->m19, 2, "$test : accessor");
-
-$o = T1->new(m18 => 1);
-is($o->m19, 2, "$test : constructor");
-
-$o = T1->new(m1 => 1);
-
-ok(!$o->m19, "$test : constructor not set");
-
 
