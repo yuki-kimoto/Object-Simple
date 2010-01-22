@@ -1,28 +1,28 @@
 package Object::Simple::Accessor;
+use base 'Exporter';
 
 use strict;
 use warnings;
-
+use Carp 'croak';
 use Object::Simple::Util;
-use base 'Exporter';
 
 our @EXPORT_OK = qw/attr class_attr dual_attr/;
 
 sub attr       { _create_accessor(shift, 'attr',       @_) }
 sub class_attr { _create_accessor(shift, 'class_attr', @_) }
-sub dual_attr  { _create_accessor(shift, 'dual_attr',  @_)   }
+sub dual_attr  { _create_accessor(shift, 'dual_attr',  @_) }
 
 sub _create_accessor {
     my ($class, $type, $attrs, @options) = @_;
-    
-    # Shorcut
-    return unless $attrs;
     
     # To array
     $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
     
     # Arrange options
     my $options = @options > 1 ? {@options} : {default => $options[0]};
+    
+    # Check options
+    _check_options($options, $type);
     
     foreach my $attr (@$attrs) {
         
@@ -42,7 +42,22 @@ sub _create_accessor {
         no strict 'refs';
         *{"${class}::$attr"} = $code;
     }
-    return $class;
+}
+
+sub _check_options {
+    my ($options, $type) = @_;
+    
+    foreach my $oname (keys %$options) {
+        my $is_valid = 1;
+        
+        if ($type eq 'attr') {
+            $is_valid = 0 unless $oname eq 'default'
+        }
+        else {
+            $is_valid = 0 unless $oname eq 'default' || $oname eq 'inherit';
+        }
+        croak "'$oname' is invalid option" unless $is_valid;
+    }
 }
 
 =head1 NAME

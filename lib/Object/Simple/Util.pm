@@ -38,7 +38,7 @@ sub create_accessor {
         
         # Called from a instance
         $source .=
-                qq/    Carp::croak("${class}::$attr must be called from class, not instance")\n/ .
+                qq/    Carp::croak("${class}::$attr must be called from a class, not a instance")\n/ .
                 qq/      if ref \$self;\n/;
     }
     else {
@@ -53,8 +53,10 @@ sub create_accessor {
     # Inherit
     if ($inherit) {
         # Check 'inherit' option
-        croak("'inherit' opiton must be 'scalar', 'array', 'hash', or code reference (${class}::$attr)")
-          if !($inherit eq 'scalar' || $inherit eq 'array' || $inherit eq 'hash' || ref $inherit eq 'CODE');
+        croak("'inherit' opiton must be 'scalar_copy', 'array_copy', " . 
+              "'hash_copy', or code reference (${class}::$attr)")
+          unless $inherit eq 'scalar_copy' || $inherit eq 'array_copy'
+              || $inherit eq 'hash_copy'   || ref $inherit eq 'CODE';
         
         # Inherit code
         $source .=
@@ -71,11 +73,11 @@ sub create_accessor {
     elsif ($default) {
         $source .=
                 qq/    if(\@_ == 0 && ! exists $strage) {\n/ .
-                qq/        \$self->$attr(/;
+                qq/        \$self->$attr(\n/;
             
         $source .= ref $default
-              ? qq/            \$options->{default}->(\$self)/
-              : qq/            \$options->{default}/;
+              ? qq/            \$options->{default}->(\$self)\n/
+              : qq/            \$options->{default}\n/;
         
         $source .=
                 qq/        )\n/ .
@@ -108,7 +110,8 @@ sub create_dual_accessor {
     my $accessor = $self->create_accessor($class, $accessor_name, $options);
     
     # Class accessor
-    my $class_accessor  = $self->create_class_accessor($class, $accessor_name, $options);
+    my $class_accessor
+      = $self->create_class_accessor($class, $accessor_name, $options);
     
     # Dual accessor
     my $code = sub {
@@ -131,14 +134,14 @@ sub inherit_prototype {
     
     # Check inherit option
     unless (ref $inherit eq 'CODE') {
-        if ($inherit eq 'scalar') {
-            $inherit = sub {shift};
+        if ($inherit eq 'scalar_copy') {
+            $inherit = sub { $_[0] };
         }
-        elsif ($inherit eq 'array') {
-            $inherit = sub { return [@{shift || [] }] };
+        elsif ($inherit eq 'array_copy') {
+            $inherit = sub { return [@{$_[0]}] };
         }
-        elsif ($inherit eq 'hash') {
-            $inherit = sub { return { %{shift || {} } } };
+        elsif ($inherit eq 'hash_copy') {
+            $inherit = sub { return { %{$_[0]} } };
         }
     }
     

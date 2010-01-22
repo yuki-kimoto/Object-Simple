@@ -1,6 +1,0 @@
-package T30_Base1;
-use Object::Simple::Old;
-
-sub m9 : Translate {target => 'm2->m1'}
-
-Object::Simple::Old->build_class;

@@ -1,3 +1,8 @@
+3.0201
+   remove 'Objet::Simple::Old' and 'Object::Simple::OldUtil'
+   rename 'Object::Simple::Base' to 'Object::Simple',
+   rename option name 'clone' to 'inherit'
+   rename 'inherit' option value name
 3.0101
   'Object::Simple' rename to 'Object::Simple::Old'. 'Object::Simple' became just a name space.(not backword compatible)
   Simplified 'Object::Simple::Base'(not backword compatible)
