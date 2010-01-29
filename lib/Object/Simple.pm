@@ -1,8 +1,28 @@
 package Object::Simple;
 use strict;
 use warnings;
+use Carp ();
 
-use Object::Simple::Accessor qw/attr class_attr dual_attr/;
+my %EXPORTS = map { $_ => 1 } qw/attr class_attr dual_attr/;
+
+sub import {
+    my ($self, @methods) = @_;
+    
+    # Caller
+    my $caller = caller;
+    
+    # Export methods
+    foreach my $method (@methods) {
+        
+        # Can be Exported?
+        Carp::croak("Cannot export '$method'.")
+          unless $EXPORTS{$method};
+        
+        # Export
+        no strict 'refs';
+        *{"${caller}::$method"} = \&{"$method"};
+    }
+}
 
 sub new {
     my $class = shift;
@@ -13,17 +33,232 @@ sub new {
       ref $class || $class;
 }
 
+my $Util = 'Object::Simple::Util';
+
+sub attr       { $Util->create_accessors(shift, 'attr',       @_) }
+sub class_attr { $Util->create_accessors(shift, 'class_attr', @_) }
+sub dual_attr  { $Util->create_accessors(shift, 'dual_attr',  @_) }
+
+
+package Object::Simple::Util;
+
+use strict;
+use warnings;
+use Carp 'croak';
+
+sub create_accessors {
+    my ($self, $class, $type, $attrs, @options) = @_;
+    
+    # To array
+    $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
+    
+    # Arrange options
+    my $options = @options > 1 ? {@options} : {default => $options[0]};
+    
+    # Check options
+    foreach my $oname (keys %$options) {
+        my $is_valid = 1;
+        
+        if ($type eq 'attr') {
+            $is_valid = 0 unless $oname eq 'default'
+        }
+        else {
+            $is_valid = 0 unless $oname eq 'default' || $oname eq 'inherit';
+        }
+        croak "'$oname' is invalid option" unless $is_valid;
+    }
+    
+    # Create accessors
+    foreach my $attr (@$attrs) {
+        
+        # Create accessor
+        my $code = $type eq 'attr'
+                 ? $self->create_accessor($class, $attr, $options)
+                 
+                 : $type eq 'class_attr'
+                 ? $self->create_class_accessor($class, $attr, $options)
+                 
+                 : $type eq 'dual_attr'
+                 ? $self->create_dual_accessor($class, $attr, $options)
+                 
+                 : undef;
+        
+        # Import
+        no strict 'refs';
+        *{"${class}::$attr"} = $code;
+    }
+}
+
+sub create_accessor {
+    my ($self, $class, $attr, $options, $attr_type) = @_;
+    
+    # Attribute type
+    $attr_type ||= '';
+    
+    # Options
+    my $default = $options->{default};
+    my $inherit = $options->{inherit};
+    
+    # Beginning of accessor
+    my $src =  qq/sub {\n/;
+    
+    # Strage
+    my $strage;
+    if ($attr_type eq 'class') {
+        
+        # Initialize class variables
+        {
+            no strict 'refs';
+            ${"${class}::CLASS_ATTRS"} ||= {};
+        }
+        
+        # Class variable
+        $strage = "\$${class}::CLASS_ATTRS->{'$attr'}";
+        
+        # Called from a instance
+        $src .= qq/    Carp::croak("${class}::$attr must be called / .
+                qq/from a class, not a instance")\n/ .
+                qq/      if ref \$_[0];\n/;
+    }
+    else {
+        # Instance variable
+        $strage = "\$_[0]->{'$attr'}";
+    }
+    
+    # Check default option
+    croak "'default' option must be scalar or code ref (${class}::$attr)"
+      unless !ref $default || ref $default eq 'CODE';
+    
+    # Inherit
+    if ($inherit) {
+        # Check 'inherit' option
+        croak("'inherit' opiton must be 'scalar_copy', 'array_copy', " . 
+              "'hash_copy', or code reference (${class}::$attr)")
+          unless $inherit eq 'scalar_copy' || $inherit eq 'array_copy'
+              || $inherit eq 'hash_copy'   || ref $inherit eq 'CODE';
+        
+        # Inherit code
+        $src .= qq/    if(\@_ == 1 && ! exists $strage) {\n/ .
+                qq/        Object::Simple::Util->inherit_prototype(\n/ .
+                qq/            \$_[0],\n/ .
+                qq/            '$attr',\n/ .
+                qq/            \$options\n/ .
+                qq/        );\n/ .
+                qq/    }\n/;
+    }
+    
+    # Default
+    elsif ($default) {
+        $src .= qq/    if(\@_ == 1 && ! exists $strage) {\n/ .
+                qq/        \$_[0]->$attr(\n/;
+            
+        $src .= ref $default
+              ? qq/            \$options->{default}->(\$_[0])\n/
+              : qq/            \$options->{default}\n/;
+        
+        $src .= qq/        )\n/ .
+                qq/    }\n/;
+    }
+    
+    # Set and get
+    $src .=     qq/    if(\@_ > 1) {\n/ .
+                qq/        $strage = \$_[1];\n/ .
+                qq/        return \$_[0]\n/ .
+                qq/    }\n/ .
+                qq/    return $strage;\n/;
+    
+    # End of accessor source code
+    $src .=     qq/}\n/;
+    
+    # Code
+    my $code = eval $src;
+    croak("$src\n:$@") if $@;
+                
+    return $code;
+}
+
+sub create_class_accessor  { shift->create_accessor(@_[0 .. 2], 'class') }
+
+sub create_dual_accessor {
+    my ($self, $class, $accessor_name, $options) = @_;
+    
+    # Create accessor
+    my $accessor = $self->create_accessor($class, $accessor_name, $options);
+    
+    # Create class accessor
+    my $class_accessor
+      = $self->create_class_accessor($class, $accessor_name, $options);
+    
+    # Create dual accessor
+    my $code = sub {
+        my $invocant = shift;
+        return ref $invocant ? $accessor->($invocant, @_)
+                             : $class_accessor->($invocant, @_);
+    };
+    
+    return $code;
+}
+
+sub inherit_prototype {
+    my $self          = shift;
+    my $invocant      = shift;
+    my $accessor_name = shift;
+    my $options = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+    
+    # Inherit option
+    my $inherit   = $options->{inherit};
+    
+    # Check inherit option
+    unless (ref $inherit eq 'CODE') {
+        if ($inherit eq 'scalar_copy') {
+            $inherit = sub { $_[0] };
+        }
+        elsif ($inherit eq 'array_copy') {
+            $inherit = sub { return [@{$_[0]}] };
+        }
+        elsif ($inherit eq 'hash_copy') {
+            $inherit = sub { return { %{$_[0]} } };
+        }
+    }
+    
+    # Default options
+    my $default = $options->{default};
+    
+    # Get default value from sub reference
+    $default = $default->() if ref $default eq 'CODE';
+    
+    # Called from a object
+    if (my $class = ref $invocant) {
+        $invocant->$accessor_name($inherit->($class->$accessor_name));
+    }
+    
+    # Called from a class
+    else {
+        my $super =  do {
+            no strict 'refs';
+            ${"${invocant}::ISA"}[0];
+        };
+        my $value = eval{$super->can($accessor_name)}
+                       ? $inherit->($super->$accessor_name)
+                       : $default;
+                          
+        $invocant->$accessor_name($value);
+    }
+}
+
+package Object::Simple;
+
 =head1 NAME
 
 Object::Simple - a base class to provide constructor and accessors
 
 =head1 VERSION
 
-Version 3.0201
+Version 3.0301
 
 =cut
 
-our $VERSION = '3.0201';
+our $VERSION = '3.0301';
 
 =head1 SYNOPSIS
     
@@ -246,13 +481,12 @@ See L<Validator::Custom> and L<DBIx::Custom>.
 
 =head1 Provide only a ability to create accessor to a class.
 
-If you want to provide only a ability to create accessor a class,
-use L<Object::Simple::Accessor>.
+If you want to provide only a ability to create accessor a class, do this.
 
     package YourClass;
     use base 'LWP::UserAgent';
     
-    use Object::Simple::Accessor 'attr';
+    use Object::Simple 'attr';
     
     __PACKAGE__->attr('foo');
 

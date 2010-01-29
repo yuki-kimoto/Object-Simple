@@ -1,3 +1,8 @@
+3.0301
+   pack all file to one file
+   move Object::Simple::Accessor export functionality to Object::Simple
+3.0202
+   fix test bug
 3.0201
    remove 'Objet::Simple::Old' and 'Object::Simple::OldUtil'
    rename 'Object::Simple::Base' to 'Object::Simple',

@@ -1,4 +1,4 @@
-use Test::More 'no_plan';
+use Test::More tests => 67;
 use strict;
 use warnings;
 
@@ -160,23 +160,50 @@ eval{$o->m2};
 like($@, qr/T1::m2 must be called from a class, not a instance/,
      'class_attr called from instance');
 
-package T2;
-use base 'Object::Simple';
+{
+    package T2;
+    use base 'Object::Simple';
 
-eval{__PACKAGE__->attr(m1 => {})};
-Test::More::like($@, qr/\Q'default' option must be scalar or code ref (T2::m1)/,
-     'default is not scalar or code ref');
+    eval{__PACKAGE__->attr(m1 => {})};
+    Test::More::like($@, qr/\Q'default' option must be scalar or code ref (T2::m1)/,
+         'default is not scalar or code ref');
 
-eval{__PACKAGE__->class_attr('m2', inherit => 'no')};
-Test::More::like($@, qr/\Q'inherit' opiton must be 'scalar_copy', 'array_copy', 'hash_copy', or code reference (T2::m2)/,
-                 'invalid inherit options');
+    eval{__PACKAGE__->class_attr('m2', inherit => 'no')};
+    Test::More::like($@, qr/\Q'inherit' opiton must be 'scalar_copy', 'array_copy', 'hash_copy', or code reference (T2::m2)/,
+                     'invalid inherit options');
 
-eval{__PACKAGE__->attr('m3', no => 1)};
-Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : attr");
+    eval{__PACKAGE__->attr('m3', no => 1)};
+    Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : attr");
 
-eval{__PACKAGE__->class_attr('m4', no => 1)};
-Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : class_attr");
+    eval{__PACKAGE__->class_attr('m4', no => 1)};
+    Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : class_attr");
 
-eval{__PACKAGE__->dual_attr('m5', no => 1)};
-Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : dual_attr");
+    eval{__PACKAGE__->dual_attr('m5', no => 1)};
+    Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : dual_attr");
+}
 
+
+test 'Method export';
+{
+    package T3;
+    use Object::Simple qw/attr class_attr dual_attr/;
+    sub new { bless {}, shift }
+    __PACKAGE__->attr('m1');
+    __PACKAGE__->class_attr('m2');
+    __PACKAGE__->dual_attr('m3');
+}
+$o = T3->new;
+$o->m1(1);
+T3->m2(2);
+$o->m3(3);
+is($o->m1, 1, "$test : export attr");
+is(T3->m2, 2, "$test : export class_attr");
+is($o->m3, 3, "$test : export dual_attr");
+
+
+test 'Method export error';
+{
+    package T4;
+    eval "use Object::Simple 'none';";
+}
+like($@, qr/Cannot export 'none'/, "$test");
