@@ -186,8 +186,7 @@ like($@, qr/T1::m2 must be called from a class, not a instance/,
 test 'Method export';
 {
     package T3;
-    use Object::Simple qw/attr class_attr dual_attr/;
-    sub new { bless {}, shift }
+    use Object::Simple qw/new attr class_attr dual_attr/;
     __PACKAGE__->attr('m1');
     __PACKAGE__->class_attr('m2');
     __PACKAGE__->dual_attr('m3');

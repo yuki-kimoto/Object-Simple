@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use Carp ();
 
-my %EXPORTS = map { $_ => 1 } qw/attr class_attr dual_attr/;
+my %EXPORTS = map { $_ => 1 } qw/new attr class_attr dual_attr/;
 
 sub import {
     my ($self, @methods) = @_;
