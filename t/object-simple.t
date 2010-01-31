@@ -1,4 +1,4 @@
-use Test::More tests => 67;
+use Test::More tests => 71;
 use strict;
 use warnings;
 
@@ -206,3 +206,9 @@ test 'Method export error';
     eval "use Object::Simple 'none';";
 }
 like($@, qr/Cannot export 'none'/, "$test");
+
+test 'Inherit class_attr';
+is_deeply(T1->m27, {a1 => 1}, "$test : no effect : hash");
+is_deeply(T1_2->m27, {a1 => 1, a2 => 2}, "$test : inhert : hash");
+is_deeply(T1->m28, [1], "$test : no effect : hash");
+is_deeply(T1_2->m28, [1, 2], "$test : inhert : hash");

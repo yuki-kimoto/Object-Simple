@@ -46,6 +46,18 @@ use strict;
 use warnings;
 use Carp 'croak';
 
+sub class_attrs {
+    my ($self, $invocant) = @_;
+    
+    my $class = ref $invocant || $invocant;
+    
+    no strict 'refs';
+    ${"${class}::CLASS_ATTRS"} ||= {};
+    my $class_attrs = ${"${class}::CLASS_ATTRS"};
+    
+    return $class_attrs;
+}
+
 sub create_accessors {
     my ($self, $class, $type, $attrs, @options) = @_;
     
@@ -106,14 +118,8 @@ sub create_accessor {
     my $strage;
     if ($attr_type eq 'class') {
         
-        # Initialize class variables
-        {
-            no strict 'refs';
-            ${"${class}::CLASS_ATTRS"} ||= {};
-        }
-        
         # Class variable
-        $strage = "\$${class}::CLASS_ATTRS->{'$attr'}";
+        $strage = "Object::Simple::Util->class_attrs(\$_[0])->{'$attr'}";
         
         # Called from a instance
         $src .= qq/    Carp::croak("${class}::$attr must be called / .
@@ -254,11 +260,11 @@ Object::Simple - a base class to provide constructor and accessors
 
 =head1 VERSION
 
-Version 3.0301
+Version 3.0302
 
 =cut
 
-our $VERSION = '3.0301';
+our $VERSION = '3.0302';
 
 =head1 SYNOPSIS
     

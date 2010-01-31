@@ -41,8 +41,18 @@ __PACKAGE__->dual_attr('m25', default => sub { [1, 2] },
 __PACKAGE__->dual_attr('m26', default => 1,
                               inherit => 'scalar_copy');
 
+__PACKAGE__->class_attr('m27', default => sub { {} }, inherit => 'hash_copy');
+__PACKAGE__->m27->{a1} = 1;
+
+__PACKAGE__->class_attr('m28', default => sub { [] }, inherit => 'array_copy');
+__PACKAGE__->m28->[0] = 1;
+
+
 package T1_2;
 use base 'T1';
+
+__PACKAGE__->m27->{a2} = 2;
+__PACKAGE__->m28->[1] = 2;
 
 package T1_3;
 use base 'T1_2';
