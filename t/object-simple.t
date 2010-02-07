@@ -1,4 +1,4 @@
-use Test::More tests => 71;
+use Test::More tests => 72;
 use strict;
 use warnings;
 
@@ -211,4 +211,5 @@ test 'Inherit class_attr';
 is_deeply(T1->m27, {a1 => 1}, "$test : no effect : hash");
 is_deeply(T1_2->m27, {a1 => 1, a2 => 2}, "$test : inhert : hash");
 is_deeply(T1->m28, [1], "$test : no effect : hash");
-is_deeply(T1_2->m28, [1, 2], "$test : inhert : hash");
+is_deeply(T1_2->m28, [1, 2], "$test : inherit : hash");
+is(T1->m29, 5, "$test: inherit : sub ref default");

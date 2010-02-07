@@ -47,6 +47,9 @@ __PACKAGE__->m27->{a1} = 1;
 __PACKAGE__->class_attr('m28', default => sub { [] }, inherit => 'array_copy');
 __PACKAGE__->m28->[0] = 1;
 
+__PACKAGE__->class_attr('m29', default => sub { shift->m30 }, inherit => 'scalar_copy');
+__PACKAGE__->class_attr('m30', default => 5);
+
 
 package T1_2;
 use base 'T1';

@@ -231,7 +231,7 @@ sub inherit_prototype {
     my $default = $options->{default};
     
     # Get default value from sub reference
-    $default = $default->() if ref $default eq 'CODE';
+    $default = $default->($invocant) if ref $default eq 'CODE';
     
     # Called from a object
     if (my $class = ref $invocant) {
@@ -256,36 +256,39 @@ package Object::Simple;
 
 =head1 NAME
 
-Object::Simple - a base class to provide constructor and accessors
+Object::Simple - Provide new() and accessor creating abilities
 
 =head1 VERSION
 
-Version 3.0302
+Version 3.0303
 
 =cut
 
-our $VERSION = '3.0302';
+our $VERSION = '3.0303';
 
 =head1 SYNOPSIS
     
     package Book;
     use base 'Object::Simple';
     
+    # Create accessor
     __PACKAGE__->attr('title');
     __PACKAGE__->attr(pages => 159);
     __PACKAGE__->attr([qw/authors categories/] => sub { [] });
     
+    # Create accessor for class variables
     __PACKAGE__->class_attr('foo');
     __PACKAGE__->class_attr(foo => 1);
     __PACAKGE__->class_attr('foo', default => 1, inherit => 'scalar_copy');
     
+    # Create accessor for both attributes and class variables
     __PACKAGE__->dual_attr('bar');
     __PACAKGE__->dual_attr(bar => 2);
     __PACAKGE__->dual_attr('bar', default => 1, inherit => 'scalar_copy');
     
     package main;
     use Book;
- 
+    
     my $book = Book->new;
     print $book->pages;
     print $book->pages(5)->pages;
@@ -298,12 +301,12 @@ our $VERSION = '3.0302';
     Book->bar('b');
     $book->bar('c');
 
-=head1 Methods
+=head1 METHODS
 
 =head2 new
 
 A subclass of Object::Simple can call "new", and create a instance.
-"new" can receive hash or hash ref.
+"new" receive hash or hash reference.
 
     package Book;
     use base 'Object::Simple';
@@ -343,17 +346,13 @@ Create accessor.
     __PACKAGE__->attr([qw/name1 name2 name3/]);
 
 A default value can be specified.
-If array ref, hash ref, or object is specified as a default value,
-that must be wrapped with sub { }.
+If array reference, hash reference, or object is specified
+as a default value, that must be wrapped with sub { }.
 
     __PACKAGE__->attr(name => 'foo');
     __PACKAGE__->attr(name => sub { ... });
     __PACKAGE__->attr([qw/name1 name2/] => 'foo');
     __PACKAGE__->attr([qw/name1 name2/] => sub { ... });
-
-Options can be specified.
-
-    __PACKAGE__->attr('name', default => sub {[]}, inherit => 'hash_copy');
 
 =head2 class_attr
 
@@ -408,7 +407,7 @@ If this accessor is called from a instance, the value is saved to the instance.
     my $book = Book->new;
     $book->title('Good days'); # Saved to $book->{title};
     
-=head1 Options
+=head1 OPTIONS
  
 =head2 default
  
@@ -431,8 +430,9 @@ Default value can be written by more simple way.
 
 =head2 inherit
 
-Package variable of super class is copied to the class at first access, If the accessor is for class.
-Package variable is copied to the instance, If the accessor is for instance.
+If the accessor is for class class variable, 
+Package variable of super class is copied to the class at first access,
+If the accessor is for instance, Package variable is copied to the instance, .
 
 "inherit" is available by "class_attr", and "dual_attr".
 This options is generally used with "default" value.
@@ -440,14 +440,15 @@ This options is generally used with "default" value.
     __PACKAGE__->dual_attr('contraints', default => sub { {} }, inherit => 'hash_copy');
     
 "scalar_copy", "array_copy", "hash_copy" is specified as "inherit" options.
+scalar_copy is normal copy. array_copy is [@{$array}], hash_copy is [%{$hash}].
 
 Any subroutine for inherit is also available.
 
     __PACKAGE__->dual_attr('url', default => sub { URI->new }, 
                                   inherit   => sub { shift->clone });
 
-=head1 Prototype system
 
+If inherit options is used, 
 L<Object::Simple> provide a prototype system like JavaScript.
 
     +--------+ 
@@ -485,7 +486,7 @@ This prototype system is used in L<Validator::Custom> and L<DBIx::Custom>.
 
 See L<Validator::Custom> and L<DBIx::Custom>.
 
-=head1 Provide only a ability to create accessor to a class.
+=head1 PROVIDE ONLY ACCESSOR CREATING ABILITIES
 
 If you want to provide only a ability to create accessor a class, do this.
 
@@ -496,13 +497,13 @@ If you want to provide only a ability to create accessor a class, do this.
     
     __PACKAGE__->attr('foo');
 
-=head1 Similar module
+=head1 SEE ALSO
 
 This module is compatible with L<Mojo::Base>.
 
 If you like L<Mojo::Base>, L<Object:Simple> is good select for you.
 
-=head1 Author
+=head1 AUTHOR
  
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
  
@@ -512,7 +513,7 @@ I develope this module at L<http://github.com/yuki-kimoto/Object-Simple>
 
 Please tell me bug if you find.
 
-=head1 Copyright & license
+=head1 COPYRIGHT & LICENSE
  
 Copyright 2008 Yuki Kimoto, all rights reserved.
  
