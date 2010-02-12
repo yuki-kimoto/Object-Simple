@@ -1,9 +1,9 @@
 package Object::Simple;
+
 use strict;
 use warnings;
-use Carp ();
 
-my %EXPORTS = map { $_ => 1 } qw/new attr class_attr dual_attr/;
+use Carp ();
 
 sub import {
     my ($self, @methods) = @_;
@@ -11,12 +11,15 @@ sub import {
     # Caller
     my $caller = caller;
     
+    # Exports
+    my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
+    
     # Export methods
     foreach my $method (@methods) {
         
         # Can be Exported?
         Carp::croak("Cannot export '$method'.")
-          unless $EXPORTS{$method};
+          unless $exports{$method};
         
         # Export
         no strict 'refs';
@@ -25,32 +28,42 @@ sub import {
 }
 
 sub new {
-    my $class = shift;
-
+    my $proto = shift;
+    
+    # Class;
+    my $class = ref $proto || $proto;
+    
     # Instantiate
-    return bless
-      exists $_[0] ? exists $_[1] ? {@_} : {%{$_[0]}} : {},
-      ref $class || $class;
+    if (ref $_[0] eq 'HASH') {
+        return bless {%{$_[0]}}, $class;
+    }
+    else {
+        Carp::croak("Odd number arguments (${class}::new())") if @_ % 2;
+        return bless {@_}, $class;
+    }
 }
 
-my $Util = 'Object::Simple::Util';
-
-sub attr       { $Util->create_accessors(shift, 'attr',       @_) }
-sub class_attr { $Util->create_accessors(shift, 'class_attr', @_) }
-sub dual_attr  { $Util->create_accessors(shift, 'dual_attr',  @_) }
-
+sub attr       { Object::Simple::Util
+                   ->create_accessors(shift, 'attr',       @_) }
+sub class_attr { Object::Simple::Util
+                   ->create_accessors(shift, 'class_attr', @_) }
+sub dual_attr  { Object::Simple::Util
+                   ->create_accessors(shift, 'dual_attr',  @_) }
 
 package Object::Simple::Util;
 
 use strict;
 use warnings;
+
 use Carp 'croak';
 
 sub class_attrs {
     my ($self, $invocant) = @_;
     
+    # Class
     my $class = ref $invocant || $invocant;
     
+    # Class variables
     no strict 'refs';
     ${"${class}::CLASS_ATTRS"} ||= {};
     my $class_attrs = ${"${class}::CLASS_ATTRS"};
@@ -70,7 +83,6 @@ sub create_accessors {
     # Check options
     foreach my $oname (keys %$options) {
         my $is_valid = 1;
-        
         if ($type eq 'attr') {
             $is_valid = 0 unless $oname eq 'default'
         }
@@ -168,6 +180,9 @@ sub create_accessor {
     
     # Set and get
     $src .=     qq/    if(\@_ > 1) {\n/ .
+                qq/        Carp::croak('Too many arguments / . 
+                qq/(${class}::$attr())')\n/ .
+                qq/          if \@_ > 2;\n/ .
                 qq/        $strage = \$_[1];\n/ .
                 qq/        return \$_[0]\n/ .
                 qq/    }\n/ .
@@ -177,7 +192,7 @@ sub create_accessor {
     $src .=     qq/}\n/;
     
     # Code
-    my $code = eval $src;
+    my $code = eval "package $class;$src";
     croak("$src\n:$@") if $@;
                 
     return $code;
@@ -258,13 +273,17 @@ package Object::Simple;
 
 Object::Simple - Provide new() and accessor creating abilities
 
+=head1 STATE
+
+This module is not stable. API will be changed for a while.
+
 =head1 VERSION
 
-Version 3.0303
+Version 3.0401
 
 =cut
 
-our $VERSION = '3.0303';
+our $VERSION = '3.0401';
 
 =head1 SYNOPSIS
     

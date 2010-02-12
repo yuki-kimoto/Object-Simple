@@ -1,4 +1,4 @@
-use Test::More tests => 72;
+use Test::More tests => 74;
 use strict;
 use warnings;
 
@@ -213,3 +213,14 @@ is_deeply(T1_2->m27, {a1 => 1, a2 => 2}, "$test : inhert : hash");
 is_deeply(T1->m28, [1], "$test : no effect : hash");
 is_deeply(T1_2->m28, [1, 2], "$test : inherit : hash");
 is(T1->m29, 5, "$test: inherit : sub ref default");
+
+
+test 'Accessor too many argument';
+$o = T1->new;
+eval{$o->m1(1, undef)};
+like($@, qr/\QToo many arguments (T1::m1())/, $test);
+
+
+test 'new() Odd number argument';
+eval{$o = T1->new('a')};
+like($@, qr/\QOdd number arguments (T1::new())/, $test);
