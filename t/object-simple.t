@@ -1,4 +1,4 @@
-use Test::More tests => 74;
+use Test::More tests => 96;
 use strict;
 use warnings;
 
@@ -224,3 +224,61 @@ like($@, qr/\QToo many arguments (T1::m1())/, $test);
 test 'new() Odd number argument';
 eval{$o = T1->new('a')};
 like($@, qr/\QOdd number arguments (T1::new())/, $test);
+
+
+test 'Normal accessor';
+$o = T1->new;
+$o->m1(1);
+is($o->m1, 1, "$test : set and get");
+is($o->m1(1), $o, "$test : set return");
+eval {$o->m1(1, 2)};
+like($@, qr/\QToo many arguments (T1::m1())/, "$test : Too many arguments");
+
+
+test 'Normal accessor with default';
+$o = T1->new;
+$o->m11(2);
+is($o->m11, 2, "$test : set and get");
+is($o->m11(2), $o, "$test : set return");
+eval {$o->m11(1, 2)};
+like($@, qr/\QToo many arguments (T1::m11())/, "$test : Too many arguments");
+$o = T1->new;
+is($o->m11, 1, "$test : default");
+is($o->m12, 9, "$test : default sub reference");
+
+
+test 'Normal accessor with inherit';
+$o = T1->new;
+$o->m24(1);
+is($o->m24, 1, "$test : set and get");
+is($o->m24(1), $o, "$test : set return");
+eval {$o->m24(1, 2)};
+like($@, qr/\QToo many arguments (T1::m24())/, "$test : Too many arguments");
+
+
+test 'Class accessor';
+T1->m2(1);
+is(T1->m2, 1, "$test : set and get");
+is(T1->m2(1), 'T1', "$test : set return");
+eval {T1->m2(1, 2)};
+like($@, qr/\QToo many arguments (T1::m2())/, "$test : Too many arguments");
+
+
+test 'Class accessor with default';
+T1->m13(2);
+is(T1->m13, 2, "$test : set and get");
+is(T1->m13(2), 'T1', "$test : set return");
+eval {T1->m13(1, 2)};
+like($@, qr/\QToo many arguments (T1::m13())/, "$test : Too many arguments");
+delete $T1::CLASS_ATTRS->{'m13'};
+is(T1->m13, 'm13', "$test : default");
+is(T1->m14, 'm14', "$test : default sub reference");
+
+
+test 'Class accessor with inherit';
+T1->m24(1);
+is(T1->m24, 1, "$test : set and get");
+is(T1->m24(1), 'T1',  "$test : set return");
+eval {T1->m24(1, 2)};
+like($@, qr/\QToo many arguments (T1::m24())/, "$test : Too many arguments");
+
