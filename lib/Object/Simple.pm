@@ -333,11 +333,11 @@ This module is not stable. API will be changed for a while.
 
 =head1 VERSION
 
-Version 3.0401
+Version 3.0402
 
 =cut
 
-our $VERSION = '3.0401';
+our $VERSION = '3.0402';
 
 =head1 SYNOPSIS
     
