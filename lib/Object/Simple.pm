@@ -43,12 +43,11 @@ sub new {
     }
 }
 
-sub attr       { Object::Simple::Util
-                   ->create_accessors(shift, 'attr',       @_) }
-sub class_attr { Object::Simple::Util
-                   ->create_accessors(shift, 'class_attr', @_) }
-sub dual_attr  { Object::Simple::Util
-                   ->create_accessors(shift, 'dual_attr',  @_) }
+my $create_accessors = \&Object::Simple::Util::create_accessors;
+
+sub attr       { shift->$create_accessors('attr',       @_) }
+sub class_attr { shift->$create_accessors('class_attr', @_) }
+sub dual_attr  { shift->$create_accessors('dual_attr',  @_) }
 
 package Object::Simple::Util;
 
@@ -58,21 +57,12 @@ use warnings;
 use Carp 'croak';
 
 sub class_attrs {
-    my ($self, $invocant) = @_;
-    
-    # Class
-    my $class = ref $invocant || $invocant;
-    
-    # Class variables
     no strict 'refs';
-    ${"${class}::CLASS_ATTRS"} ||= {};
-    my $class_attrs = ${"${class}::CLASS_ATTRS"};
-    
-    return $class_attrs;
+    return ${"$_[0]::CLASS_ATTRS"} ||= {};
 }
 
 sub create_accessors {
-    my ($self, $class, $type, $attrs, @options) = @_;
+    my ($class, $type, $attrs, @options) = @_;
     
     # To array
     $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
@@ -97,13 +87,13 @@ sub create_accessors {
         
         # Create accessor
         my $code = $type eq 'attr'
-                 ? $self->create_accessor($class, $attr, $options)
+                 ? create_accessor($class, $attr, $options)
                  
                  : $type eq 'class_attr'
-                 ? $self->create_class_accessor($class, $attr, $options)
+                 ? create_class_accessor($class, $attr, $options)
                  
                  : $type eq 'dual_attr'
-                 ? $self->create_dual_accessor($class, $attr, $options)
+                 ? create_dual_accessor($class, $attr, $options)
                  
                  : undef;
         
@@ -114,7 +104,7 @@ sub create_accessors {
 }
 
 sub create_accessor {
-    my ($self, $class, $attr, $options, $attr_type) = @_;
+    my ($class, $attr, $options, $attr_type) = @_;
     
     # Attribute type
     $attr_type ||= '';
@@ -123,92 +113,153 @@ sub create_accessor {
     my $default = $options->{default};
     my $inherit = $options->{inherit};
     
-    # Beginning of accessor
-    my $src =  qq/sub {\n/;
-    
-    # Strage
-    my $strage;
-    if ($attr_type eq 'class') {
-        
-        # Class variable
-        $strage = "Object::Simple::Util->class_attrs(\$_[0])->{'$attr'}";
-        
-        # Called from a instance
-        $src .= qq/    Carp::croak("${class}::$attr must be called / .
-                qq/from a class, not a instance")\n/ .
-                qq/      if ref \$_[0];\n/;
-    }
-    else {
-        # Instance variable
-        $strage = "\$_[0]->{'$attr'}";
-    }
-    
-    # Check default option
-    croak "'default' option must be scalar or code ref (${class}::$attr)"
-      unless !ref $default || ref $default eq 'CODE';
-    
-    # Inherit
+    # Check inherit option
     if ($inherit) {
-        # Check 'inherit' option
-        croak("'inherit' opiton must be 'scalar_copy', 'array_copy', " . 
+        croak("'inherit' opiton must be 'scalar_copy', 'array_copy', " .
               "'hash_copy', or code reference (${class}::$attr)")
           unless $inherit eq 'scalar_copy' || $inherit eq 'array_copy'
               || $inherit eq 'hash_copy'   || ref $inherit eq 'CODE';
-        
-        # Inherit code
-        $src .= qq/    if(\@_ == 1 && ! exists $strage) {\n/ .
-                qq/        Object::Simple::Util->inherit_prototype(\n/ .
-                qq/            \$_[0],\n/ .
-                qq/            '$attr',\n/ .
-                qq/            \$options\n/ .
-                qq/        );\n/ .
-                qq/    }\n/;
     }
-    
-    # Default
-    elsif ($default) {
-        $src .= qq/    if(\@_ == 1 && ! exists $strage) {\n/ .
-                qq/        \$_[0]->$attr(\n/;
-            
-        $src .= ref $default
-              ? qq/            \$options->{default}->(\$_[0])\n/
-              : qq/            \$options->{default}\n/;
+
+    # Check default option
+    croak "'default' option must be scalar or code ref (${class}::$attr)"
+      unless !ref $default || ref $default eq 'CODE';
+
+    my $code;
+    # Class Accessor
+    if ($attr_type eq 'class') {
         
-        $src .= qq/        )\n/ .
-                qq/    }\n/;
-    }
-    
-    # Set and get
-    $src .=     qq/    if(\@_ > 1) {\n/ .
-                qq/        Carp::croak('Too many arguments / . 
-                qq/(${class}::$attr())')\n/ .
-                qq/          if \@_ > 2;\n/ .
-                qq/        $strage = \$_[1];\n/ .
-                qq/        return \$_[0]\n/ .
-                qq/    }\n/ .
-                qq/    return $strage;\n/;
-    
-    # End of accessor source code
-    $src .=     qq/}\n/;
-    
-    # Code
-    my $code = eval "package $class;$src";
-    croak("$src\n:$@") if $@;
+        # With inherit option
+        if (defined $inherit) {
+            $code = sub {
+                Carp::croak("${class}::$attr must be called " . 
+                            "from a class, not a instance")
+                  if ref $_[0];
                 
+                if(@_ == 1 && ! exists class_attrs($_[0])->{$attr}) {
+                    inherit_prototype($_[0], $attr, $options);
+                }
+                
+                if(@_ > 1) {
+                    Carp::croak("Too many arguments (${class}::$attr())")
+                      if @_ > 2;
+                    class_attrs($_[0])->{$attr} = $_[1];
+                    return $_[0];
+                }
+                
+                return class_attrs($_[0])->{$attr};
+            };            
+        }
+        
+        # With default option
+        elsif (defined $default) {
+            $code = sub {
+                Carp::croak("${class}::$attr must be called " . 
+                            "from a class, not a instance")
+                  if ref $_[0];
+                
+                if(@_ == 1 && ! exists class_attrs($_[0])->{$attr}) {
+                    class_attrs($_[0])->{$attr}
+                      = ref $default ? $default->() : $default;
+                }
+                
+                if(@_ > 1) {
+                    Carp::croak("Too many arguments (${class}::$attr())")
+                      if @_ > 2;
+                    class_attrs($_[0])->{$attr} = $_[1];
+                    return $_[0];
+                }
+                
+                return class_attrs($_[0])->{$attr};
+            };
+        }
+        
+        # Without option
+        else {
+            $code = sub {
+                Carp::croak("${class}::$attr must be called " . 
+                            "from a class, not a instance")
+                  if ref $_[0];
+                
+                if(@_ > 1) {
+                    Carp::croak("Too many arguments (${class}::$attr())")
+                      if @_ > 2;
+                    class_attrs($_[0])->{$attr} = $_[1];
+                    return $_[0];
+                }
+                
+                return class_attrs($_[0])->{$attr};
+            };
+        }
+    }
+    
+    # Normal accessor
+    else {
+    
+        # With inherit option
+        if (defined $inherit) {
+            $code = sub {
+                if(@_ == 1 && ! exists $_[0]->{$attr}) {
+                    inherit_prototype($_[0], $attr, $options);
+                }
+                
+                if(@_ > 1) {
+                    Carp::croak("Too many arguments (${class}::$attr())")
+                      if @_ > 2;
+                    $_[0]->{$attr} = $_[1];
+                    return $_[0];
+                }
+                
+                return $_[0]->{$attr};
+            };            
+        }
+        
+        # With default option
+        elsif (defined $default) {
+            $code = sub {
+                if(@_ == 1 && ! exists $_[0]->{$attr}) {
+                    $_[0]->{$attr} = ref $default ? $default->()
+                                                  : $default;
+                }
+                
+                if(@_ > 1) {
+                    Carp::croak("Too many arguments (${class}::$attr())")
+                      if @_ > 2;
+                    $_[0]->{$attr} = $_[1];
+                    return $_[0];
+                }
+                return $_[0]->{$attr};
+            };
+        }
+        
+        # Without option
+        else {
+            $code = sub {
+                if(@_ > 1) {
+                    Carp::croak("Too many arguments (${class}::$attr())")
+                      if @_ > 2;
+                    $_[0]->{$attr} = $_[1];
+                    return $_[0]
+                }
+                return $_[0]->{$attr};
+            };
+        }
+    }
+    
     return $code;
 }
 
-sub create_class_accessor  { shift->create_accessor(@_[0 .. 2], 'class') }
+sub create_class_accessor  { create_accessor(@_[0 .. 2], 'class') }
 
 sub create_dual_accessor {
-    my ($self, $class, $accessor_name, $options) = @_;
+    my ($class, $accessor_name, $options) = @_;
     
     # Create accessor
-    my $accessor = $self->create_accessor($class, $accessor_name, $options);
+    my $accessor = create_accessor($class, $accessor_name, $options);
     
     # Create class accessor
     my $class_accessor
-      = $self->create_class_accessor($class, $accessor_name, $options);
+      = create_class_accessor($class, $accessor_name, $options);
     
     # Create dual accessor
     my $code = sub {
@@ -221,7 +272,6 @@ sub create_dual_accessor {
 }
 
 sub inherit_prototype {
-    my $self          = shift;
     my $invocant      = shift;
     my $accessor_name = shift;
     my $options = ref $_[0] eq 'HASH' ? $_[0] : {@_};
