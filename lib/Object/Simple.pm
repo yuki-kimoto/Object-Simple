@@ -56,11 +56,6 @@ use warnings;
 
 use Carp 'croak';
 
-sub class_attrs {
-    no strict 'refs';
-    return ${"$_[0]::CLASS_ATTRS"} ||= {};
-}
-
 sub create_accessors {
     my ($class, $type, $attrs, @options) = @_;
     
@@ -115,8 +110,8 @@ sub create_accessor {
     
     # Check inherit option
     if ($inherit) {
-        croak("'inherit' opiton must be 'scalar_copy', 'array_copy', " .
-              "'hash_copy', or code reference (${class}::$attr)")
+        croak "'inherit' opiton must be 'scalar_copy', 'array_copy', " .
+              "'hash_copy', or code reference (${class}::$attr)"
           unless $inherit eq 'scalar_copy' || $inherit eq 'array_copy'
               || $inherit eq 'hash_copy'   || ref $inherit eq 'CODE';
     }
@@ -132,63 +127,75 @@ sub create_accessor {
         # With inherit option
         if (defined $inherit) {
             $code = sub {
-                Carp::croak("${class}::$attr must be called " . 
-                            "from a class, not a instance")
+                croak "${class}::$attr must be called " . 
+                      "from a class, not a instance"
                   if ref $_[0];
                 
-                if(@_ == 1 && ! exists class_attrs($_[0])->{$attr}) {
+                my $class_attrs = do {
+                    no strict 'refs';
+                    ${"$_[0]::CLASS_ATTRS"} ||= {};
+                };
+                
+                if(@_ == 1 && ! exists $class_attrs->{$attr}) {
                     inherit_prototype($_[0], $attr, $options);
                 }
                 
                 if(@_ > 1) {
-                    Carp::croak("Too many arguments (${class}::$attr())")
-                      if @_ > 2;
-                    class_attrs($_[0])->{$attr} = $_[1];
+                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
                 
-                return class_attrs($_[0])->{$attr};
-            };            
+                return $class_attrs->{$attr};
+            };
         }
         
         # With default option
         elsif (defined $default) {
             $code = sub {
-                Carp::croak("${class}::$attr must be called " . 
-                            "from a class, not a instance")
+                croak "${class}::$attr must be called " . 
+                      "from a class, not a instance"
                   if ref $_[0];
+
+                my $class_attrs = do {
+                    no strict 'refs';
+                    ${"$_[0]::CLASS_ATTRS"} ||= {};
+                };
                 
-                if(@_ == 1 && ! exists class_attrs($_[0])->{$attr}) {
-                    class_attrs($_[0])->{$attr}
+                if(@_ == 1 && ! exists $class_attrs->{$attr}) {
+                    $class_attrs->{$attr}
                       = ref $default ? $default->() : $default;
                 }
                 
                 if(@_ > 1) {
-                    Carp::croak("Too many arguments (${class}::$attr())")
-                      if @_ > 2;
-                    class_attrs($_[0])->{$attr} = $_[1];
+                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
                 
-                return class_attrs($_[0])->{$attr};
+                return $class_attrs->{$attr};
             };
         }
         
         # Without option
         else {
             $code = sub {
-                Carp::croak("${class}::$attr must be called " . 
-                            "from a class, not a instance")
+                croak "${class}::$attr must be called " . 
+                      "from a class, not a instance"
                   if ref $_[0];
+
+                my $class_attrs = do {
+                    no strict 'refs';
+                    ${"$_[0]::CLASS_ATTRS"} ||= {};
+                };
                 
                 if(@_ > 1) {
-                    Carp::croak("Too many arguments (${class}::$attr())")
-                      if @_ > 2;
-                    class_attrs($_[0])->{$attr} = $_[1];
+                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
                 
-                return class_attrs($_[0])->{$attr};
+                return $class_attrs->{$attr};
             };
         }
     }
@@ -204,8 +211,7 @@ sub create_accessor {
                 }
                 
                 if(@_ > 1) {
-                    Carp::croak("Too many arguments (${class}::$attr())")
-                      if @_ > 2;
+                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -223,8 +229,7 @@ sub create_accessor {
                 }
                 
                 if(@_ > 1) {
-                    Carp::croak("Too many arguments (${class}::$attr())")
-                      if @_ > 2;
+                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -236,8 +241,7 @@ sub create_accessor {
         else {
             $code = sub {
                 if(@_ > 1) {
-                    Carp::croak("Too many arguments (${class}::$attr())")
-                      if @_ > 2;
+                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0]
                 }
