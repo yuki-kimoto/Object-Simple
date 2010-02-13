@@ -1,7 +1,6 @@
-3.0502
-  Expand class_attrs
 3.0501
   expand accessors to sub reference
+  expand class_attrs
 3.0401
   add error checking to new() and accessor
 3.0303
