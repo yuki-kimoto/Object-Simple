@@ -1,4 +1,4 @@
-use Test::More tests => 96;
+use Test::More tests => 108;
 use strict;
 use warnings;
 
@@ -155,10 +155,6 @@ is_deeply($o->m26, 3, "$test :subclass 2 : object");
 
 
 test 'Error';
-$o = T1->new;
-eval{$o->m2};
-like($@, qr/T1::m2 must be called from a class, not a instance/,
-     'class_attr called from instance');
 
 {
     package T2;
@@ -262,6 +258,8 @@ is(T1->m2, 1, "$test : set and get");
 is(T1->m2(1), 'T1', "$test : set return");
 eval {T1->m2(1, 2)};
 like($@, qr/\QToo many arguments (T1::m2())/, "$test : Too many arguments");
+eval {T1->new->m2};
+like($@, qr/T1::m2 must be called from class/, "$test : must be called from class");
 
 
 test 'Class accessor with default';
@@ -273,7 +271,8 @@ like($@, qr/\QToo many arguments (T1::m13())/, "$test : Too many arguments");
 delete $T1::CLASS_ATTRS->{'m13'};
 is(T1->m13, 'm13', "$test : default");
 is(T1->m14, 'm14', "$test : default sub reference");
-
+eval {T1->new->m13};
+like($@, qr/T1::m13 must be called from class/, "$test : must be called from class");
 
 test 'Class accessor with inherit';
 T1->m24(1);
@@ -281,4 +280,29 @@ is(T1->m24, 1, "$test : set and get");
 is(T1->m24(1), 'T1',  "$test : set return");
 eval {T1->m24(1, 2)};
 like($@, qr/\QToo many arguments (T1::m24())/, "$test : Too many arguments");
+eval{T1->new->m27};
+like($@, qr/T1::m27 must be called from class/, "$test : must be called from class");
+
+test 'new()';
+$o = T1->new(m1 => 1);
+isa_ok($o, 'T1');
+is($o->m1, 1, "$test : from class : hash");
+
+$o = T1->new({m1 => 1});
+isa_ok($o, 'T1');
+is($o->m1, 1, "$test : from class : hash ref");
+
+$o = $o->new(m1 => 1);
+isa_ok($o, 'T1');
+is($o->m1, 1, "$test : from object : hash");
+
+$o = $o->new({m1 => 1});
+isa_ok($o, 'T1');
+is($o->m1, 1, "$test : from object : hash ref");
+
+test 'default';
+$o = T1->new;
+is($o->m31, 5, "$test : self : attr");
+is(T1->m32, 5, "$test : self : class_attr");
+
 

@@ -28,28 +28,21 @@ sub import {
 }
 
 sub new {
-    my $proto = shift;
+    my $class = shift;
     
-    # Class;
-    my $class = ref $proto || $proto;
+    # Instantiate hash reference
+    return bless {%{$_[0]}}, ref $class || $class if ref $_[0] eq 'HASH';
     
-    # Instantiate
-    if (ref $_[0] eq 'HASH') {
-        return bless {%{$_[0]}}, $class;
-    }
-    else {
-        Carp::croak("Odd number arguments (${class}::new())") if @_ % 2;
-        return bless {@_}, $class;
-    }
+    # Instantiate hash
+    Carp::croak("Odd number arguments (${class}::new())") if @_ % 2;
+    return bless {@_}, ref $class || $class;
 }
 
-my $create_accessors = \&Object::Simple::Util::create_accessors;
+sub attr       { Object::Simple::Accessor::create_accessors('attr',       @_) }
+sub class_attr { Object::Simple::Accessor::create_accessors('class_attr', @_) }
+sub dual_attr  { Object::Simple::Accessor::create_accessors('dual_attr',  @_) }
 
-sub attr       { shift->$create_accessors('attr',       @_) }
-sub class_attr { shift->$create_accessors('class_attr', @_) }
-sub dual_attr  { shift->$create_accessors('dual_attr',  @_) }
-
-package Object::Simple::Util;
+package Object::Simple::Accessor;
 
 use strict;
 use warnings;
@@ -57,7 +50,7 @@ use warnings;
 use Carp 'croak';
 
 sub create_accessors {
-    my ($class, $type, $attrs, @options) = @_;
+    my ($type, $class, $attrs, @options) = @_;
     
     # To array
     $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
@@ -67,14 +60,9 @@ sub create_accessors {
     
     # Check options
     foreach my $oname (keys %$options) {
-        my $is_valid = 1;
-        if ($type eq 'attr') {
-            $is_valid = 0 unless $oname eq 'default'
-        }
-        else {
-            $is_valid = 0 unless $oname eq 'default' || $oname eq 'inherit';
-        }
-        croak "'$oname' is invalid option" unless $is_valid;
+        croak "'$oname' is invalid option"
+         if  !($oname eq 'default' || $oname eq 'inherit')
+           || ($type eq 'attr' && $oname ne 'default');
     }
     
     # Create accessors
@@ -99,21 +87,25 @@ sub create_accessors {
 }
 
 sub create_accessor {
-    my ($class, $attr, $options, $attr_type) = @_;
-    
-    # Attribute type
-    $attr_type ||= '';
+    my ($class, $attr, $options, $type) = @_;
     
     # Options
     my $default = $options->{default};
-    my $inherit = $options->{inherit};
+    my $inherit = $options->{inherit} || '';
     
-    # Check inherit option
     if ($inherit) {
+        
+        # Rearrange Inherit option
+        $options->{inherit} = $inherit eq 'scalar_copy' ? sub { $_[0]      }
+                            : $inherit eq 'array_copy'  ? sub { [@{$_[0]}] }
+                            : $inherit eq 'hash_copy'   ? sub { return {%{$_[0]}} }
+                            : undef
+          unless ref $inherit eq 'CODE';
+        
+        # Check inherit options
         croak "'inherit' opiton must be 'scalar_copy', 'array_copy', " .
               "'hash_copy', or code reference (${class}::$attr)"
-          unless $inherit eq 'scalar_copy' || $inherit eq 'array_copy'
-              || $inherit eq 'hash_copy'   || ref $inherit eq 'CODE';
+          unless $options->{inherit};
     }
 
     # Check default option
@@ -122,13 +114,12 @@ sub create_accessor {
 
     my $code;
     # Class Accessor
-    if ($attr_type eq 'class') {
+    if (($type || '') eq 'class') {
         
         # With inherit option
-        if (defined $inherit) {
+        if ($inherit) {
             $code = sub {
-                croak "${class}::$attr must be called " . 
-                      "from a class, not a instance"
+                croak "${class}::$attr must be called from class."
                   if ref $_[0];
                 
                 my $class_attrs = do {
@@ -136,9 +127,8 @@ sub create_accessor {
                     ${"$_[0]::CLASS_ATTRS"} ||= {};
                 };
                 
-                if(@_ == 1 && ! exists $class_attrs->{$attr}) {
-                    inherit_prototype($_[0], $attr, $options);
-                }
+                inherit_attribute($_[0], $attr, $options)
+                  if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
                     croak "Too many arguments (${class}::$attr())" if @_ > 2;
@@ -153,8 +143,7 @@ sub create_accessor {
         # With default option
         elsif (defined $default) {
             $code = sub {
-                croak "${class}::$attr must be called " . 
-                      "from a class, not a instance"
+                croak "${class}::$attr must be called from class."
                   if ref $_[0];
 
                 my $class_attrs = do {
@@ -162,10 +151,8 @@ sub create_accessor {
                     ${"$_[0]::CLASS_ATTRS"} ||= {};
                 };
                 
-                if(@_ == 1 && ! exists $class_attrs->{$attr}) {
-                    $class_attrs->{$attr}
-                      = ref $default ? $default->() : $default;
-                }
+                $class_attrs->{$attr} = ref $default ? $default->($_[0]) : $default
+                  if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
                     croak "Too many arguments (${class}::$attr())" if @_ > 2;
@@ -180,8 +167,7 @@ sub create_accessor {
         # Without option
         else {
             $code = sub {
-                croak "${class}::$attr must be called " . 
-                      "from a class, not a instance"
+                croak "${class}::$attr must be called from class."
                   if ref $_[0];
 
                 my $class_attrs = do {
@@ -204,11 +190,10 @@ sub create_accessor {
     else {
     
         # With inherit option
-        if (defined $inherit) {
+        if ($inherit) {
             $code = sub {
-                if(@_ == 1 && ! exists $_[0]->{$attr}) {
-                    inherit_prototype($_[0], $attr, $options);
-                }
+                inherit_attribute($_[0], $attr, $options)
+                  if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
                     croak "Too many arguments (${class}::$attr())" if @_ > 2;
@@ -223,10 +208,8 @@ sub create_accessor {
         # With default option
         elsif (defined $default) {
             $code = sub {
-                if(@_ == 1 && ! exists $_[0]->{$attr}) {
-                    $_[0]->{$attr} = ref $default ? $default->()
-                                                  : $default;
-                }
+                $_[0]->{$attr} = ref $default ? $default->($_[0]) : $default
+                  if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
                     croak "Too many arguments (${class}::$attr())" if @_ > 2;
@@ -253,71 +236,38 @@ sub create_accessor {
     return $code;
 }
 
-sub create_class_accessor  { create_accessor(@_[0 .. 2], 'class') }
+sub create_class_accessor  { create_accessor(@_, 'class') }
 
 sub create_dual_accessor {
-    my ($class, $accessor_name, $options) = @_;
-    
-    # Create accessor
-    my $accessor = create_accessor($class, $accessor_name, $options);
-    
-    # Create class accessor
-    my $class_accessor
-      = create_class_accessor($class, $accessor_name, $options);
-    
+
     # Create dual accessor
-    my $code = sub {
-        my $invocant = shift;
-        return ref $invocant ? $accessor->($invocant, @_)
-                             : $class_accessor->($invocant, @_);
-    };
+    my $accessor       = create_accessor(@_);
+    my $class_accessor = create_class_accessor(@_);
     
-    return $code;
+    return sub { ref $_[0] ? $accessor->(@_) : $class_accessor->(@_) };
 }
 
-sub inherit_prototype {
-    my $invocant      = shift;
-    my $accessor_name = shift;
-    my $options = ref $_[0] eq 'HASH' ? $_[0] : {@_};
+sub inherit_attribute {
+    my ($proto, $attr, $options) = @_;
     
-    # Inherit option
-    my $inherit   = $options->{inherit};
-    
-    # Check inherit option
-    unless (ref $inherit eq 'CODE') {
-        if ($inherit eq 'scalar_copy') {
-            $inherit = sub { $_[0] };
-        }
-        elsif ($inherit eq 'array_copy') {
-            $inherit = sub { return [@{$_[0]}] };
-        }
-        elsif ($inherit eq 'hash_copy') {
-            $inherit = sub { return { %{$_[0]} } };
-        }
-    }
-    
-    # Default options
+    # Options
+    my $inherit = $options->{inherit};
     my $default = $options->{default};
-    
-    # Get default value from sub reference
-    $default = $default->($invocant) if ref $default eq 'CODE';
-    
+
     # Called from a object
-    if (my $class = ref $invocant) {
-        $invocant->$accessor_name($inherit->($class->$accessor_name));
+    if (my $class = ref $proto) {
+        $proto->{$attr} = $inherit->($class->$attr);
     }
     
     # Called from a class
     else {
         my $super =  do {
             no strict 'refs';
-            ${"${invocant}::ISA"}[0];
+            ${"${proto}::ISA"}[0];
         };
-        my $value = eval{$super->can($accessor_name)}
-                       ? $inherit->($super->$accessor_name)
-                       : $default;
-                          
-        $invocant->$accessor_name($value);
+        $proto->$attr(eval { $super->can($attr) }
+                    ? $inherit->($super->$attr)
+                    : ref $default ? $default->($proto) : $default);
     }
 }
 
@@ -333,46 +283,92 @@ This module is not stable. API will be changed for a while.
 
 =head1 VERSION
 
-Version 3.0501
+Version 3.0601
 
 =cut
 
-our $VERSION = '3.0501';
+our $VERSION = '3.0601';
 
 =head1 SYNOPSIS
+
+    package Point;
     
-    package Book;
+    use strict;
+    use warnings;
+    
     use base 'Object::Simple';
+
+    __PACKAGE__->attr(x => 0);
+    __PACKAGE__->attr(y => 0);
     
-    # Create accessor
-    __PACKAGE__->attr('title');
-    __PACKAGE__->attr(pages => 159);
-    __PACKAGE__->attr([qw/authors categories/] => sub { [] });
+    sub clear {
+        my $self = shift;
+        
+        $self->x(0);
+        $self->y(0);
+    }
     
-    # Create accessor for class variables
-    __PACKAGE__->class_attr('foo');
-    __PACKAGE__->class_attr(foo => 1);
-    __PACAKGE__->class_attr('foo', default => 1, inherit => 'scalar_copy');
+    package Point3D;
     
-    # Create accessor for both attributes and class variables
-    __PACKAGE__->dual_attr('bar');
-    __PACAKGE__->dual_attr(bar => 2);
-    __PACAKGE__->dual_attr('bar', default => 1, inherit => 'scalar_copy');
+    use strict;
+    use warnings;
+    
+    use base 'Point';
+    
+    __PACKAGE__->attr(z => 0);
+    
+    sub clear {
+        my $self = shift;
+        $self->SUPER::clear();
+        $self->z(0);
+    }
     
     package main;
-    use Book;
     
-    my $book = Book->new;
-    print $book->pages;
-    print $book->pages(5)->pages;
- 
-    my $my_book = Car->new(title => 'Good Day');
-    print $book->authors(['Ken', 'Tom'])->authors;
+    use strict;
+    use warnings;
     
-    Book->foo('a');
+    my $point = Point3D->new(x => 4, y => 6, z => 5);
     
-    Book->bar('b');
-    $book->bar('c');
+    $point->x(1);
+    $point->y(2);
+    $point->z(5);
+    
+    my $x = $point->x;
+    my $y = $point->y;
+    my $z = $point->z;
+    
+    $point->clear;
+
+=head1 FEATURES
+
+This module has the folloing features. 
+
+=over 4
+
+=item 1. new() is prepared. You do not have to define new().
+
+=item 2. Provide accessor creating abilities.
+
+=item 3. Default value is available.
+
+=item 4. Object Oriented interface.
+
+=item 5. Memory saving implementation.
+
+=item 6. Fast Compiling.
+
+=item 7. Fast new() and accessors as possible.
+
+=item 8. Pure perl and one file.
+
+=item 9. Debugging is easy.
+
+=item 10. Provide class accessor creating ability
+
+=item 11. Probide class attribute inheriting system.
+
+=back
 
 =head1 METHODS
 
@@ -381,25 +377,15 @@ our $VERSION = '3.0501';
 A subclass of Object::Simple can call "new", and create a instance.
 "new" receive hash or hash reference.
 
-    package Book;
+    package Point;
     use base 'Object::Simple';
     
     package main;
-    my $book = Book->new;
-    my $book = Book->new(title => 'Good day');
-    my $book = Book->new({title => 'Good'});
+    my $book = Point->new;
+    my $book = Point->new(x => 1, y => 2);
+    my $book = Point->new({x => 1, y => 2});
 
 "new" can be overrided to arrange arguments or initialize the instance.
-
-Arguments arrange
-    
-    sub new {
-        my ($class, $title, $author) = @_;
-        
-        my $self = $class->SUPER::new(title => $title, author => $author);
-        
-        return $self;
-    }
 
 Instance initialization
 
@@ -411,6 +397,10 @@ Instance initialization
         return $self;
     }
 
+Arguments arranging
+    
+    sub new { shift->SUPER::new(x => $_[0], y => $_[1]) }
+
 =head2 attr
 
 Create accessor.
@@ -419,36 +409,48 @@ Create accessor.
     __PACKAGE__->attr([qw/name1 name2 name3/]);
 
 A default value can be specified.
-If array reference, hash reference, or object is specified
-as a default value, that must be wrapped with sub { }.
+If dfault value is reference or object, You must wrap the value with sub { }.
 
     __PACKAGE__->attr(name => 'foo');
     __PACKAGE__->attr(name => sub { ... });
     __PACKAGE__->attr([qw/name1 name2/] => 'foo');
     __PACKAGE__->attr([qw/name1 name2/] => sub { ... });
 
+Accessor is chained.
+
+    $point->x(3)->y(4);
+    
+The folloing is a sample.
+
+    package Car;
+    use base 'Object::Simple';
+    
+    __PACKAGE__->attr(maintainer => sub { ['Ken', 'Beck'] });
+    __PACKAGE__->attr(handle => sub { Car::Handle->new });
+    __PACKAGE__->attr([qw/speed passenger/] => 0);
+    
 =head2 class_attr
 
-Create accessor for class variable.
+Create accessor for class attribute.
 
     __PACKAGE__->class_attr('name');
     __PACKAGE__->class_attr([qw/name1 name2 name3/]);
     __PACKAGE__->class_attr(name => 'foo');
     __PACKAGE__->class_attr(name => sub { ... });
 
-This accessor is called from package, not instance.
+This accessor is called from class.
 
     Book->title('BBB');
 
-Class variables is saved to package variable "$CLASS_ATTRS". If you want to
-delete the value or check existence, "delete" or "exists" function is available.
+Class attribute is saved to $CLASS_ATTRS. This is class variable.
+If you want to delete or check existence of a class attribute,
+"delete" or "exists" function is available.
 
-    delete $Book::CLASS_ATTRS->{title};
-    exists $Book::CLASS_ATTRS->{title};
+    delete $SomeClass::CLASS_ATTRS->{name};
+    exists $SomeCLass::CLASS_ATTRS->{name};
 
-If This class is inherited, the value is saved to package variable of subclass.
-For example, Book->title('Beautiful days') is saved to $Book::CLASS_ATTRS->{title},
-and Magazine->title('Good days') is saved to $Magazine::CLASS_ATTRS->{title}.
+If the class is a subclass, the class attribute is saved to $CLASS_ATTRS of subclass .
+See the following sample.
 
     package Book;
     use base 'Object::Simple';
@@ -460,25 +462,30 @@ and Magazine->title('Good days') is saved to $Magazine::CLASS_ATTRS->{title}.
     
     package main;
     
-    Book->title('Beautiful days'); # Saved to $Book::CLASS_ATTRS->{title}
-    Magazine->title('Good days');  # Saved to $Magazine::CLASS_ATTRS->{title}
+    Book->title('Beautiful days');
+    Magazine->title('Good days');
+
+If Book->title('Beautiful days') is called,
+the value is saved to $Book::CLASS_ATTRS->{title}.
+If Magazine->title('Good days') is called,
+the value is saved to $Magazine::CLASS_ATTRS->{title}.
 
 =head2 dual_attr
 
-Create accessor for a instance and class variable.
+Create accessor for a attribute and class attribute.
 
     __PACKAGE__->dual_attr('name');
     __PACKAGE__->dual_attr([qw/name1 name2 name3/]);
     __PACKAGE__->dual_attr(name => 'foo');
     __PACKAGE__->dual_attr(name => sub { ... });
 
-If this accessor is called from a package, the value is saved to $CLASS_ATTRS.
-If this accessor is called from a instance, the value is saved to the instance.
+If the accessor is called from a package, the value is saved to $CLASS_ATTRS.
+If the accessor is called from a instance, the value is saved to the instance.
 
-    Book->title('Beautiful days'); # Saved to $CLASS_ATTRS->{title};
+    Book->title('Beautiful days');
     
     my $book = Book->new;
-    $book->title('Good days'); # Saved to $book->{title};
+    $book->title('Good days');
     
 =head1 OPTIONS
  
@@ -488,8 +495,8 @@ Define a default value.
 
     __PACKAGE__->attr('title', default => 'Good news');
 
-If a default value is array ref, or hash ref, or object,
-the value is wrapped with sub { }.
+If a default value is a reference or object,
+You must wrap the value with sub { }.
 
     __PACKAGE__->attr('authors', default => sub{ ['Ken', 'Taro'] });
     __PACKAGE__->attr('ua',      default => sub { LWP::UserAgent->new });
@@ -515,14 +522,12 @@ This options is generally used with "default" value.
 "scalar_copy", "array_copy", "hash_copy" is specified as "inherit" options.
 scalar_copy is normal copy. array_copy is [@{$array}], hash_copy is [%{$hash}].
 
-Any subroutine for inherit is also available.
+Your subroutine is also available to copy the value.
 
     __PACKAGE__->dual_attr('url', default => sub { URI->new }, 
-                                  inherit   => sub { shift->clone });
-
-
-If inherit options is used, 
-L<Object::Simple> provide a prototype system like JavaScript.
+                                  inherit => sub { shift->clone });
+ 
+L<Object::Simple> provide class attribute inhertance system.
 
     +--------+ 
     | Class1 |
@@ -553,15 +558,13 @@ This value is used when instance is created. "title" value is "Beautiful day"
     my $book = Class2->new;
     $book->title;
     
-This prototype system is very useful to create castamizable class for user.
-
-This prototype system is used in L<Validator::Custom> and L<DBIx::Custom>.
+This prototype system is useful to create castamizable class.
 
 See L<Validator::Custom> and L<DBIx::Custom>.
 
 =head1 PROVIDE ONLY ACCESSOR CREATING ABILITIES
 
-If you want to provide only a ability to create accessor a class, do this.
+If you want to provide only a ability to create accessor a class, do the following way.
 
     package YourClass;
     use base 'LWP::UserAgent';
@@ -573,8 +576,6 @@ If you want to provide only a ability to create accessor a class, do this.
 =head1 SEE ALSO
 
 This module is compatible with L<Mojo::Base>.
-
-If you like L<Mojo::Base>, L<Object:Simple> is good select for you.
 
 =head1 AUTHOR
  

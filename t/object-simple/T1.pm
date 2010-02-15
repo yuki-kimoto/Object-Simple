@@ -48,8 +48,10 @@ __PACKAGE__->class_attr('m28', default => sub { [] }, inherit => 'array_copy');
 __PACKAGE__->m28->[0] = 1;
 
 __PACKAGE__->class_attr('m29', default => sub { shift->m30 }, inherit => 'scalar_copy');
-__PACKAGE__->class_attr('m30', default => 5);
+__PACKAGE__->dual_attr('m30', default => 5);
 
+__PACKAGE__->attr(m31 => sub { shift->m30 });
+__PACKAGE__->class_attr(m32 => sub { shift->m30 });
 
 package T1_2;
 use base 'T1';

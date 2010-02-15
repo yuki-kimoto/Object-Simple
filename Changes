@@ -1,3 +1,7 @@
+3.0601
+  rename Object::Simple::Util to Object::Simple::Accessor.
+  update document
+  some cleanup
 3.0501
   expand accessors to sub reference
   expand class_attrs
