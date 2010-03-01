@@ -275,19 +275,23 @@ package Object::Simple;
 
 =head1 NAME
 
-Object::Simple - Provide new() and accessor creating abilities
+Object::Simple - Provide new() and accessor creating methods
 
 =head1 STATE
 
-This module is not stable. API will be changed for a while.
+This module is now stable. I will not change APIs and implemetations.
+I will only fix bug if it is found.
+Version 3.0601 backward compatibility will be keeped for ever.
+You can use this module to create your products without fear.
+I promise what I said.
 
 =head1 VERSION
 
-Version 3.0601
+Version 3.0602
 
 =cut
 
-our $VERSION = '3.0601';
+our $VERSION = '3.0602';
 
 =head1 SYNOPSIS
 
@@ -346,27 +350,15 @@ This module has the folloing features.
 
 =over 4
 
-=item 1. new() is prepared. You do not have to define new().
+=item 1. new() and accessor creating methods is prepared.
 
-=item 2. Provide accessor creating abilities.
+=item 2. Default value is available.
 
-=item 3. Default value is available.
+=item 3. Object Oriented interface and pure perl implemetation.
 
-=item 4. Object Oriented interface.
+=item 4. Memory saving implementation and fast Compiling.
 
-=item 5. Memory saving implementation.
-
-=item 6. Fast Compiling.
-
-=item 7. Fast new() and accessors as possible.
-
-=item 8. Pure perl and one file.
-
-=item 9. Debugging is easy.
-
-=item 10. Provide class accessor creating ability
-
-=item 11. Probide class attribute inheriting system.
+=item 5. Debugging is easy.
 
 =back
 
@@ -385,7 +377,7 @@ A subclass of Object::Simple can call "new", and create a instance.
     my $book = Point->new(x => 1, y => 2);
     my $book = Point->new({x => 1, y => 2});
 
-"new" can be overrided to arrange arguments or initialize the instance.
+"new" can be overrided to initialize the instance or arrange arguments.
 
 Instance initialization
 
@@ -399,7 +391,13 @@ Instance initialization
 
 Arguments arranging
     
-    sub new { shift->SUPER::new(x => $_[0], y => $_[1]) }
+    sub new {
+        my $self = shift;
+        
+        $self->SUPER::new(x => $_[0], y => $_[1]);
+        
+        return $self;
+    }
 
 =head2 attr
 
@@ -507,64 +505,60 @@ Default value can be written by more simple way.
     __PACKAGE__->attr(authors => sub { ['Ken', 'Taro'] });
     __PACKAGE__->attr(ua      => sub { LWP::UserAgent->new });
 
-
 =head2 inherit
 
-If the accessor is for class class variable, 
-Package variable of super class is copied to the class at first access,
-If the accessor is for instance, Package variable is copied to the instance, .
+Inherit a attribute from a base class's one.
 
-"inherit" is available by "class_attr", and "dual_attr".
-This options is generally used with "default" value.
+You can inherit a class attribute from base class's one.
 
-    __PACKAGE__->dual_attr('contraints', default => sub { {} }, inherit => 'hash_copy');
-    
-"scalar_copy", "array_copy", "hash_copy" is specified as "inherit" options.
-scalar_copy is normal copy. array_copy is [@{$array}], hash_copy is [%{$hash}].
-
-Your subroutine is also available to copy the value.
-
-    __PACKAGE__->dual_attr('url', default => sub { URI->new }, 
-                                  inherit => sub { shift->clone });
- 
-L<Object::Simple> provide class attribute inhertance system.
-
-    +--------+ 
-    | Class1 |
-    +--------+ 
-        |
-        v
-    +--------+    +----------+
-    | Class2 | -> |instance2 |
-    +--------+    +----------+
-
-"Class1" has "title" accessor using "dual_attr" with "inherit" options.
-
-    package Class1;
+    package BaseClass;
     use base 'Object::Simple';
     
-    __PACKAGE__->dual_attr('title', default => 'Good day', inherit => 'scalar_copy');
-
-"title" can be changed in "Class2".
-
-    package Class2;
-    use base Class1;
+    __PACKAGE__->class_attr('cache', default => 30, inherit => 'scalar_copy');
     
-    __PACKAGE__->title('Beautiful day');
+    package SomeClass;
+    use base 'BaseClass';
     
-This value is used when instance is created. "title" value is "Beautiful day"
-
     package main;
-    my $book = Class2->new;
-    $book->title;
+    my $obj = SomeClass->new;
+    $obj->cache; # This is 30, which is inherited from BaseClass's cache.
+
+inherit option must be 'scalar_copy', 'array_copy', 'hash_copy', or sub reference.
+This is used to decide the way to copy the base class attribute.
+
+The following is the implemetations to copy the value.
+
+    'scalar copy' : Normal copy        : sub { return $_[0] }
+    'array_copy'  : Array shallow copy : sub { return [@{$_[0]}] }
+    'hash_copy'   : Hash shallow copy  : sub { return {%{$_[0]}} }
+    sub reference : Your original copy : sub { ... }
+
+If inherit option is specified at dual_attr(), a instance attribute inherit the class attribute.
+
+    package SomeClass;
+    use base 'Object::Simple';
     
-This prototype system is useful to create castamizable class.
+    __PACKAGE__->dual_attr('filters',
+        default => sub {
+            {
+                trim  => sub { ... },
+                chomp => sub { ... }
+            }
+        },
+        inherit => 'hash_copy'
+    );
+    
+    package main;
+    my $obj = SomeClass->new;
+    $obj->filters; # This is { trim => sub { ... }, chomp => sub { ... } }
+                   # , which is inherit from SomeClass's filters
 
-See L<Validator::Custom> and L<DBIx::Custom>.
+Good example of inherit options is L<Validator::Custom::HTMLForm>.
+See also this module.
 
-=head1 PROVIDE ONLY ACCESSOR CREATING ABILITIES
+=head1 PROVIDE ONLY ACCESSOR CREATING METHODS
 
-If you want to provide only a ability to create accessor a class, do the following way.
+If you want to provide only accessor creating methods, do the following way.
 
     package YourClass;
     use base 'LWP::UserAgent';
@@ -576,6 +570,7 @@ If you want to provide only a ability to create accessor a class, do the followi
 =head1 SEE ALSO
 
 This module is compatible with L<Mojo::Base>.
+If you like L<Mojo::Base>, This module is good choice.
 
 =head1 AUTHOR
  
@@ -584,8 +579,6 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 Github L<http://github.com/yuki-kimoto/>
 
 I develope this module at L<http://github.com/yuki-kimoto/Object-Simple>
-
-Please tell me bug if you find.
 
 =head1 COPYRIGHT & LICENSE
  

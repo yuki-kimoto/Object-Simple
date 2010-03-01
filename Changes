@@ -1,3 +1,6 @@
+3.0602
+  update document
+  I promised backward compatibility of version 3.0601 in this document.
 3.0601
   rename Object::Simple::Util to Object::Simple::Accessor.
   update document
