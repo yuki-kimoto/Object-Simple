@@ -1,21 +1,71 @@
 WHAT IS THIS?
 
-Object::Simple is simple,fast,useful class builder.
-
-You can defined various type of accessors very easy way.
-and prepared new method is available.
+Object::Simple provide new() and accessor creating methods.
 
 INSTALLATION
 
 cpan Object::Simple
 
-SAMPLES
+SYNOPSIS
 
-package Book;
-use Object::Simple;
+    package Point;
+    
+    use strict;
+    use warnings;
+    
+    use base 'Object::Simple';
 
-sub title  : Attr { default => 'Perl' }
-sub author : Attr { default => 'taro' }
+    __PACKAGE__->attr(x => 0);
+    __PACKAGE__->attr(y => 0);
+    
+    sub clear {
+        my $self = shift;
+        
+        $self->x(0);
+        $self->y(0);
+    }
+    
+    package Point3D;
+    
+    use strict;
+    use warnings;
+    
+    use base 'Point';
+    
+    __PACKAGE__->attr(z => 0);
+    
+    sub clear {
+        my $self = shift;
+        $self->SUPER::clear();
+        $self->z(0);
+    }
+    
+    package main;
+    
+    use strict;
+    use warnings;
+    
+    my $point = Point3D->new(x => 4, y => 6, z => 5);
+    
+    $point->x(1);
+    $point->y(2);
+    $point->z(5);
+    
+    my $x = $point->x;
+    my $y = $point->y;
+    my $z = $point->z;
+    
+    $point->clear;
+
+FEATURES
+
+This module has the folloing features. 
+
+1. new() and accessor creating methods is prepared.
+2. Default value is available.
+3. Object Oriented interface and pure perl implemetation.
+4. Memory saving implementation and fast Compiling.
+5. Debugging is easy.
 
 COPYRIGHT AND LICENCE
 
