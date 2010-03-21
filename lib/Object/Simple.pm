@@ -281,17 +281,15 @@ Object::Simple - Provide new() and accessor creating methods
 
 This module is now stable. I will not change APIs and implemetations.
 I will only fix bug if it is found.
-Version 3.0601 backward compatibility will be keeped for ever.
-You can use this module to create your products without fear.
-I promise what I said.
+Version 3.0601 implementation is keeped for ever.
 
 =head1 VERSION
 
-Version 3.0602
+Version 3.0603
 
 =cut
 
-our $VERSION = '3.0602';
+our $VERSION = '3.0603';
 
 =head1 SYNOPSIS
 
@@ -361,6 +359,11 @@ This module has the folloing features.
 =item 5. Debugging is easy.
 
 =back
+
+You can think L<Object::Simple> is L<Class::Accessor::Fast> + "default value definition" + "useful new()"
+
+This module's API is compatible of L<Mojo::Base>.
+If you like L<Mojo::Base>, this module is good choice.
 
 =head1 METHODS
 
@@ -569,8 +572,7 @@ If you want to provide only accessor creating methods, do the following way.
 
 =head1 SEE ALSO
 
-This module is compatible with L<Mojo::Base>.
-If you like L<Mojo::Base>, This module is good choice.
+L<Mojo::Base>, L<Class::Accessor::Fast>
 
 =head1 AUTHOR
  
