@@ -131,7 +131,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
                     $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -155,7 +155,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
                     $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -176,7 +176,7 @@ sub create_accessor {
                 };
                 
                 if(@_ > 1) {
-                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
                     $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -196,7 +196,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -212,7 +212,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -224,7 +224,7 @@ sub create_accessor {
         else {
             $code = sub {
                 if(@_ > 1) {
-                    croak "Too many arguments (${class}::$attr())" if @_ > 2;
+                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0]
                 }
@@ -285,11 +285,11 @@ Version 3.0601 implementation is keeped for ever.
 
 =head1 VERSION
 
-Version 3.0603
+Version 3.0604
 
 =cut
 
-our $VERSION = '3.0603';
+our $VERSION = '3.0604';
 
 =head1 SYNOPSIS
 

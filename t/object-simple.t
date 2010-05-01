@@ -214,7 +214,7 @@ is(T1->m29, 5, "$test: inherit : sub ref default");
 test 'Accessor too many argument';
 $o = T1->new;
 eval{$o->m1(1, undef)};
-like($@, qr/\QToo many arguments (T1::m1())/, $test);
+like($@, qr/\QHash reference must be passed (T1::m1())/, $test);
 
 
 test 'new() Odd number argument';
@@ -228,7 +228,7 @@ $o->m1(1);
 is($o->m1, 1, "$test : set and get");
 is($o->m1(1), $o, "$test : set return");
 eval {$o->m1(1, 2)};
-like($@, qr/\QToo many arguments (T1::m1())/, "$test : Too many arguments");
+like($@, qr/\QHash reference must be passed (T1::m1())/, "$test : Hash reference must be passed");
 
 
 test 'Normal accessor with default';
@@ -237,7 +237,7 @@ $o->m11(2);
 is($o->m11, 2, "$test : set and get");
 is($o->m11(2), $o, "$test : set return");
 eval {$o->m11(1, 2)};
-like($@, qr/\QToo many arguments (T1::m11())/, "$test : Too many arguments");
+like($@, qr/\QHash reference must be passed (T1::m11())/, "$test : Hash reference must be passed");
 $o = T1->new;
 is($o->m11, 1, "$test : default");
 is($o->m12, 9, "$test : default sub reference");
@@ -249,7 +249,7 @@ $o->m24(1);
 is($o->m24, 1, "$test : set and get");
 is($o->m24(1), $o, "$test : set return");
 eval {$o->m24(1, 2)};
-like($@, qr/\QToo many arguments (T1::m24())/, "$test : Too many arguments");
+like($@, qr/\QHash reference must be passed (T1::m24())/, "$test : Hash reference must be passed");
 
 
 test 'Class accessor';
@@ -257,7 +257,7 @@ T1->m2(1);
 is(T1->m2, 1, "$test : set and get");
 is(T1->m2(1), 'T1', "$test : set return");
 eval {T1->m2(1, 2)};
-like($@, qr/\QToo many arguments (T1::m2())/, "$test : Too many arguments");
+like($@, qr/\QHash reference must be passed (T1::m2())/, "$test : Hash reference must be passed");
 eval {T1->new->m2};
 like($@, qr/T1::m2 must be called from class/, "$test : must be called from class");
 
@@ -267,7 +267,7 @@ T1->m13(2);
 is(T1->m13, 2, "$test : set and get");
 is(T1->m13(2), 'T1', "$test : set return");
 eval {T1->m13(1, 2)};
-like($@, qr/\QToo many arguments (T1::m13())/, "$test : Too many arguments");
+like($@, qr/\QHash reference must be passed (T1::m13())/, "$test : Hash reference must be passed");
 delete $T1::CLASS_ATTRS->{'m13'};
 is(T1->m13, 'm13', "$test : default");
 is(T1->m14, 'm14', "$test : default sub reference");
@@ -279,7 +279,7 @@ T1->m24(1);
 is(T1->m24, 1, "$test : set and get");
 is(T1->m24(1), 'T1',  "$test : set return");
 eval {T1->m24(1, 2)};
-like($@, qr/\QToo many arguments (T1::m24())/, "$test : Too many arguments");
+like($@, qr/\QHash reference must be passed (T1::m24())/, "$test : Hash reference must be passed");
 eval{T1->new->m27};
 like($@, qr/T1::m27 must be called from class/, "$test : must be called from class");
 
