@@ -285,11 +285,11 @@ Version 3.0601 implementation is keeped for ever.
 
 =head1 VERSION
 
-Version 3.0604
+Version 3.0605
 
 =cut
 
-our $VERSION = '3.0604';
+our $VERSION = '3.0605';
 
 =head1 SYNOPSIS
 
