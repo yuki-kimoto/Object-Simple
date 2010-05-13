@@ -34,7 +34,7 @@ sub new {
     return bless {%{$_[0]}}, ref $class || $class if ref $_[0] eq 'HASH';
     
     # Instantiate hash
-    Carp::croak("Odd number arguments (${class}::new())") if @_ % 2;
+    Carp::croak("Hash reference or even number list must be passed to ${class}::new()") if @_ % 2;
     return bless {@_}, ref $class || $class;
 }
 
@@ -131,7 +131,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
+                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
                     $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -155,7 +155,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
+                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
                     $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -176,7 +176,7 @@ sub create_accessor {
                 };
                 
                 if(@_ > 1) {
-                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
+                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
                     $class_attrs->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -196,7 +196,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
+                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -212,7 +212,7 @@ sub create_accessor {
                   if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
+                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0];
                 }
@@ -224,7 +224,7 @@ sub create_accessor {
         else {
             $code = sub {
                 if(@_ > 1) {
-                    croak "Hash reference must be passed (${class}::$attr())" if @_ > 2;
+                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
                     $_[0]->{$attr} = $_[1];
                     return $_[0]
                 }
