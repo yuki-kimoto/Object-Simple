@@ -34,7 +34,10 @@ sub new {
     return bless {%{$_[0]}}, ref $class || $class if ref $_[0] eq 'HASH';
     
     # Instantiate hash
-    Carp::croak("Hash reference or even number list must be passed to ${class}::new()") if @_ % 2;
+    Carp::croak("Hash reference or even number arguments ". 
+                "must be passed to ${class}::new()")
+      if @_ % 2;
+    
     return bless {@_}, ref $class || $class;
 }
 
@@ -285,11 +288,11 @@ Version 3.0601 implementation is keeped for ever.
 
 =head1 VERSION
 
-Version 3.0605
+Version 3.0606
 
 =cut
 
-our $VERSION = '3.0605';
+our $VERSION = '3.0606';
 
 =head1 SYNOPSIS
 

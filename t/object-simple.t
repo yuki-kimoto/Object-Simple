@@ -219,7 +219,7 @@ like($@, qr/\QOnly one argument must be passed to T1::m1()/, $test);
 
 test 'new() Odd number argument';
 eval{$o = T1->new('a')};
-like($@, qr/\QHash reference or even number list must be passed to T1::new()/, $test);
+like($@, qr/\QHash reference or even number arguments must be passed to T1::new()/, $test);
 
 test 'Normal accessor';
 $o = T1->new;
