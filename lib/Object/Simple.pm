@@ -282,11 +282,11 @@ Object::Simple - generate accessor with default, and provide constructor
 
 =head1 VERSION
 
-Version 3.0607
+Version 3.0608
 
 =cut
 
-our $VERSION = '3.0607';
+our $VERSION = '3.0608';
 
 =head1 SYNOPSIS
 
@@ -353,15 +353,11 @@ our $VERSION = '3.0607';
 
 =head1 DESCRIPTION
 
-=head2 introduction
+L<Object::Simple> is a accessor generator.
+To create a class, you must write many accessors by yourself,
 
-L<Object::Simple> is the generator of accessor.
-If you want to create a class, you must write many accessors by yourself,
-so you will be tired of writing accesors.
-
-L<Object::Simple> help you to create accessor.
-You can call attr() method to create accessor
-from subclass of L<Object::Simple>
+L<Object::Simple> help you to do this work.
+a L<Object::Simple> subclass call attr() method to create accessor.
     
     package YourClass;
     
@@ -370,10 +366,10 @@ from subclass of L<Object::Simple>
     # Generate accessor
     __PACKAGE__->attr('x');
 
-L<Object::Simple> also provide constructor new().
-new() can receive hash or hash reference.
+L<Object::Simple> also provide a constructor.
+new() receive hash or hash reference.
 
-    # Constructor new()
+    # Constructor
     my $obj = YourClass->new(x => 1, y => 2);
     my $obj = YourClass->new({x => 1, y => 2});
 
@@ -400,9 +396,7 @@ This is requirement not to share the value with more than one instance.
     __PACKAGE__->attr(x => sub { {} });
     __PACKAGE__->attr(x => sub { SomeClass->new });
 
-=head2 examples
-
-I wrote Point and Point3D class.
+I wrote some examples, Point and Point3D class.
 Point has two accessor x() and y(), and method clear().
 
 Point3D is subclass of Point.
@@ -441,8 +435,6 @@ which is overridden.
         $self->z(0);
     }
 
-=head2 how to override new()
-
 You can override new() to initialize the instance or arrange arguments.
 To call super class new(), you can use SUPER pseudo-class.
 
@@ -466,8 +458,6 @@ Arrange arguments:
         return $self;
     }
 
-=head2 import accessor generating methods
-
 You can only import accessor generating methods if you need.
 
     package YourClass;
@@ -475,8 +465,6 @@ You can only import accessor generating methods if you need.
     use Object::Simple qw/attr class_attr dual_attr/;
     
     __PACKAGE__->attr('x');
-
-=head2 implementation
 
 attr(), class_attr(), and dual_attr() is implemented by closure, not eval,
 so memory efficiency is very good.
@@ -494,16 +482,9 @@ exception is thrown.
     # Exception!
     $obj->x(a => 1);
 
-=head2 history
-
-L<Class::Accessor::Fast> is very useful.
-so I wanted to add new new features to that.
-But when I looked at L<Mojo::Base>, I realized that it is not necessarily
-to have many features to do Object Oriented Programing.
-
-So I decided that L<Object::Simple> has compatible of L<Mojo::Base>.
-L<Mojo::Base> is minimal but enough
-to do Object Oriented Programing.
+L<Object::Simple>'s attr() is compatible with L<Mojo::Base>'s attr().
+L<Mojo::Base> is minimal but enough to do Object Oriented Programing.
+If you like L<Mojo::Base>, L<Object::Simple> is good choice for you.
 
 =head1 METHODS
 
@@ -575,6 +556,19 @@ Class accessor can inherit the value of class variable in super class.
     __PACKAGE__->class_attr('x', default => 0, inherit => 'scalar_copy');
     __PACKAGE__->class_attr('x', default => sub { [] }, inherit => 'array_copy');
     __PACKAGE__->class_attr('x', default => sub { {} }, inherit => 'hash_copy');
+    __PACKAGE__->class_attr(
+      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
+
+scalar_copy, array_copy, hash_copy is the same as the following subroutine.s
+
+    # scalar_copy
+    inherit => sub { return $_[0] }
+    
+    # array_copy
+    inherit => sub { return [@{$_[0]}] }
+    
+    # hash_copy
+    inherit => sub { return {%{$_[0]}} }
 
 =head2 dual_attr
 
@@ -597,7 +591,20 @@ and the value of class variable in super class if called by class.
     __PACKAGE__->class_attr('x', default => 0, inherit => 'scalar_copy');
     __PACKAGE__->class_attr('x', default => sub { [] }, inherit => 'array_copy');
     __PACKAGE__->class_attr('x', default => sub { {} }, inherit => 'hash_copy');
+    __PACKAGE__->dual_attr(
+      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
+
+scalar_copy, array_copy, hash_copy is the same as the following subroutine.s
+
+    # scalar_copy
+    inherit => sub { return $_[0] }
     
+    # array_copy
+    inherit => sub { return [@{$_[0]}] }
+    
+    # hash_copy
+    inherit => sub { return {%{$_[0]}} }
+
 =head1 STABILITY
 
 L<Object::Simple> is stable.
