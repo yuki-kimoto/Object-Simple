@@ -30,12 +30,11 @@ sub import {
 sub new {
     my $class = shift;
     
-    # Instantiate hash reference
-    return bless {%{$_[0]}}, ref $class || $class if ref $_[0] eq 'HASH';
+    return bless {%{$_[0]}}, ref $class || $class
+      if ref $_[0] eq 'HASH';
     
-    # Instantiate hash
-    Carp::croak("Hash reference or even number arguments ". 
-                "must be passed to ${class}::new()")
+    Carp::croak(qq{Hash reference or even number arguments } . 
+                qq{must be passed to "${class}::new()"})
       if @_ % 2;
     
     return bless {@_}, ref $class || $class;
@@ -121,7 +120,13 @@ sub create_accessor {
         
         # With inherit option
         if ($inherit) {
-            $code = sub {
+
+
+
+
+
+            return sub {
+
                 croak "${class}::$attr must be called from class."
                   if ref $_[0];
                 
@@ -134,18 +139,32 @@ sub create_accessor {
                   if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
+                    croak qq{One argument must be passed to "${class}::$attr()"}
+                      if @_ > 2;
+                    
                     $class_attrs->{$attr} = $_[1];
+                    
                     return $_[0];
                 }
                 
                 return $class_attrs->{$attr};
             };
+
+
+
+
+
         }
         
         # With default option
         elsif (defined $default) {
-            $code = sub {
+
+
+
+
+
+            return sub {
+
                 croak "${class}::$attr must be called from class."
                   if ref $_[0];
 
@@ -158,18 +177,34 @@ sub create_accessor {
                   if @_ == 1 && ! exists $class_attrs->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
+                    
+                    croak qq{One argument must be passed to "${class}::$attr()"}
+                      if @_ > 2;
+                    
                     $class_attrs->{$attr} = $_[1];
+                    
                     return $_[0];
                 }
                 
                 return $class_attrs->{$attr};
+
             };
+
+
+
+
+
         }
         
         # Without option
         else {
-            $code = sub {
+
+
+
+
+
+            return sub {
+
                 croak "${class}::$attr must be called from class."
                   if ref $_[0];
 
@@ -179,13 +214,21 @@ sub create_accessor {
                 };
                 
                 if(@_ > 1) {
-                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
+                    croak qq{One argument must be passed to "${class}::$attr()"}
+                      if @_ > 2;
+                    
                     $class_attrs->{$attr} = $_[1];
+                    
                     return $_[0];
                 }
                 
                 return $class_attrs->{$attr};
             };
+
+
+
+
+
         }
     }
     
@@ -194,49 +237,97 @@ sub create_accessor {
     
         # With inherit option
         if ($inherit) {
-            $code = sub {
+
+
+
+
+
+            return sub {
+
                 inherit_attribute($_[0], $attr, $options)
                   if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
+                
+                    croak qq{One argument must be passed to "${class}::$attr()"}
+                      if @_ > 2;
+                    
                     $_[0]->{$attr} = $_[1];
+                    
                     return $_[0];
                 }
                 
                 return $_[0]->{$attr};
             };            
+
+
+
+
+
+
         }
         
         # With default option
         elsif (defined $default) {
-            $code = sub {
+
+
+
+
+
+            return sub {
+
                 $_[0]->{$attr} = ref $default ? $default->($_[0]) : $default
                   if @_ == 1 && ! exists $_[0]->{$attr};
                 
                 if(@_ > 1) {
-                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
+                    
+                    croak qq{One argument must be passed to "${class}::$attr()"}
+                      if @_ > 2;
+                    
                     $_[0]->{$attr} = $_[1];
+                    
                     return $_[0];
                 }
+                
                 return $_[0]->{$attr};
             };
+
+
+
+
+
         }
         
         # Without option
         else {
-            $code = sub {
-                if(@_ > 1) {
-                    croak "Only one argument must be passed to ${class}::$attr()" if @_ > 2;
-                    $_[0]->{$attr} = $_[1];
-                    return $_[0]
+
+
+
+
+
+            return sub {
+                
+                my $self = shift;
+                
+                if(@_ > 0) {
+
+                    croak qq{One argument must be passed to "${class}::$attr()"}
+                      if @_ > 1;
+                    
+                    $self->{$attr} = $_[0];
+
+                    return $self;
                 }
-                return $_[0]->{$attr};
+
+                return $self->{$attr};
             };
+
+
+
+
+
         }
     }
-    
-    return $code;
 }
 
 sub create_class_accessor  { create_accessor(@_, 'class') }
