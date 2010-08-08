@@ -126,25 +126,28 @@ sub create_accessor {
 
 
             return sub {
-
+                
+                my $self = shift;
+                
                 croak "${class}::$attr must be called from class."
-                  if ref $_[0];
+                  if ref $self;
                 
                 my $class_attrs = do {
                     no strict 'refs';
-                    ${"$_[0]::CLASS_ATTRS"} ||= {};
+                    ${"${self}::CLASS_ATTRS"} ||= {};
                 };
                 
-                inherit_attribute($_[0], $attr, $options)
-                  if @_ == 1 && ! exists $class_attrs->{$attr};
+                inherit_attribute($self, $attr, $options)
+                  if @_ == 0 && ! exists $class_attrs->{$attr};
                 
-                if(@_ > 1) {
+                if(@_ > 0) {
+                
                     croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 2;
+                      if @_ > 1;
                     
-                    $class_attrs->{$attr} = $_[1];
+                    $class_attrs->{$attr} = $_[0];
                     
-                    return $_[0];
+                    return $self;
                 }
                 
                 return $class_attrs->{$attr};
@@ -164,26 +167,28 @@ sub create_accessor {
 
 
             return sub {
-
+                
+                my $self = shift;
+                
                 croak "${class}::$attr must be called from class."
-                  if ref $_[0];
+                  if ref $self;
 
                 my $class_attrs = do {
                     no strict 'refs';
-                    ${"$_[0]::CLASS_ATTRS"} ||= {};
+                    ${"${self}::CLASS_ATTRS"} ||= {};
                 };
                 
-                $class_attrs->{$attr} = ref $default ? $default->($_[0]) : $default
-                  if @_ == 1 && ! exists $class_attrs->{$attr};
+                $class_attrs->{$attr} = ref $default ? $default->($self) : $default
+                  if @_ == 0 && ! exists $class_attrs->{$attr};
                 
-                if(@_ > 1) {
+                if(@_ > 0) {
                     
                     croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 2;
+                      if @_ > 1;
                     
-                    $class_attrs->{$attr} = $_[1];
+                    $class_attrs->{$attr} = $_[0];
                     
-                    return $_[0];
+                    return $self;
                 }
                 
                 return $class_attrs->{$attr};
@@ -204,22 +209,25 @@ sub create_accessor {
 
 
             return sub {
-
+                
+                my $self = shift;
+                
                 croak "${class}::$attr must be called from class."
-                  if ref $_[0];
+                  if ref $self;
 
                 my $class_attrs = do {
                     no strict 'refs';
-                    ${"$_[0]::CLASS_ATTRS"} ||= {};
+                    ${"${self}::CLASS_ATTRS"} ||= {};
                 };
                 
-                if(@_ > 1) {
+                if(@_ > 0) {
+                
                     croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 2;
+                      if @_ > 1;
                     
-                    $class_attrs->{$attr} = $_[1];
+                    $class_attrs->{$attr} = $_[0];
                     
-                    return $_[0];
+                    return $self;
                 }
                 
                 return $class_attrs->{$attr};
@@ -243,22 +251,24 @@ sub create_accessor {
 
 
             return sub {
-
-                inherit_attribute($_[0], $attr, $options)
-                  if @_ == 1 && ! exists $_[0]->{$attr};
                 
-                if(@_ > 1) {
+                my $self = shift;
+                
+                inherit_attribute($self, $attr, $options)
+                  if @_ == 0 && ! exists $self->{$attr};
+                
+                if(@_ > 0) {
                 
                     croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 2;
+                      if @_ > 1;
                     
-                    $_[0]->{$attr} = $_[1];
+                    $self->{$attr} = $_[0];
                     
-                    return $_[0];
+                    return $self;
                 }
                 
-                return $_[0]->{$attr};
-            };            
+                return $self->{$attr};
+            };
 
 
 
@@ -275,21 +285,23 @@ sub create_accessor {
 
 
             return sub {
-
-                $_[0]->{$attr} = ref $default ? $default->($_[0]) : $default
-                  if @_ == 1 && ! exists $_[0]->{$attr};
                 
-                if(@_ > 1) {
+                my $self = shift;
+                
+                $self->{$attr} = ref $default ? $default->($self) : $default
+                  if @_ == 0 && ! exists $self->{$attr};
+                
+                if(@_ > 0) {
                     
                     croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 2;
+                      if @_ > 1;
                     
-                    $_[0]->{$attr} = $_[1];
+                    $self->{$attr} = $_[0];
                     
-                    return $_[0];
+                    return $self;
                 }
                 
-                return $_[0]->{$attr};
+                return $self->{$attr};
             };
 
 
@@ -373,11 +385,11 @@ Object::Simple - generate accessor with default, and provide constructor
 
 =head1 VERSION
 
-Version 3.0608
+Version 3.0609
 
 =cut
 
-our $VERSION = '3.0608';
+our $VERSION = '3.0609';
 
 =head1 SYNOPSIS
 
