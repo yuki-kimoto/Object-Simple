@@ -381,11 +381,8 @@ package Object::Simple;
 
 =head1 NAME
 
-Object::Simple - generate accessor with default, and provide constructor
+Object::Simple - Generate accessor having default value, and provide constructor
 
-=head1 VERSION
-
-Version 3.0609
 
 =cut
 
@@ -393,111 +390,150 @@ our $VERSION = '3.0609';
 
 =head1 SYNOPSIS
 
-    package YourClass;
+Class definition.
+
+    package SomeClass;
     
     use base 'Object::Simple';
     
     # Generate accessor
-    __PACKAGE__->attr('x');
+    __PACKAGE__->attr('foo');
     
-    # Generate accessor with default (scalar)
-    __PACKAGE__->attr(x => 0);
-    
-    # Generate accessor with default (reference or instance)
-    __PACKAGE__->attr(x => sub { [] });
-    __PACKAGE__->attr(x => sub { {} });
-    __PACKAGE__->attr(x => sub { SomeClass->new });
+    # Generate accessor with default
+    __PACKAGE__->attr(foo => 0);
+    __PACKAGE__->attr(foo => sub { [] });
+    __PACKAGE__->attr(foo => sub { {} });
+    __PACKAGE__->attr(foo => sub { OtherClass->new });
     
     # Generate accessors at once
-    __PACKAGE__->attr([qw/x y z/]);
+    __PACKAGE__->attr([qw/foo bar baz/]);
+    __PACKAGE__->attr([qw/foo bar baz/] => 0);
+
+Use the class
+
+    # Constructor
+    my $obj = SomeClass->new(foo => 1, bar => 2);
+    my $obj = SomeClass->new({foo => 1, bar => 2});
     
-    # Generate accessors with default at once
-    __PACKAGE__->attr([qw/x y z/] => 0);
-    
-    # Generate class accessor
-    __PACKAGE__->class_attr('x');
-    __PACKAGE__->class_attr(x => 0);
-    
-    # Generate inheritable class accessor
-    __PACKAGE__->class_attr('x', default => 0, inherit => 'scalar_copy');
-    __PACKAGE__->class_attr('x', default => sub { [] }, inherit => 'array_copy');
-    __PACKAGE__->class_attr('x', default => sub { {} }, inherit => 'hash_copy');
-    
-    __PACKAGE__->class_attr(
-      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
-    
-    # Generate dual accessor, which work as normal accessor or class accessor
-    __PACKAGE__->dual_attr('x');
-    __PACKAGE__->dual_attr(x => 0);
-    
-    # Generate inheritable dual accessor
-    __PACKAGE__->dual_attr('x', default => 0, inherit => 'scalar_copy');
-    __PACKAGE__->dual_attr('x', default => sub { [] }, inherit => 'array_copy');
-    __PACKAGE__->dual_attr('x', default => sub { {} }, inherit => 'hash_copy');
-    
-    __PACKAGE__->dual_attr(
-      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
-    
-    package main;
-    
-    # Constructor new()
-    my $obj = YourClass->new;
-    my $obj = YourClass->new(x => 1, y => 2);
-    my $obj = YourClass->new({x => 1, y => 2});
+    # Get attribute
+    my $foo = $obj->foo;
     
     # Set attribute
     $obj->x(1);
-    
-    # Setter method chain is available
-    $obj->x(1)->y(2);
-    
-    # Get attribute
-    my $x = $obj->x;
 
-=head1 DESCRIPTION
+Class accessor. Accessor for class variable.
 
-L<Object::Simple> is a accessor generator.
-To create a class, you must write many accessors by yourself,
-
-L<Object::Simple> help you to do this work.
-a L<Object::Simple> subclass call attr() method to create accessor.
+    # Generate class accessor
+    __PACKAGE__->class_attr('foo');
+    __PACKAGE__->class_attr(foo => 0);
     
-    package YourClass;
+    # Generate inheritable class accessor
+    __PACKAGE__->class_attr(
+        'foo', default => 0, inherit => 'scalar_copy');
+    
+    __PACKAGE__->class_attr(
+        'foo', default => sub { [] }, inherit => 'array_copy');
+    
+    __PACKAGE__->class_attr(
+        'foo', default => sub { {} }, inherit => 'hash_copy');
+    
+    __PACKAGE__->class_attr(
+        'foo',
+        default => sub { OtherClass->new },
+        inherit => sub { shift->clone }
+    );
+
+Dual accessor. Accessor for both object and class variable.
+
+    # Generate dual accessor
+    __PACKAGE__->dual_attr('foo');
+    __PACKAGE__->dual_attr(foo => 0);
+    
+    # Generate inheritable dual accessor
+    __PACKAGE__->dual_attr(
+        'foo', default => 0, inherit => 'scalar_copy');
+    
+    __PACKAGE__->dual_attr(
+        'foo', default => sub { [] }, inherit => 'array_copy');
+    
+    __PACKAGE__->dual_attr(
+        'foo', default => sub { {} }, inherit => 'hash_copy');
+    
+    __PACKAGE__->dual_attr(
+        'foo', 
+        default => sub { OtherClass->new }, 
+        inherit => sub { shift->clone }
+    );
+
+=head1 DESCRIPTIONS
+
+=head2 1. Features
+
+L<Object::Simple> is a generator of accessor,
+such as L<Class::Accessor>, L<Mojo::Base>, or L<Moose>
+L<Class::Accessor> is simple, but it lack offten used features.
+C<new()> method can't receive hash arguments.
+Default value can't be specified to accessor generating method.
+If multipul value is set by accssor,
+its value is converted to array reference without warnings.
+
+L<Moose> is so complex for many people to use,
+and depend on many modules. This is almost another language,
+not fit familiar perl syntax.
+L<Moose> increase the complexity of projects,
+rather than increase production eficiency.
+In addition, its complie speed is slow
+and the used memroy is huge.
+
+L<Object::Simple> is the middle area between L<Class::Accessor>
+and complex class builder. Only offten used features is
+implemnted.
+This module is compatible of L<Mojo::Base>
+for many people to use easily.
+You can define default value for accessor,
+and define class accessor.
+This is like L<Class::Data::Inheritable>, but more useful
+because you can specify method to copy the value of super class.
+Compile speed is fast and the used memory is small.
+Debuggin is easy.
+
+=head2 2. Basic usage
+
+    package SomeClass;
     
     use base 'Object::Simple';
 
-    # Generate accessor
-    __PACKAGE__->attr('x');
+    __PACKAGE__->attr('foo');
 
 L<Object::Simple> also provide a constructor.
 new() receive hash or hash reference.
 
     # Constructor
-    my $obj = YourClass->new(x => 1, y => 2);
-    my $obj = YourClass->new({x => 1, y => 2});
+    my $obj = SomeClass->new(foo => 1, bar => 2);
+    my $obj = SomeClass->new({foo => 1, bar => 2});
 
 This instance can call x() to set and get attribute.
 
     # Set attribute
-    $obj->x(1);
+    $obj->foo(1);
     
     # Get attribute
-    my $x = $obj->x;
+    my $foo = $obj->foo;
     
 Default value for accessor can be specified.
-If x() is called at first, the default value is set to the attribute.
+If C<foo()> is called at first, the default value is set to the attribute.
 
-    # Generate accessor with default (scalar)
-    __PACKAGE__->attr(x => 0);
+    # Generate accessor with default
+    __PACKAGE__->attr(foo => 0);
 
 If you specifiy a reference or instance as default value,
 it must be return value of sub reference.
 This is requirement not to share the value with more than one instance.
 
     # Generate accessor with default (reference or instance)
-    __PACKAGE__->attr(x => sub { [] });
-    __PACKAGE__->attr(x => sub { {} });
-    __PACKAGE__->attr(x => sub { SomeClass->new });
+    __PACKAGE__->attr(foo => sub { [] });
+    __PACKAGE__->attr(foo => sub { {} });
+    __PACKAGE__->attr(foo => sub { SomeClass->new });
 
 I wrote some examples, Point and Point3D class.
 Point has two accessor x() and y(), and method clear().
@@ -561,158 +597,194 @@ Arrange arguments:
         return $self;
     }
 
-You can only import accessor generating methods if you need.
-
-    package YourClass;
-    
-    use Object::Simple qw/attr class_attr dual_attr/;
-    
-    __PACKAGE__->attr('x');
-
-attr(), class_attr(), and dual_attr() is implemented by closure, not eval,
-so memory efficiency is very good.
-and the performance of compiling is very fast.
-
-And accessor is optimized not to damage the performance.
-
 L<Object::Simple> pay attention to usability.
 If wrong number arguments is passed to new() or accessor,
 exception is thrown.
     
-    # Exception!
-    my $obj = YourClass->new(1); 
+    # Constructor must receive even number aruments or hash refrence
+    my $obj = SomeClass->new(1); # Exception!
     
-    # Exception!
-    $obj->x(a => 1);
+    # Accessor must receive only one argument
+    $obj->x(a => 1); # Exception!
 
-L<Object::Simple>'s attr() is compatible with L<Mojo::Base>'s attr().
-L<Mojo::Base> is minimal but enough to do Object Oriented Programing.
-If you like L<Mojo::Base>, L<Object::Simple> is good choice for you.
+You can only import accessor generator method.
+
+    package SomeClass;
+    
+    use Object::Simple qw/attr class_attr dual_attr/;
+    
+    __PACKAGE__->attr('foo');
 
 =head1 METHODS
 
-=head2 new
+=head2 C<new>
 
-Create instance. the subclass of L<Object::Simple> inherit new() method.
-"new" receive hash or hash reference.
+    my $obj = Object::Simple->new(foo => 1, bar => 2);
+    my $obj = Object::Simple->new({foo => 1, bar => 2});
 
-    package YourClass;
-    
-    use base 'Object::Simple';
+Create a new object. C<new()> method receive
+hash or hash reference as arguments.
 
-    my $obj = YourClass->new;
-    my $obj = YourClass->new(x => 1, y => 2);
-    my $obj = YourClass->new({x => 1, y => 2});
-
-=head2 attr
+=head2 C<attr>
 
 Generate accessor.
     
-    __PACKAGE__->attr('x');
-    __PACKAGE__->attr([qw/x y z/]);
+    __PACKAGE__->attr('foo');
+    __PACKAGE__->attr([qw/foo bar baz/]);
+    __PACKAGE__->attr(foo => 0);
+    __PACKAGE__->attr(foo => sub { {} });
 
-You can specify default value for accessor.
+Generate accessor. C<attr()> method receive two arguments,
+accessor name and default value.
+If you want to create multipul accessors at once,
+specify accessor names as array reference at first argument.
+Default value is optional.
+If you want to specify refrence or object as default value,
+the value must be sub reference
+not to share the value with other objects.
 
-    __PACKAGE__->attr(x => 0);
-    __PACKAGE__->attr([qw/x y z/] => 0);
+Generated accessor.
 
-If you specifiy a reference or instance as default value,
-it must be return value of sub reference.
-This is requirement not to share the value with more than one instance.
+    my $value = $obj->foo;
+    $obj      = $obj->foo(1);
 
-    __PACKAGE__->attr(x => sub { [] });
-    __PACKAGE__->attr(x => sub { {} });
-    __PACKAGE__->attr(x => sub { SomeClass->new });
+You can set and get a value.
+If a default value is specified and the value is not exists,
+you can get default value.
+Accessor return self object if a value is set.
 
-Setter is chained.
+=head2 C<class_attr>
 
-    $obj->x(3)->y(4);
-    
-=head2 class_attr
+    __PACKAGE__->class_attr('foo');
+    __PACKAGE__->class_attr([qw/foo bar baz/]);
+    __PACKAGE__->class_attr(foo => 0);
+    __PACKAGE__->class_attr(foo => sub { {} });
 
-Generate class accessor.
+Generate accessor for class variable.
+C<class_attr()> method receive two arguments,
+accessor name and default value.
+If you want to create multipul accessors at once,
+specify accessor names as array reference at first argument.
+Default value is optional.
+If you want to specify refrence or object as default value,
+the value must be sub reference
+not to share the value with other objects.
 
-    __PACKAGE__->class_attr('x');
-    __PACKAGE__->class_attr(x => 0);
-    __PACKAGE__->class_attr([qw/x y z/]);
+Generated class accessor.
 
-Class accessor is called by class, not instance.
+    my $value = SomeClass->foo;
+    $class    = SomeClass->foo(1);
 
-    YourClass->x(5);
+You can set and get a value.
+If a default value is specified and the value is not exists,
+you can get default value.
+Accessor return class name if a value is set.
 
-The value is saved to $CLASS_ATTRS in that class.
+Class accessor save the value to the class variable "CLASS_ATTRS".
+The folloing two is same.
 
-If you want to delete the value or check the existence it,
-"delete" or "exists" function is available.
+    SomeClass->foo(1);
+    $SomeClass::CLASS_ATTRS->{foo} = 1;
 
-    delete $YourClass::CLASS_ATTRS->{x};
-    exists $YourClass::CLASS_ATTRS->{x};
+You can delete the value and check existance of it.
 
-If you call class accessor from subclass,
-the value is saved to $CLASS_ATTRS in the subclass.
-    
-    # The value is saved to $YourSubClass::CLASS_ATTRS
-    YourSubClass->x(6); 
+    delete $SomeClass::CLASS_ATTRS->{foo};
+    exists $SomeClass::CLASS_ATTRS->{foo};
 
-Class accessor can inherit the value of class variable in super class.
+If the value is set from subclass, the value is saved to
+the class variable of subclass.
 
-    __PACKAGE__->class_attr('x', default => 0, inherit => 'scalar_copy');
-    __PACKAGE__->class_attr('x', default => sub { [] }, inherit => 'array_copy');
-    __PACKAGE__->class_attr('x', default => sub { {} }, inherit => 'hash_copy');
+    $SubClass->foo(1);
+    $SubClass::CLASS_ATTRS->{foo} = 1;
+
+If you want to inherit the value of super class,
+use C<default> and C<inherit> options.
+
     __PACKAGE__->class_attr(
-      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
+        'foo', default => sub { {} }, inherit => 'hash_copy');
 
-scalar_copy, array_copy, hash_copy is the same as the following subroutine.s
+you must specify the way to copy the value of super class
+to C<inherit> option.
+this is one of C<scalar_copy>, C<array_copy>, C<hash_copy>,
+or sub reference.
+
+C<scalar> copy is normal copy,
+C<array_copy> is surface copy of array reference
+C<hash_copy> is surface copy of hash reference.
+the implementations are the folloing ones.
 
     # scalar_copy
-    inherit => sub { return $_[0] }
+    my $copy = $value;
     
     # array_copy
-    inherit => sub { return [@{$_[0]}] }
+    my $copy = [@{$value}];
     
     # hash_copy
-    inherit => sub { return {%{$_[0]}} }
+    my $copy = {%{$value}};
 
-=head2 dual_attr
+=head2 C<dual_attr>
 
-Generate dual accessor, which work as normal accessor or class accessor.
+    __PACKAGE__->dual_attr('foo');
+    __PACKAGE__->dual_attr([qw/foo bar baz/]);
+    __PACKAGE__->dual_attr(foo => 0);
+    __PACKAGE__->dual_attr(foo => sub { {} });
 
-    __PACKAGE__->class_attr('x');
-    __PACKAGE__->class_attr(x => 0);
-    __PACKAGE__->class_attr([qw/x y z/]);
+Generate accessor for both object and class variable.
+C<dual_attr()> method receive two arguments,
+accessor name and default value.
+If you want to create multipul accessors at once,
+specify accessor names as array reference at first argument.
+Default value is optional.
+If you want to specify refrence or object as default value,
+the value must be sub reference
+not to share the value with other objects.
 
-Accessor is called both by instance and class.
-If called by instance, the accessor work as normal accessor.
-If called by class, the accessor work as class accessor.
+Generated dual accessor.
 
-    $obj->x(5)
-    YourClass->x(5);
+    my $value = $obj->foo;
+    $obj      = $obj->foo(1);
 
-Dual accessor can inherit the value of class variable if called by instance,
-and the value of class variable in super class if called by class.
+    my $value = SomeClass->foo;
+    $class    = SomeClass->foo(1);
 
-    __PACKAGE__->class_attr('x', default => 0, inherit => 'scalar_copy');
-    __PACKAGE__->class_attr('x', default => sub { [] }, inherit => 'array_copy');
-    __PACKAGE__->class_attr('x', default => sub { {} }, inherit => 'hash_copy');
+You can set and get a value.
+If a default value is specified and the value is not exists,
+you can get default value.
+Accessor return class name or object if a value is set.
+
+If accessor is called from object,
+the value is saved to object.
+If accesosr is called from class name,
+the value is saved to class variable.
+See also description of C<class_attr> method.
+
+C<dual_attr()> method have C<default> and C<inherit> options
+as same as C<class_attr()> method have.
+
     __PACKAGE__->dual_attr(
-      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
+        'foo', default => sub { {} }, inherit => 'hash_copy');
 
-scalar_copy, array_copy, hash_copy is the same as the following subroutine.s
+But one point is different.
+If accessor is called from a object, the object
+inherit the value of the class.
 
-    # scalar_copy
-    inherit => sub { return $_[0] }
-    
-    # array_copy
-    inherit => sub { return [@{$_[0]}] }
-    
-    # hash_copy
-    inherit => sub { return {%{$_[0]}} }
+    SomeClass->foo({name => 1});
+    my $obj = SomeClass->new;
+    my $foo = $obj->foo;
+
+C<$foo> is C<{name => 1}> because it inherit the value of class.
+
+=head1 EXPORTS
+
 
 =head1 STABILITY
 
-L<Object::Simple> is stable.
-APIs and the implementation will not be changed from v3.0601.
-Only bug fixing will be done if it is found.
+L<Object::Simple> is now stable.
+APIs and the implementations will not be changed in the future.
+
+=head1 BUGS
+
+Please tell me bugs if they are found.
 
 =head1 AUTHOR
  
