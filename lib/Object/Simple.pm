@@ -383,7 +383,6 @@ package Object::Simple;
 
 Object::Simple - Generate accessor having default value, and provide constructor
 
-
 =cut
 
 our $VERSION = '3.0610';
@@ -396,10 +395,10 @@ Class definition.
     
     use base 'Object::Simple';
     
-    # Generate accessor
+    # Generate a accessor
     __PACKAGE__->attr('foo');
     
-    # Generate accessor having default value
+    # Generate a accessor having default value
     __PACKAGE__->attr(foo => 1);
     __PACKAGE__->attr(foo => sub { [] });
     __PACKAGE__->attr(foo => sub { {} });
@@ -432,7 +431,7 @@ Class accessor.
     __PACKAGE__->class_attr('foo', inherit => 'array_copy');
     __PACKAGE__->class_attr('foo', inherit => 'hash_copy');
 
-Dual accessor for both object and class
+Dual accessor for both the object and its class
 
     # Generate dual accessor
     __PACKAGE__->dual_attr('foo');
@@ -473,9 +472,9 @@ L<Object::Simple> is compatible of L<Mojo::Base>
 for some people to use easily.
 
 In addition, L<Object::Simple> can generate C<class accessor>
-, and C<dual accessor> for both object and class.
-This is like L<Class::Data::Inheritable>, but more flexible.
-You can specify the way to copy the value of super class.
+, and C<dual accessor> for both the object and its class.
+This is like L<Class::Data::Inheritable>, but more flexible,
+because You can specify the way to copy the value of super class.
 
 =head2 2. Generate accessor
 
@@ -493,11 +492,11 @@ it can receive hash and hash reference as arguments.
     my $obj = SomeClass->new(foo => 1, bar => 2);
     my $obj = SomeClass->new({foo => 1, bar => 2});
 
-You can generate accessor by C<attr> method.
+You can generate accessor by C<attr()> method.
 
     __PACKAGE__->attr('foo');
 
-Using accessor, you can set and get the value.
+You can set and get the value by accessor.
 
     # Set the value
     $obj->foo(1);
@@ -505,7 +504,7 @@ Using accessor, you can set and get the value.
     # Get the value
     my $foo = $obj->foo;
 
-You can specify a default value for accessor.
+You can specify a default value for the accessor.
 
     __PACKAGE__->attr(foo => 1);
 
@@ -551,8 +550,8 @@ and C<clear()> method to set C<x> and C<y> to 0.
         $self->y(0);
     }
 
-Point3D class, which inherit L<Point> class, and
-C<z> attribute, in addition C<x> and C<y>.
+Point3D class, which inherit L<Point> class.
+This class has C<z> attribute in addition to C<x> and C<y>.
 C<clear()> method is overridden to clear C<x>, C<y> and C<z>.
     
     package Point3D;
@@ -576,11 +575,12 @@ C<clear()> method is overridden to clear C<x>, C<y> and C<z>.
 
 =head2 Inheritance
 
-I explain Object-Oriented programing essence to use L<Object::Simple> well.
+I explain the essence of Object-Oriented programing
+to use L<Object::Simple> well.
 
-Inheritance is first concept of Object-Oriented programing.
-
-Inheritance.
+First concept of Object-Oriented programing is Inheritance.
+Inheritance means that
+If Class B inherit Class A, Class B can call all method of class A.
 
     +---+
     | A | Base class
@@ -591,7 +591,7 @@ Inheritance.
     +---+   having method3()
 
 Class B inherits Class A,
-so B can call all methods of A, in addition to methods of B.
+so B can call all methods of A in addition to methods of B.
 In other words, B can call
 C<method1()>, C<method2()>, and C<method3()>
 
@@ -610,47 +610,49 @@ use L<base> module to inherit a class.
 
 Perl has useful functions and methods to help Object-Oriented programing.
 
-use C<ref> function to know the object is belong to what class.
+C<ref()> function to know the object is belong to what class.
 
     my $class = ref $obj;
 
-use C<isa()> method to know whether a object is belong to a sub class.
+C<isa()> method to know whether the object inherits the specified class.
 
     $obj->isa('SomeClass');
 
-use C<can()> method to know whether the object or class can call the method.
+C<can()> method to know whether the object(or class)
+can call the specified method.
 
     SomeClass->can('method1');
     $obj->can('method1');
 
 =head2 Capsulation
 
-Capsulation is second concept of Object-Oriented programing.
-Capsulation means taht
+Second concept is capsulation.
+Capsulation means that
 you don't touch internal data directory.
 You must use public methods written in documentation.
-If you keep this rule, All the thins become simple and secure.
+If you keep this rule, All the things become simple and secure.
 
-Use only accessor to accesse to the attribute value.
+Use only accessor to get and set to the attribute value.
 
     my $value = $obj->foo;
     $obj->foo(1);
 
-It is bad manner to accesse the value directory.
+It is bad manner to access the value directory.
 
     my $value = $obj->{foo};
     $obj->{foo} = 1;
 
 =head3 Polymorphism
 
-Polymorphism is third concept of Object-Oriented programing.
+Third concept is polymorphism.
 Polymorphism is devieded into two concepts,
-overloading and overriding.
+overloading> and overriding.
 
-Perl programer don't care overloading.
+Perl programer don't have to care overloading.
 Perl is dynamic language,
 so subroutine can receive any value.
-Overloading is worth for languages having static type variable.
+Overloading is worth for languages having static type variable,
+like C++ or Java.
 
 Overriding means that you can change base class's methods in sub class.
 
@@ -664,27 +666,31 @@ Overriding means that you can change base class's methods in sub class.
     
     sub method1 { return 2 }
 
-C<method1()> of class A return 1. C<method1> of class B return 2.
-That is to say, C<method1()> is overridden in class B
+C<method1()> of class A return 1. C<method1()> of class B return 2.
+That is to say, C<method1()> is overridden in class B.
 
     my $obj_a = A->new;
-    $obj_a->method1; # the value is 1
+    $obj_a->method1; # return value is 1
     
     my $obj_b = B->new;
-    $obj_b->method1; # the value is 2
+    $obj_b->method1; # return value is 2
 
 If you want to call the method of super class from sub class,
 use SUPER pseudo-class.
 
     package B;
     
-    sub metho1 {
+    sub method1 {
         my $self = shift;
         
-        my $value = $self->SUPER::method1(); # the value is 1
+        my $value = $self->SUPER::method1(); # return value is 1
         
         return 2 + $value;
     }
+
+If you understand only these three concepts,
+you can do enough and powerful Object-Oriented programing.
+and source code is understandable for any language users.
 
 =head2 4. Special accessors
 
@@ -695,7 +701,7 @@ You sometimes want to save the value to class, not object.
     my $foo = SomeClass->foo;
     SomeClass->foo(1);
 
-use C<class_attr()>L method if you want to create accessor
+use C<class_attr()> method if you want to create accessor
 for class variable.
 
     __PACKAGE__->class_attr('foo');
@@ -703,13 +709,13 @@ for class variable.
 You can also specify default value as same as C<attr()> method.
 See section "METHODS class_attr".
 
-The value is saved to class variable C<$CLASS_ATTRS>.
+The value is saved to C<$CLASS_ATTRS>.
 this is hash reference.
 "SomeClass->foo(1)" is same as the follwoing one.
 
     $SomeClass::CLASS_ATTRS->{foo} = 1;
 
-If the value is set in sub class,
+If the value is set through sub class,
 the value is saved to sub class, not base class.
 
 Base class.
@@ -724,13 +730,13 @@ Sub class.
     
     use base 'BaseClass';
 
-C<foo> is called from sub class
+Call C<foo()> in sub class
 
     SubClass->foo(1);
 
 This is same as
 
-    SubClass::CLASS_ATTRS->{foo} = 1;
+    $SubClass::CLASS_ATTRS->{foo} = 1;
 
 If you want to inherit the value of base class,
 use C<inherit> option.
@@ -763,7 +769,7 @@ hash_copy - surface hash copy
 
 =head2 Dual accessor
 
-Dual accessor is the accessor havin the feature of
+Dual accessor is the accessor having the features of
 normal accessor and class accessor.
 
     my $foo = $obj->foo;
@@ -779,10 +785,10 @@ use C<dual_attr()> method to generate dual accessor.
 
     __PACKAGE__->dual_attr('foo');
 
-You can also specify default value, and create accessors at once
-as same as C<attr()> method. See section "METHODS dual_attr".
+You can also specify the default value.
+as same as C<attr()> method. See also section "METHODS dual_attr".
 
-C<dual_attr> have C<inherit> option as same as C<class_attr()>,
+C<dual_attr()> method have C<inherit> option as same as C<class_attr()>,
 but one point is difference.
 If you try to get the value through the object,
 the value is inherited from the class.
@@ -836,7 +842,7 @@ The value is inherited from the base class.
     my $obj = SubClass->new;
     my $value_of_base_class = $obj->foo;
 
-This tequnique is explained with a example in section
+This technique is explained again in section
 "5. Offten used techniques - Inherit a value from class to object"
 
 =head1 5. Offten used techniques
@@ -859,7 +865,7 @@ Initialize the object
 
 B<Example:>
 
-Change new() arguments
+Change arguments of C<new()>.
     
     sub new {
         my $self = shift;
@@ -869,17 +875,17 @@ Change new() arguments
         return $self;
     }
 
-You can pass array to C<new()> method.
+You can pass array to C<new()> method by overridden C<new()> method.
 
     my $point = Point->new(4, 5);
 
 =head2 Inherit the value from class to object
 
-If you want to save the value to the class,
+If you want to save the value to the class
 and get the value from the object,
 use C<dual_attr()> with C<default> and C<inherit> option.
 
-For example, If you register some finctions to the class,
+For example, If you register some functions to the class,
 and call the functions from the object,
 create the following class.
 
@@ -901,13 +907,12 @@ create the following class.
         func1 => sub { return 1 }
     );
 
-Fucntions is saved to C<functions> attribute of SomeClass,
-and by C<register_function()>, You can register function.
-
-You can call these functions from the object.
+Fucntions is saved to C<functions> attribute.
+You can register function by C<register_function()>. 
+Registered functions is called from the object.
 
     my $obj = SomeClass->new;
-    my $ret = $obj->functions->{func1};
+    my $value = $obj->functions->{func1};
 
 This is like "Prototype inheritance of JavaScript", but more flexible.
 You can also register functions in sub class and object.
@@ -923,7 +928,7 @@ Sub class.
     package SubClass;
     
     __PACKAGE->register_function(
-       func2 => sub { return 2 }
+        func2 => sub { return 2 }
     );
 
 Object.
@@ -939,19 +944,19 @@ You can call registered functions from the object
     my $value2 = $obj->functions->{func2};
     my $value3 = $obj->functions->{func3};
 
-Most practical example is L<Validator::Custom>
+Practical example is L<Validator::Custom>
 and L<Validator::Custom::HTMLForm>.
 See also these modules.
 
 =head1 6. More features
 
-=head2 Checking arguments
+=head2 Check arguments
 
 L<Object::Simple> pay attention to usability.
 If wrong number arguments is passed to new() or accessor,
 exception is thrown.
     
-    # Constructor must receive even number aruments or hash refrence
+    # Constructor must receive even number arguments or hash refrence
     my $obj = SomeClass->new(1);
     
     # Accessor must receive only one argument
@@ -964,7 +969,7 @@ This is useful in case you don't want to do multiple inheritance.
 
     package SomeClass;
     
-    use Object::Simple qw/attr class_attr dual_attr/;
+    use Object::Simple qw/new attr class_attr dual_attr/;
     
     __PACKAGE__->attr('foo');
 
@@ -973,7 +978,7 @@ because C<new()> method is not inherited from the base class,
 
 =head2 Method chain
 
-Accessor return self-object when it called to set the value,
+Accessor return self-object when it is called to set the value,
 so you can do method chain.
 
     $obj->foo(1)->bar(4)->baz(6);
@@ -1044,12 +1049,12 @@ you can get default value.
 Accessor return class name if a value is set.
 
 Class accessor save the value to the class variable "CLASS_ATTRS".
-The folloing two is same.
+The following two is same.
 
     SomeClass->foo(1);
     $SomeClass::CLASS_ATTRS->{foo} = 1;
 
-You can delete the value and check existance of it.
+You can delete the value and check existence of it.
 
     delete $SomeClass::CLASS_ATTRS->{foo};
     exists $SomeClass::CLASS_ATTRS->{foo};
@@ -1074,7 +1079,7 @@ or sub reference.
 C<scalar> copy is normal copy,
 C<array_copy> is surface copy of array reference
 C<hash_copy> is surface copy of hash reference.
-the implementations are the folloing ones.
+the implementations are the following ones.
 
     # scalar_copy
     my $copy = $value;
@@ -1119,7 +1124,7 @@ If accessor is called from object,
 the value is saved to object.
 If accesosr is called from class name,
 the value is saved to class variable.
-See also description of C<class_attr> method.
+See also description of C<class_attr()> method.
 
 C<dual_attr()> method have C<default> and C<inherit> options
 as same as C<class_attr()> method have.
@@ -1136,9 +1141,6 @@ inherit the value of the class.
     my $foo = $obj->foo;
 
 C<$foo> is C<{name => 1}> because it inherit the value of class.
-
-=head1 EXPORTS
-
 
 =head1 STABILITY
 
