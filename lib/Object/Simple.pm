@@ -385,7 +385,7 @@ Object::Simple - Generate accessor having default value, and provide constructor
 
 =cut
 
-our $VERSION = '3.0610';
+our $VERSION = '3.0611';
 
 =head1 SYNOPSIS
 
@@ -571,9 +571,9 @@ C<clear()> method is overridden to clear C<x>, C<y> and C<z>.
         $self->z(0);
     }
 
-=head1 3. Concepts of Object-Oriented programing
+=head2 3. Concepts of Object-Oriented programing
 
-=head2 Inheritance
+=head3 Inheritance
 
 I explain the essence of Object-Oriented programing
 to use L<Object::Simple> well.
@@ -624,7 +624,7 @@ can call the specified method.
     SomeClass->can('method1');
     $obj->can('method1');
 
-=head2 Capsulation
+=head3 Capsulation
 
 Second concept is capsulation.
 Capsulation means that
@@ -767,7 +767,7 @@ hash_copy - surface hash copy
 
 =back
 
-=head2 Dual accessor
+=head3 Dual accessor
 
 Dual accessor is the accessor having the features of
 normal accessor and class accessor.
@@ -845,9 +845,9 @@ The value is inherited from the base class.
 This technique is explained again in section
 "5. Offten used techniques - Inherit a value from class to object"
 
-=head1 5. Offten used techniques
+=head2 5. Offten used techniques
 
-=head2 Override new() method
+=head3 Override new() method
 
 C<new()> method is overridden if needed.
 
@@ -879,7 +879,7 @@ You can pass array to C<new()> method by overridden C<new()> method.
 
     my $point = Point->new(4, 5);
 
-=head2 Inherit the value from class to object
+=head3 Inherit the value from class to object
 
 If you want to save the value to the class
 and get the value from the object,
@@ -948,9 +948,9 @@ Practical example is L<Validator::Custom>
 and L<Validator::Custom::HTMLForm>.
 See also these modules.
 
-=head1 6. More features
+=head2 6. More features
 
-=head2 Check arguments
+=head3 Check arguments
 
 L<Object::Simple> pay attention to usability.
 If wrong number arguments is passed to new() or accessor,
@@ -962,7 +962,7 @@ exception is thrown.
     # Accessor must receive only one argument
     $obj->foo(a => 1);
 
-=head2 Import methods
+=head3 Import methods
 
 You can import methods of L<Object::Simple>.
 This is useful in case you don't want to do multiple inheritance.
@@ -976,7 +976,7 @@ This is useful in case you don't want to do multiple inheritance.
 Note that you can't override C<new()> method
 because C<new()> method is not inherited from the base class,
 
-=head2 Method chain
+=head3 Method chain
 
 Accessor return self-object when it is called to set the value,
 so you can do method chain.
