@@ -4,8 +4,8 @@ Build
 MANIFEST
 META.yml
 MYMETA.yml
-Makefile.PL
 _build/*
 blib/*
 *.tar.gz
 cover_db/*
+Makefile
