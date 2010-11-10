@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.0612';
+our $VERSION = '3.0613';
 
 use strict;
 use warnings;
@@ -43,6 +43,8 @@ sub new {
 }
 
 sub attr       { Object::Simple::Accessor::create_accessors('attr',       @_) }
+
+# Deprecated methods
 sub class_attr { Object::Simple::Accessor::create_accessors('class_attr', @_) }
 sub dual_attr  { Object::Simple::Accessor::create_accessors('dual_attr',  @_) }
 
@@ -419,26 +421,6 @@ Use the class
     # Set the value
     $obj->foo(1);
 
-Class accessor.
-
-    # Generate class accessor
-    __PACKAGE__->class_attr('foo');
-    
-    # Generate inheritable class accessor
-    __PACKAGE__->class_attr('foo', inherit => 'scalar_copy');
-    __PACKAGE__->class_attr('foo', inherit => 'array_copy');
-    __PACKAGE__->class_attr('foo', inherit => 'hash_copy');
-
-Dual accessor for both the object and its class
-
-    # Generate dual accessor
-    __PACKAGE__->dual_attr('foo');
-    
-    # Generate inheritable dual accessor
-    __PACKAGE__->dual_attr('foo', inherit => 'scalar_copy');
-    __PACKAGE__->dual_attr('foo', inherit => 'array_copy');
-    __PACKAGE__->dual_attr('foo', inherit => 'hash_copy');
-
 =head1 DESCRIPTION
 
 L<Object::Simple> is a generator of accessor,
@@ -465,11 +447,6 @@ You can specify default value for the accessor.
 Compile speed is fast and used memory is small.
 Debugging is easy.
 And L<Object::Simple> is compatible of L<Mojo::Base>
-
-In addition, L<Object::Simple> can generate C<class accessor>
-, and C<dual accessor> for both the object and its class.
-This is like L<Class::Data::Inheritable>, but more flexible,
-because You can specify the way to copy the value of base class.
 
 If you know the detail of L<Object::Simple>, see section L</"GUIDES">
 
@@ -510,110 +487,6 @@ You can set and get a value.
 If a default value is specified and the value is not exists,
 you can get default value.
 Accessor return self object if a value is set.
-
-=head2 C<class_attr>
-
-    __PACKAGE__->class_attr('foo');
-    __PACKAGE__->class_attr([qw/foo bar baz/]);
-    __PACKAGE__->class_attr(foo => 1);
-    __PACKAGE__->class_attr(foo => sub { {} });
-
-Generate accessor for class variable.
-C<class_attr()> method receive
-accessor name and default value.
-
-Generated class accessor.
-
-    my $value = SomeClass->foo;
-    $class    = SomeClass->foo(1);
-
-You can set and get a value.
-
-Class accessor save the value to the class variable "CLASS_ATTRS".
-The following two is same.
-
-    SomeClass->foo(1);
-    $SomeClass::CLASS_ATTRS->{foo} = 1;
-
-You can delete the value and check existence of it.
-
-    delete $SomeClass::CLASS_ATTRS->{foo};
-    exists $SomeClass::CLASS_ATTRS->{foo};
-
-If the value is set from subclass, the value is saved to
-the subclass.
-
-    SubClass->foo(1);
-    $SubClass::CLASS_ATTRS->{foo} = 1;
-
-If you want to inherit the value of base class,
-use C<default> and C<inherit> options.
-
-    __PACKAGE__->class_attr(
-        'foo', default => sub { {} }, inherit => 'hash_copy');
-
-you must specify the way to copy the value of base class
-to C<inherit> option.
-this is one of C<scalar_copy>, C<array_copy>, C<hash_copy>,
-or sub reference.
-
-C<scalar> copy is normal copy,
-C<array_copy> is surface copy of array reference
-C<hash_copy> is surface copy of hash reference.
-the implementations are same as the following ones.
-
-    # scalar_copy
-    my $copy = $value;
-    
-    # array_copy
-    my $copy = [@{$value}];
-    
-    # hash_copy
-    my $copy = {%{$value}};
-
-=head2 C<dual_attr>
-
-    __PACKAGE__->dual_attr('foo');
-    __PACKAGE__->dual_attr([qw/foo bar baz/]);
-    __PACKAGE__->dual_attr(foo => 1);
-    __PACKAGE__->dual_attr(foo => sub { {} });
-
-Generate accessor for both object and class variable.
-C<dual_attr()> method receive
-accessor name and default value.
-
-Generated dual accessor.
-
-    my $value = $obj->foo;
-    $obj      = $obj->foo(1);
-
-    my $value = SomeClass->foo;
-    $class    = SomeClass->foo(1);
-
-You can set and get a value.
-
-If accessor is called from object,
-the value is saved to the object.
-If accesosr is called from class name,
-the value is saved to the class.
-
-See description of C<class_attr()> method to know the way to save the value to the class
-
-C<dual_attr()> method have C<default> and C<inherit> options
-as same as C<class_attr()> method have.
-
-    __PACKAGE__->dual_attr(
-        'foo', default => sub { {} }, inherit => 'hash_copy');
-
-But one point is different.
-If accessor is called from a object, the object
-inherit the value of the class.
-
-    SomeClass->foo({name => 1});
-    my $obj = SomeClass->new;
-    my $foo = $obj->foo;
-
-C<$foo> is C<{name => 1}> because it inherit the value of class.
 
 =head1 GUIDES
 
@@ -869,226 +742,7 @@ You can pass array to C<new()> method by overridden C<new()> method.
 
     my $point = Point->new(4, 5);
 
-=head2 4. Special accessors
-
-=head3 Class accessor
-
-You sometimes want to save the value to class, not object.
-
-    my $foo = SomeClass->foo;
-    SomeClass->foo(1);
-
-To generate a accessor for class variable,
-use C<class_attr()> method.
-
-    __PACKAGE__->class_attr('foo');
-
-You can also specify default value as same as C<attr()> method.
-
-The value is saved to C<$CLASS_ATTRS>.
-this is a hash reference.
-"SomeClass->foo(1)" is same as the follwoing one.
-
-    $SomeClass::CLASS_ATTRS->{foo} = 1;
-
-If the value is set through sub class,
-the value is saved to sub class, not base class.
-
-Base class.
-
-    package BaseClass;
-    
-    __PACKAGE__->class_attr('foo');
-
-Sub class.
-
-    package SubClass;
-    
-    use base 'BaseClass';
-
-Call C<foo()> in sub class
-
-    SubClass->foo(1);
-
-This is same as
-
-    $SubClass::CLASS_ATTRS->{foo} = 1;
-
-If you want to inherit the value of base class,
-use C<inherit> option.
-
-    __PACKAGE__->class_attr('foo', inherit => 'scalar_copy');
-
-The value of C<inherit> option is the way to copy the value.
-
-=over 4
-
-=item *
-
-scalar_copy - normal copy
-
-    my $copy = $value;
-    
-=item *
-
-array_copy - surface array copy
-
-    my $copy = [@{$value}];
-
-=item *
-
-hash_copy - surface hash copy
-
-    my $copy = {%{$value}};
-
-=back
-
-=head3 Dual accessor
-
-Dual accessor is the accessor having the features of
-normal accessor and class accessor.
-
-    my $foo = $obj->foo;
-    $obj    = $obj->foo(1);
-    
-    my $foo = SomeClass->foo;
-    $class  = SomeClass->foo(1);
-
-If the value is set through the object, the value is saved to the object.
-If the value is set through the class, the value is saved to the class.
-
-To generate dual accessor, use C<dual_attr()> method.
-
-    __PACKAGE__->dual_attr('foo');
-
-You can also specify the default value.
-as same as C<attr()> method.
-
-C<dual_attr()> method have C<inherit> option as same as C<class_attr()>,
-but one point is difference.
-If you try to get the value through the object,
-the value is inherited from the class.
-
-    +------------+
-    | Some class |
-    +------------+
-          |
-          v
-    +------------+
-    |    $obj    |
-    +------------+
-
-Source code.
-
-    SomeClass->foo(1);
-    my $obj = SomeClass->new;
-    my $value_of_some_class = $obj->foo;
-
-This can be chained from base class.
-
-    +------------+
-    | Base class |
-    +------------+
-          |
-          v
-    +------------+
-    | Some class |
-    +------------+
-          |
-          v
-    +------------+
-    |    $obj    |
-    +------------+
-
-Base class.
-
-    package BaseClass;
-    
-    __PACKAGE__->dual_attr('foo', inherit => 'scalar_copy');
-
-Sub class.
-
-    package SubClass;
-    
-    use base 'BaseClass';
-
-The value is inherited from the base class.
-
-    BaseClass->foo(1);
-    my $obj = SubClass->new;
-    my $value_of_base_class = $obj->foo;
-
-B<Example>
-
-Inherit the value from class to object
-
-If you want to save the value to the class
-and get the value from the object,
-use C<dual_attr()> with C<default> and C<inherit> option.
-
-For example, If you register some functions to the class,
-and call the functions from the object,
-create the following class.
-
-    package SomeClass;
-    
-    __PACKAGE__->dual_attr(
-      'functions', default => sub { {} }, inherit => 'hash_copy');
-    
-    sub register_function {
-        my $invocant = shift;
-        
-        my $functions = ref $_[0] eq 'HASH' ? $_[0] : {@_};
-        $invocant->functions({%{$invocant->functions}, %$functions});
-        
-        return $invocant;
-    }
-    
-    __PACKAGE__->register_function(
-        func1 => sub { return 1 }
-    );
-
-Fucntions is saved to C<functions> attribute.
-You can register function by C<register_function()>. 
-Registered functions is called from the object.
-
-    my $obj = SomeClass->new;
-    my $value = $obj->functions->{func1};
-
-This is like "Prototype inheritance of JavaScript", but more flexible.
-You can also register functions in sub class and object.
-
-Base class.
-
-    package BaseClass;
-    
-    # (Code is same as above SomeClass)
-
-Sub class.
-
-    package SubClass;
-    
-    __PACKAGE->register_function(
-        func2 => sub { return 2 }
-    );
-
-Object.
-
-    my $obj = SubClass->new;
-    $obj->register_function(
-        func3 => sub { return 3 }
-    );
-
-You can call registered functions from the object
-
-    my $value1 = $obj->functions->{func1};
-    my $value2 = $obj->functions->{func2};
-    my $value3 = $obj->functions->{func3};
-
-Practical example is L<Validator::Custom>
-and L<Validator::Custom::HTMLForm>.
-
-=head2 5. Other features
+=head2 4. Other features
 
 =head3 Strict arguments check
 
@@ -1109,7 +763,7 @@ This is useful in case you don't want to use multiple inheritance.
 
     package SomeClass;
     
-    use Object::Simple qw/new attr class_attr dual_attr/;
+    use Object::Simple qw/new attr/;
     
     __PACKAGE__->attr('foo');
 
@@ -1128,6 +782,12 @@ accessor return self-object when it is called to set the value,
 
 L<Object::Simple> is stable.
 APIs and the implementations will not be changed in the future.
+
+=head1 DEPRECATED
+
+C<class_attr> and C<dual_attr> is deprecated because
+this is not good practice in Object Oriented programming.
+To know the usages, see old documentation before 3.0612.
 
 =head1 BUGS
 
