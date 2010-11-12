@@ -1,0 +1,320 @@
+=encoding utf8
+
+=head1 NAME
+
+Object::Simple::Guides::Ja - Object::Simpleの日本語ガイド
+
+=head1 GUIDES
+
+=head2 1. アクセサメソッドの生成
+
+最初に、L<Object::Simple>のメソッドを利用するために、
+L<Object::Simple>を継承したクラスを作成します
+
+    package SomeClass;
+    
+    use base 'Object::Simple';
+
+L<Object::Simple>はC<new()>メソッドを持っています。
+これはコンストラクタで、
+ハッシュかハッシュのリファレンスを受け取ることができます。
+    
+    my $obj = SomeClass->new;
+    my $obj = SomeClass->new(foo => 1, bar => 2);
+    my $obj = SomeClass->new({foo => 1, bar => 2});
+
+C<attr()>メソッドによって、アクセサメソッドを生成することができます。
+
+    __PACKAGE__->attr('foo');
+
+アクセサメソッドを使って値を設定したり取得することができます。
+
+    # Set the value
+    $obj->foo(1);
+    
+    # Get the value
+    my $foo = $obj->foo;
+
+アクセサメソッドのためのデフォルト値を指定することもできます。
+
+    __PACKAGE__->attr(foo => 1);
+
+C<foo>の値が存在しないで、C<foo>メソッドが呼び出されると、
+デフォルト値を取得することができます。
+
+    my $default_value = $obj->foo;
+
+もしリファレンスやオブジェクトをデフォルト値として指定したい場合は
+デフォルト値を返却するサブルーチンのリファレンスである必要があります。
+これはデフォルト値を他のオブジェクトと共有しないために必要です。
+
+    __PACKAGE__->attr(foo => sub { [] });
+    __PACKAGE__->attr(foo => sub { {} });
+    __PACKAGE__->attr(foo => sub { SomeClass->new });
+
+アクセサメソッドを一度に生成することもできます。
+
+    __PACKAGE__->attr([qw/foo bar baz/]);
+    __PACKAGE__->attr([qw/foo bar baz/] => 0);
+
+B<サンプル:>
+
+L<Object::Simple>をよく理解するためにひとつのサンプルを見せます。
+
+C<Point>クラスは、C<x>とC<y>というふたつの属性と、
+C<x>とC<y>の値を0にクリアする<clear>というメソッドを持ちます。
+
+    package Point;
+    
+    use strict;
+    use warnings;
+    
+    use base 'Object::Simple';
+
+    __PACKAGE__->attr(x => 0);
+    __PACKAGE__->attr(y => 0);
+    
+    sub clear {
+        my $self = shift;
+        
+        $self->x(0);
+        $self->y(0);
+    }
+
+C<Point3D>クラスは、C<Point>クラスを継承します。
+このクラスはC<x>とC<y>という属性に加えて、C<z>という属性
+を持っています。
+C<clear()>メソッドはC<x>とC<y>とC<z>の値をクリアするために
+オーバーライドされています。
+    
+    package Point3D;
+    
+    use strict;
+    use warnings;
+    
+    use base 'Point';
+    
+    __PACKAGE__->attr(z => 0);
+    
+    sub clear {
+        my $self = shift;
+        
+        $self->SUPER::clear();
+        
+        $self->z(0);
+    }
+
+=head2 2. オブジェクト指向プログラミングの概念
+
+=head3 継承
+
+L<Object::Simple>をよく理解するために、
+オブジェクト指向の概念を解説したいと思います。
+
+オブジェクト指向の一つ目の概念は「継承」です。
+「継承」は「もしクラスQがクラスPを継承していたら、
+クラスQはクラスPのすべてのメソッドを呼び出すことができる」
+ということを意味します。
+
+    +---+
+    | P | Base class
+    +---+   having method1() and method2()
+      |
+    +---+
+    | Q | Sub class
+    +---+   having method3()
+
+クラスQはクラスPを継承しているので、
+クラスQはクラスQのメソッドに加えて、クラスPのすべてのメソッド
+を呼び出すことができます。
+言い換えれば、クラスQは
+C<method1()>, C<method2()>とC<method3()>
+を呼び出すことができます。
+
+継承を行うには、L<base>モジュールを使用します。
+
+    package P;
+    
+    sub method1 { ... }
+    sub method2 { ... }
+    
+    package Q;
+    
+    use base 'P';
+    
+    sub method3 { ... }
+
+Perlはオブジェクト指向プログラミングを助ける
+便利な関数とメソッドを持っています。
+
+オブジェクトがどのクラスに属しているかを知るには、
+C<ref()>関数を使用します。
+
+    my $class = ref $obj;
+
+オブジェクトが特定のクラスを継承しているかどうかを調べるには、
+C<isa()>メソッドを使用します。
+
+    $obj->isa('SomeClass');
+
+オブジェクト（あるいはクラス)が特定のメソッドを呼び出す
+ことができるかどうかを知るには、
+C<can()>メソッドを使用します。
+
+    SomeClass->can('method1');
+    $obj->can('method1');
+
+=head3 カプセル化
+
+オブジェクト指向プログラミングのふたつ目の概念は
+カプセル化です。
+「カプセル化」は「内部的にデータに直接アクセスしてはいけない」
+ということを意味します。
+ドキュメントに記述された公開されたメソッドを使用しなければ
+なりません。
+このルールを守ることによって、すべてのことがシンプルになります。
+
+このルールを守るためには
+値を取得や設定を行うためのアクセサメソッドを生成する
+必要があります。
+
+    my $value = $obj->foo;
+    $obj->foo(1);
+
+直接データにアクセスするのは良くない習慣です。
+
+    my $value = $obj->{foo}; # Bad manner!
+    $obj->{foo} = 1;         # Bad manner!
+
+=head3 ポリモーフィズム
+
+オブジェクト指向プログラミングの三つ目の概念は
+「ポリモーフィズム」です。
+「ポリモーフィズム」は、
+「オーバーロード」と「オーバーライド」のふたつの概念に
+分割されます。
+
+Perlプログラマはオーバーロードを気にする必要はありません。
+Perlは動的な言語なので、
+サブルーチンはどのような値でも受け取ることができます。
+オーバーロードはC++やJavaなどの
+静的な型を持つ言語にとって価値があります。
+
+「オーバーライド」は「サブクラスにおいて、基底クラスのメソッドを
+変更することができる」ということを意味します。
+
+    package P;
+    
+    sub method1 { return 1 }
+    
+    package Q;
+    
+    use base 'P';
+    
+    sub method1 { return 2 }
+
+クラスPのC<method1()>は1という値を返却します。
+クラスQのC<method1()>は2という値を返却します。
+つまり、クラスQにおいて、C<method1()>はオーバーライド
+されたということです。
+
+    my $obj_a = P->new;
+    $obj_p->method1; # Return value is 1
+    
+    my $obj_b = Q->new;
+    $obj_q->method1; # Return value is 2
+
+もし基底クラスのメソッドをサブクラスから呼び出したい場合は
+SUPER擬似クラスを使用します。
+
+    package Q;
+    
+    sub method1 {
+        my $self = shift;
+        
+        my $value = $self->SUPER::method1(); # return value is 1
+        
+        return 2 + $value;
+    }
+
+これらの三つの概念だけを理解するならば、
+十分強力なオブジェクト指向プログラムができ、
+ソースコードは他の言語のユーザから見ても
+読みやすいものになるでしょう。
+
+=head2 3. よく利用するテクニック
+
+=head3 Override new()メソッドのオーバーライド
+
+C<new()>メソッドは必要ならばオーバーライドすることができます。
+
+B<サンプル:>
+
+オブジェクトの初期化。
+
+    sub new {
+        my $self = shift->SUPER::new(@_);
+        
+        # Initialization
+        
+        return $self;
+    }
+
+B<サンプル:>
+
+C<new()>の引数の変更。
+    
+    sub new {
+        my $self = shift;
+        
+        $self->SUPER::new(x => $_[0], y => $_[1]);
+        
+        return $self;
+    }
+C<new()>メソッドをオーバーライドすることによって、
+C<new()>に配列を渡すことができるようになりました。
+
+    my $point = Point->new(4, 5);
+
+=head2 4. その他の特徴
+
+=head3 厳格な引数チェック
+
+L<Object::Simple>はユーザビリティにも注意を払っています。
+もし間違った数の引数がC<new()>メソッドに渡されるならば、
+例外が発生します。
+    
+    my $obj = SomeClass->new(1); # Exception!
+
+アクセッサにおいても同じです。
+
+    $obj->foo(a => 1); # Execption!
+
+=head3 メソッドのインポート
+
+L<Object::Simple>のメソッドをインポートすることができます。
+これは多重継承を行いたくない場合に便利です。
+
+    package SomeClass;
+    
+    use Object::Simple qw/new attr/;
+    
+    __PACKAGE__->attr('foo');
+
+C<new()>はクラスにインポートされるのであって、
+基底クラスから継承したわけではないので、
+C<new()>メソッドをオーバーライドすることはできない
+ということに注意してください。
+
+=head3 メソッドチェーン
+
+アクセサメソッドは、値を設定するために呼ばれたときに、
+自分自分のオブジェクトを返却するので、メソッドチェーンを
+行うことができます。
+
+    $obj->foo(1)->bar(4)->baz(6);
+
+=cut
+ 
+1;
+

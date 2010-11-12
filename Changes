@@ -1,3 +1,5 @@
+3.0614
+  updated document
 3.0613
   deprecated "class_attr" and "dual_attr" because having class variable is not good for Object Oriented programing.
 3.0612
