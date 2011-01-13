@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.0615';
+our $VERSION = '3.0616';
 
 use strict;
 use warnings;
@@ -42,346 +42,59 @@ sub new {
     return bless {@_}, ref $class || $class;
 }
 
-sub attr       { Object::Simple::Accessor::create_accessors('attr',       @_) }
+sub attr {
+    my ($self, @args) = @_;
+    
+    my $class = ref $self || $self;
+    
+    # Fix argument
+    unshift @args, (shift @args, undef) if @args % 2;
+    
+    for (my $i = 0; $i < @args; $i += 2) {
+        
+        # Attribute name
+        my $attrs = $args[$i];
+        $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
+        
+        # Default
+        my $default = $args[$i + 1];
+        
+        foreach my $attr (@$attrs) {
+
+            Carp::croak("'default' option must be scalar " . 
+                        "or code ref (${class}::$attr)")
+              unless !ref $default || ref $default eq 'CODE';
+
+# Code
+my $code = sub {
+
+    my $self = shift;
+
+    $self->{$attr} = ref $default ? $default->($self) : $default
+      if @_ == 0 && defined $default && ! exists $self->{$attr};
+
+    if(@_ > 0) {
+        
+        Carp::croak qq{One argument must be passed to "${class}::$attr()"}                if @_ > 1;
+        
+        $self->{$attr} = $_[0];
+        
+        return $self;
+    }
+
+    return $self->{$attr};
+};
+            
+            no strict 'refs';
+            *{"${class}::$attr"} = $code;
+        }
+    }
+}
 
 # Deprecated methods
+use Object::Simple::Accessor;
 sub class_attr { Object::Simple::Accessor::create_accessors('class_attr', @_) }
 sub dual_attr  { Object::Simple::Accessor::create_accessors('dual_attr',  @_) }
-
-package Object::Simple::Accessor;
-
-use strict;
-use warnings;
-
-use Carp 'croak';
-
-sub create_accessors {
-    my ($type, $class, $attrs, @options) = @_;
-    
-    # To array
-    $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
-    
-    # Arrange options
-    my $options = @options > 1 ? {@options} : {default => $options[0]};
-    
-    # Check options
-    foreach my $oname (keys %$options) {
-        croak "'$oname' is invalid option"
-         if  !($oname eq 'default' || $oname eq 'inherit')
-           || ($type eq 'attr' && $oname ne 'default');
-    }
-    
-    # Create accessors
-    foreach my $attr (@$attrs) {
-        
-        # Create accessor
-        my $code = $type eq 'attr'
-                 ? create_accessor($class, $attr, $options)
-                 
-                 : $type eq 'class_attr'
-                 ? create_class_accessor($class, $attr, $options)
-                 
-                 : $type eq 'dual_attr'
-                 ? create_dual_accessor($class, $attr, $options)
-                 
-                 : undef;
-        
-        # Import
-        no strict 'refs';
-        *{"${class}::$attr"} = $code;
-    }
-}
-
-sub create_accessor {
-    my ($class, $attr, $options, $type) = @_;
-    
-    # Options
-    my $default = $options->{default};
-    my $inherit = $options->{inherit} || '';
-    
-    if ($inherit) {
-        
-        # Rearrange Inherit option
-        $options->{inherit} = $inherit eq 'scalar_copy' ? sub { $_[0]      }
-                            : $inherit eq 'array_copy'  ? sub { [@{$_[0]}] }
-                            : $inherit eq 'hash_copy'   ? sub { return {%{$_[0]}} }
-                            : undef
-          unless ref $inherit eq 'CODE';
-        
-        # Check inherit options
-        croak "'inherit' opiton must be 'scalar_copy', 'array_copy', " .
-              "'hash_copy', or code reference (${class}::$attr)"
-          unless $options->{inherit};
-    }
-
-    # Check default option
-    croak "'default' option must be scalar or code ref (${class}::$attr)"
-      unless !ref $default || ref $default eq 'CODE';
-
-    my $code;
-    # Class Accessor
-    if (($type || '') eq 'class') {
-        
-        # With inherit option
-        if ($inherit) {
-
-
-
-
-
-            return sub {
-                
-                my $self = shift;
-                
-                croak "${class}::$attr must be called from class."
-                  if ref $self;
-                
-                my $class_attrs = do {
-                    no strict 'refs';
-                    ${"${self}::CLASS_ATTRS"} ||= {};
-                };
-                
-                inherit_attribute($self, $attr, $options)
-                  if @_ == 0 && ! exists $class_attrs->{$attr};
-                
-                if(@_ > 0) {
-                
-                    croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 1;
-                    
-                    $class_attrs->{$attr} = $_[0];
-                    
-                    return $self;
-                }
-                
-                return $class_attrs->{$attr};
-            };
-
-
-
-
-
-        }
-        
-        # With default option
-        elsif (defined $default) {
-
-
-
-
-
-            return sub {
-                
-                my $self = shift;
-                
-                croak "${class}::$attr must be called from class."
-                  if ref $self;
-
-                my $class_attrs = do {
-                    no strict 'refs';
-                    ${"${self}::CLASS_ATTRS"} ||= {};
-                };
-                
-                $class_attrs->{$attr} = ref $default ? $default->($self) : $default
-                  if @_ == 0 && ! exists $class_attrs->{$attr};
-                
-                if(@_ > 0) {
-                    
-                    croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 1;
-                    
-                    $class_attrs->{$attr} = $_[0];
-                    
-                    return $self;
-                }
-                
-                return $class_attrs->{$attr};
-
-            };
-
-
-
-
-
-        }
-        
-        # Without option
-        else {
-
-
-
-
-
-            return sub {
-                
-                my $self = shift;
-                
-                croak "${class}::$attr must be called from class."
-                  if ref $self;
-
-                my $class_attrs = do {
-                    no strict 'refs';
-                    ${"${self}::CLASS_ATTRS"} ||= {};
-                };
-                
-                if(@_ > 0) {
-                
-                    croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 1;
-                    
-                    $class_attrs->{$attr} = $_[0];
-                    
-                    return $self;
-                }
-                
-                return $class_attrs->{$attr};
-            };
-
-
-
-
-
-        }
-    }
-    
-    # Normal accessor
-    else {
-    
-        # With inherit option
-        if ($inherit) {
-
-
-
-
-
-            return sub {
-                
-                my $self = shift;
-                
-                inherit_attribute($self, $attr, $options)
-                  if @_ == 0 && ! exists $self->{$attr};
-                
-                if(@_ > 0) {
-                
-                    croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 1;
-                    
-                    $self->{$attr} = $_[0];
-                    
-                    return $self;
-                }
-                
-                return $self->{$attr};
-            };
-
-
-
-
-
-
-        }
-        
-        # With default option
-        elsif (defined $default) {
-
-
-
-
-
-            return sub {
-                
-                my $self = shift;
-                
-                $self->{$attr} = ref $default ? $default->($self) : $default
-                  if @_ == 0 && ! exists $self->{$attr};
-                
-                if(@_ > 0) {
-                    
-                    croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 1;
-                    
-                    $self->{$attr} = $_[0];
-                    
-                    return $self;
-                }
-                
-                return $self->{$attr};
-            };
-
-
-
-
-
-        }
-        
-        # Without option
-        else {
-
-
-
-
-
-            return sub {
-                
-                my $self = shift;
-                
-                if(@_ > 0) {
-
-                    croak qq{One argument must be passed to "${class}::$attr()"}
-                      if @_ > 1;
-                    
-                    $self->{$attr} = $_[0];
-
-                    return $self;
-                }
-
-                return $self->{$attr};
-            };
-
-
-
-
-
-        }
-    }
-}
-
-sub create_class_accessor  { create_accessor(@_, 'class') }
-
-sub create_dual_accessor {
-
-    # Create dual accessor
-    my $accessor       = create_accessor(@_);
-    my $class_accessor = create_class_accessor(@_);
-    
-    return sub { ref $_[0] ? $accessor->(@_) : $class_accessor->(@_) };
-}
-
-sub inherit_attribute {
-    my ($proto, $attr, $options) = @_;
-    
-    # Options
-    my $inherit = $options->{inherit};
-    my $default = $options->{default};
-
-    # Called from a object
-    if (my $class = ref $proto) {
-        $proto->{$attr} = $inherit->($class->$attr);
-    }
-    
-    # Called from a class
-    else {
-        my $base =  do {
-            no strict 'refs';
-            ${"${proto}::ISA"}[0];
-        };
-        $proto->$attr(eval { $base->can($attr) }
-                    ? $inherit->($base->$attr)
-                    : ref $default ? $default->($proto) : $default);
-    }
-}
-
-package Object::Simple;
 
 =head1 NAME
 
@@ -407,6 +120,13 @@ Class definition.
     # Generate accessors at once
     __PACKAGE__->attr([qw/foo bar baz/]);
     __PACKAGE__->attr([qw/foo bar baz/] => 0);
+    
+    # More easily
+    __PACKAGE__->attr(
+        [qw/foo bar baz/],
+        pot => 1,
+        mer => sub { 5 }
+    );
 
 Use the class
 
@@ -478,15 +198,25 @@ If you want to specify refrence or object as default value,
 the value must be sub reference
 not to share the value with other objects.
 
-Generated accessor.
+You can set and get a value.
 
     my $value = $obj->foo;
     $obj      = $obj->foo(1);
 
-You can set and get a value.
 If a default value is specified and the value is not exists,
 you can get default value.
 Accessor return self object if a value is set.
+
+You can create accessors more easy way.
+
+    __PACKAGE__->attr(
+        [qw/foo bar baz/],
+        pot => 1,
+        mer => sub { 5 }
+    );
+
+First argument are accessors without default.
+Rest arguments are accessors with default.
 
 =head1 Guildes
 

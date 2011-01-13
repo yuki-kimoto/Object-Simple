@@ -12,9 +12,6 @@ __PACKAGE__->attr([qw/m4_1 m4_2/]);
 __PACKAGE__->class_attr([qw/m5_1 m5_2/]);
 __PACKAGE__->dual_attr([qw/m6_1 m6_2/]);
 
-__PACKAGE__->attr('m7', default => 7);
-__PACKAGE__->attr([qw/m8_1 m8_2/], default => sub { 8 });
-
 __PACKAGE__->class_attr('m9', default => 9);
 __PACKAGE__->dual_attr('m10', default => 10);
 
@@ -52,6 +49,17 @@ __PACKAGE__->dual_attr('m30', default => 5);
 
 __PACKAGE__->attr(m31 => sub { shift->m30 });
 __PACKAGE__->class_attr(m32 => sub { shift->m30 });
+
+__PACKAGE__->attr(
+    [qw/m33 m34/],
+    m35 => 1,
+    m36 => sub { 5 }
+);
+
+__PACKAGE__->attr(
+    m37 => 1,
+    m38 => sub { 5 }
+);
 
 package T1_2;
 use base 'T1';

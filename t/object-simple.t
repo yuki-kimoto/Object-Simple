@@ -1,4 +1,4 @@
-use Test::More tests => 108;
+use Test::More 'no_plan';
 use strict;
 use warnings;
 
@@ -72,9 +72,6 @@ is($o->m1, 2, "$test : hash ref");
 
 test 'default option';
 $o = T1->new;
-is($o->m7, 7, "$test : single");
-is($o->m8_1, '8', "$test : multi 1");
-is($o->m8_2, '8', "$test : multi 2");
 
 is(T1->m9, 9, "$test : class_attr");
 is($o->m10, 10, "$test : dual_attr : object");
@@ -167,9 +164,6 @@ test 'Error';
     eval{__PACKAGE__->class_attr('m2', inherit => 'no')};
     Test::More::like($@, qr/\Q'inherit' opiton must be 'scalar_copy', 'array_copy', 'hash_copy', or code reference (T2::m2)/,
                      'invalid inherit options');
-
-    eval{__PACKAGE__->attr('m3', no => 1)};
-    Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : attr");
 
     eval{__PACKAGE__->class_attr('m4', no => 1)};
     Test::More::like($@, qr/\Q'no' is invalid option/, "$test : invalid option : class_attr");
@@ -304,4 +298,16 @@ $o = T1->new;
 is($o->m31, 5, "$test : self : attr");
 is(T1->m32, 5, "$test : self : class_attr");
 
+test 'easy definition';
+$o = T1->new;
+ok($o->can('m33'), $test);
+ok($o->can('m34'), $test);
+is($o->m35, 1, $test);
+is($o->m36, 5, $test);
+is($o->m37, 1, $test);
+is($o->m38, 5, $test);
 
+test 'attr from object';
+$o = T1->new;
+$o->attr('from_object');
+ok($o->can('from_object'), $test);
