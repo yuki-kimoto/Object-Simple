@@ -54,6 +54,24 @@ You can generate accessors at once.
     __PACKAGE__->attr([qw/foo bar baz/]);
     __PACKAGE__->attr([qw/foo bar baz/] => 0);
 
+You can create accessor more easily.
+
+    __PACKAGE__->attr(
+        some => 1,
+        other => sub { 5 }
+    );
+
+If arguments count is odd number, first argument is
+for accessor not having default value.
+
+    __PACKAGE__->attr(
+        [qw/foo bar baz/],
+        some => 1,
+        other => sub { 5 }
+    );
+
+This is most easy way of accessor definition.
+
 B<Example:>
 
 I show a example to understand L<Object::Simple> well.

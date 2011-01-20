@@ -75,7 +75,8 @@ my $code = sub {
 
     if(@_ > 0) {
         
-        Carp::croak qq{One argument must be passed to "${class}::$attr()"}                if @_ > 1;
+        Carp::croak qq{One argument must be passed to "${class}::$attr()"}
+          if @_ > 1;
         
         $self->{$attr} = $_[0];
         
@@ -124,8 +125,8 @@ Class definition.
     # More easily
     __PACKAGE__->attr(
         [qw/foo bar baz/],
-        pot => 1,
-        mer => sub { 5 }
+        some => 1,
+        other => sub { 5 }
     );
 
 Use the class
