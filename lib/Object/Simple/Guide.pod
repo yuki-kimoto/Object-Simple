@@ -1,8 +1,8 @@
 =head1 NAME
 
-Object::Simple::Guides -  Object::Simple Guides
+Object::Simple::Guide -  Object::Simple Guide
 
-=head1 GUIDES
+=head1 GUIDE
 
 =head2 1. Generate accessor
 

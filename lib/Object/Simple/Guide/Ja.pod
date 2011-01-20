@@ -2,9 +2,9 @@
 
 =head1 NAME
 
-Object::Simple::Guides::Ja - Object::Simpleの日本語ガイド
+Object::Simple::Guide::Ja - Object::Simpleの日本語ガイド
 
-=head1 GUIDES
+=head1 GUIDE
 
 =head2 1. アクセッサの生成
 
