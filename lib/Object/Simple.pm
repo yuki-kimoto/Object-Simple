@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.0617';
+our $VERSION = '3.0618';
 
 use strict;
 use warnings;
@@ -147,8 +147,6 @@ Object::Simple - Generate accessor having default value, and provide constructor
 
 =head1 SYNOPSIS
 
-Class definition.
-
     package SomeClass;
     
     use base 'Object::Simple';
@@ -156,7 +154,7 @@ Class definition.
     # Generate a accessor
     __PACKAGE__->attr('foo');
     
-    # Generate a accessor having default value
+    # Generate a accessor having default attribute value
     __PACKAGE__->attr(foo => 1);
     __PACKAGE__->attr(foo => sub { [] });
     __PACKAGE__->attr(foo => sub { {} });
@@ -166,24 +164,22 @@ Class definition.
     __PACKAGE__->attr([qw/foo bar baz/]);
     __PACKAGE__->attr([qw/foo bar baz/] => 0);
     
-    # More easily
+    # Generate accessors more easy way
     __PACKAGE__->attr(
         [qw/foo bar baz/],
         some => 1,
         other => sub { 5 }
     );
 
-Use the class
+Use the class.
 
-    # Constructor
+    # Create a new object
     my $obj = SomeClass->new;
     my $obj = SomeClass->new(foo => 1, bar => 2);
     my $obj = SomeClass->new({foo => 1, bar => 2});
     
-    # Get the value
+    # Get and set a attribute value
     my $foo = $obj->foo;
-    
-    # Set the value
     $obj->foo(1);
 
 =head1 DESCRIPTION
@@ -211,9 +207,13 @@ C<new()> can receive hash or hash reference as arguments.
 You can specify default value for the accessor.
 Compile speed is fast and used memory is small.
 Debugging is easy.
-And L<Object::Simple> is compatible of L<Mojo::Base>
+L<Object::Simple> is compatible of L<Mojo::Base>
 
-See L<Object::Simple::Guides> to know detals.
+See L<Object::Simple::Guide> to know L<Object::Simple> details.
+
+=head1 GUIDE
+
+See L<Object::Simple::Guide>
 
 =head1 METHODS
 
@@ -222,7 +222,7 @@ See L<Object::Simple::Guides> to know detals.
     my $obj = Object::Simple->new(foo => 1, bar => 2);
     my $obj = Object::Simple->new({foo => 1, bar => 2});
 
-Create a new object. C<new()> method receive
+Create a new object. C<new()> receive
 hash or hash reference as arguments.
 
 =head2 C<attr>
@@ -234,23 +234,28 @@ Generate accessor.
     __PACKAGE__->attr(foo => 1);
     __PACKAGE__->attr(foo => sub { {} });
 
-Generate accessor. C<attr()> method receive
-accessor name and default value.
+Generate accessor. C<attr()> receive
+accessor name and default attribute value.
+Default value is optional.
 If you want to create multipule accessors at once,
 specify accessor names as array reference at first argument.
-Default value is optional.
+
 If you want to specify refrence or object as default value,
-the value must be sub reference
+it must be code reference
 not to share the value with other objects.
 
-You can set and get a value.
+Get and set a attribute value.
 
-    my $value = $obj->foo;
-    $obj      = $obj->foo(1);
+    my $foo = $obj->foo;
+    $obj->foo(1);
 
 If a default value is specified and the value is not exists,
 you can get default value.
-Accessor return self object if a value is set.
+
+If a value is set, the accessor return self object.
+So you can set a value repeatedly.
+
+   $obj->foo(1)->bar(2);
 
 You can create accessors more easy way.
 
@@ -262,10 +267,6 @@ You can create accessors more easy way.
 
 First argument are accessors without default.
 Rest arguments are accessors with default.
-
-=head1 Guildes
-
-L<Object::Simple::Guides>
 
 =head1 BUGS
 
