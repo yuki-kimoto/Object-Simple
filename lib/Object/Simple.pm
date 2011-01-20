@@ -65,26 +65,70 @@ sub attr {
                         "or code ref (${class}::$attr)")
               unless !ref $default || ref $default eq 'CODE';
 
-# Code
-my $code = sub {
+        # Code
+        my $code;
+        if (defined $default && ref $default) {
 
-    my $self = shift;
 
-    $self->{$attr} = ref $default ? $default->($self) : $default
-      if @_ == 0 && defined $default && ! exists $self->{$attr};
 
-    if(@_ > 0) {
-        
+$code = sub {
+
+    if(@_ > 1) {
         Carp::croak qq{One argument must be passed to "${class}::$attr()"}
-          if @_ > 1;
+          if @_ > 2;
         
-        $self->{$attr} = $_[0];
+        $_[0]->{$attr} = $_[1];
         
-        return $self;
+        return $_[0];
     }
 
-    return $self->{$attr};
-};
+    return $_[0]->{$attr} = $default->($_[0]) if ! exists $_[0]->{$attr};
+    return $_[0]->{$attr};
+}
+
+        }
+        elsif (defined $default && ! ref $default) {
+
+
+
+$code = sub {
+    if(@_ > 1) {
+        Carp::croak qq{One argument must be passed to "${class}::$attr()"}
+          if @_ > 2;
+        
+        $_[0]->{$attr} = $_[1];
+        
+        return $_[0];
+    }
+    return $_[0]->{$attr} = $default if ! exists $_[0]->{$attr};
+    return $_[0]->{$attr};
+}
+
+
+
+    }
+    else {
+
+
+
+$code = sub {
+
+    if(@_ > 1) {
+        
+        Carp::croak qq{One argument must be passed to "${class}::$attr()"}
+          if @_ > 2;
+        
+        $_[0]->{$attr} = $_[1];
+        
+        return $_[0];
+    }
+
+    return $_[0]->{$attr};
+}
+
+
+
+    }
             
             no strict 'refs';
             *{"${class}::$attr"} = $code;
