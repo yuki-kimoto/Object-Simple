@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.0618';
+our $VERSION = '3.0619';
 
 use strict;
 use warnings;
@@ -61,8 +61,8 @@ sub attr {
         
         foreach my $attr (@$attrs) {
 
-            Carp::croak("'default' option must be scalar " . 
-                        "or code ref (${class}::$attr)")
+            Carp::croak("Default value of attr() must be string or number " . 
+                        "or code reference (${class}::$attr)")
               unless !ref $default || ref $default eq 'CODE';
 
         # Code
