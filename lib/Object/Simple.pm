@@ -1,9 +1,10 @@
 package Object::Simple;
 
-our $VERSION = '3.0619';
+our $VERSION = '3.0620';
 
 use strict;
 use warnings;
+no warnings 'redefine';
 
 use Carp ();
 
@@ -136,10 +137,17 @@ $code = sub {
     }
 }
 
-# Deprecated methods
-use Object::Simple::Accessor;
-sub class_attr { Object::Simple::Accessor::create_accessors('class_attr', @_) }
-sub dual_attr  { Object::Simple::Accessor::create_accessors('dual_attr',  @_) }
+
+# DEPRECATED!
+sub class_attr {
+    require Object::Simple::Accessor;
+    Object::Simple::Accessor::create_accessors('class_attr', @_)
+}
+
+sub dual_attr {
+    require Object::Simple::Accessor;
+    Object::Simple::Accessor::create_accessors('dual_attr',  @_)
+}
 
 =head1 NAME
 

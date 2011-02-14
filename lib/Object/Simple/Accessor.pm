@@ -340,5 +340,6 @@ sub inherit_attribute {
 
 =head1 NAME
 
-Object::Simple::Accessor - Deprecated
+Object::Simple::Accessor - DEPRECATED!
 
+=cut
