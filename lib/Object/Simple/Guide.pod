@@ -310,13 +310,22 @@ accessor return self-object when it is called to set the value,
 
     $obj->foo(1)->bar(4)->baz(6);
 
-=head1 STABILITY
+=head3 Call C<attr()> from object.
 
-L<Object::Simple> is stable.
-APIs and the implementations will not be changed in the future.
+You can call C<attr()> from object.
 
-=head1 DEPRECATED
+    $obj->attr(foo => 1);
 
-C<class_attr> and C<dual_attr> is deprecated because
-this is not good practice in Object Oriented programming.
-To know the usages, see old documentation before 3.0612.
+Accessor is added to the class the object belong to
+
+=head2 Staibility
+
+(2011/2/23 3.0621)
+
+L<Object::Simple> is very stable.
+I keep L<Object::Simple> backword compatible as possible.
+
+Methods written in documentation will not changed and not removed 
+
+You must not use DEPRECATED methods such as C<class_attr> or C<dual_attr>,
+In distant future, these methods is removed after long public comment period.
