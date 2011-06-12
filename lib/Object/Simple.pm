@@ -273,7 +273,6 @@ C<new()> can receive hash or hash reference as arguments.
 You can specify default value for the accessor.
 Compile speed is fast and used memory is small.
 Debugging is easy.
-L<Object::Simple> is compatible of L<Mojo::Base>
 
 See L<Object::Simple::Guide> to know L<Object::Simple> details.
 
@@ -333,6 +332,41 @@ You can create accessors more easy way.
 
 First argument are accessors without default.
 Rest arguments are accessors with default.
+
+=head1 More Simple Way
+
+This is EXPERIMENTAL.
+
+If you specify -base flag, you can inherit Object::Simple
+and C<has> function. has function is equal to C<attr> method.
+
+    package Foo;
+    
+    use Object::Simple -base;
+    
+    has x => 1;
+    has y => 2;
+
+strict and warnings is automatically enabled and 
+Perl 5.10 features is imported.
+
+You can use -base flag sub class.
+
+    package Bar;
+    
+    use Foo -base;
+    
+    has z => 3;
+
+This is equal to
+
+    package Bar;
+    
+    use base 'Foo';
+    use strict;
+    use warnings;
+    use feature ':5.10';
+    sub has { __PACKAGE__->attr(@_) }
 
 =head1 BUGS
 
