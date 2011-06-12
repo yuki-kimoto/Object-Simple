@@ -311,3 +311,16 @@ test 'attr from object';
 $o = T1->new;
 $o->attr('from_object');
 ok($o->can('from_object'), $test);
+
+
+test '-base flag';
+use T2;
+$o = T2->new;
+is($o->x, 1);
+is($o->y, 2);
+
+use T3;
+$o = T3->new;
+is($o->x, 1);
+is($o->y, 2);
+is($o->z, 3);

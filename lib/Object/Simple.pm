@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.0620';
+our $VERSION = '3.0621';
 
 use strict;
 use warnings;
@@ -9,24 +9,46 @@ no warnings 'redefine';
 use Carp ();
 
 sub import {
-    my ($self, @methods) = @_;
-    
+    my ($class, @methods) = @_;
+
     # Caller
     my $caller = caller;
     
-    # Exports
-    my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
-    
-    # Export methods
-    foreach my $method (@methods) {
-        
-        # Can be Exported?
-        Carp::croak("Cannot export '$method'.")
-          unless $exports{$method};
-        
-        # Export
+    # Base
+    if ((my $flag = $methods[0] || '') eq '-base') {
+
+        # Can haz?
         no strict 'refs';
-        *{"${caller}::$method"} = \&{"$method"};
+        no warnings 'redefine';
+        *{"${caller}::has"} = sub { attr($caller, @_) };
+        
+        # Inheritance
+        push @{"${caller}::ISA"}, $class;
+
+        # strict!
+        strict->import;
+        warnings->import;
+
+        # Modern!
+        feature->import(':5.10') if $] >= 5.010;        
+    }
+    # Method export
+    else {
+        
+        # Exports
+        my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
+        
+        # Export methods
+        foreach my $method (@methods) {
+            
+            # Can be Exported?
+            Carp::croak("Cannot export '$method'.")
+              unless $exports{$method};
+            
+            # Export
+            no strict 'refs';
+            *{"${caller}::$method"} = \&{"$method"};
+        }
     }
 }
 
@@ -179,6 +201,30 @@ Object::Simple - Generate accessor having default value, and provide constructor
         other => sub { 5 }
     );
 
+More Simple
+
+    package SomeClass;
+    
+    use Object::Simple -base;
+    
+    # Generate a accessor
+    has 'foo';
+    
+    # Generate a accessor having default attribute value
+    has foo => 1;
+    has foo => sub { [] };
+    has foo => sub { {} };
+    has foo => sub { OtherClass->new };
+    
+    # Generate accessors at once
+    has [qw/foo bar baz/];
+    has [qw/foo bar baz/] => 0;
+    
+    # Generate accessors more easy way
+    has [qw/foo bar baz/],
+        some => 1,
+        other => sub { 5 };
+
 Use the class.
 
     # Create a new object
@@ -189,6 +235,18 @@ Use the class.
     # Get and set a attribute value
     my $foo = $obj->foo;
     $obj->foo(1);
+
+Inheritance
+
+    package Foo;
+    
+    use Object::Simple -base;
+    
+    package Bar;
+    
+    use Foo -base;
+    
+    has x => 1;
 
 =head1 DESCRIPTION
 
