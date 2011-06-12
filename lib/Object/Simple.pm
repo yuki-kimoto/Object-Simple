@@ -258,13 +258,14 @@ Default value can't be specified.
 If multipule values is set through the accssor,
 its value is converted to array reference without warnings.
 
-L<Moose> is too complex for many people to use,
-and depends on many modules. L<Moose> is almost another language,
-and don't fit familiar perl syntax.
-L<Moose> increase the complexity of projects,
-rather than increase production efficiency.
-In addition, its complie speed is slow
-and used memroy is large.
+Some people find L<Moose> too complex, and dislike that 
+it depends on outside modules. Some say that L<Moose> is 
+almost like another language and does not fit the familiar 
+perl syntax. In some cases, in particular smaller projects, 
+some people feel that L<Moose> will increase complexity
+and therefore decrease programmer efficiency.
+In addition, L<Moose> can be slow at compile-time and 
+its memory usage can get large.
 
 L<Object::Simple> is the middle area between L<Class::Accessor>
 and complex class builder. Only offten used features is
