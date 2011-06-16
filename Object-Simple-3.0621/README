@@ -1,0 +1,87 @@
+NAME
+
+Object::Simple - generate accessor with default, and provide constructor
+
+INSTALLATION
+
+cpan Object::Simple
+
+SYNOPSIS
+
+    package YourClass;
+    
+    use base 'Object::Simple';
+    
+    # Generate accessor
+    __PACKAGE__->attr('x');
+    
+    # Generate accessor with default (scalar)
+    __PACKAGE__->attr(x => 0);
+    
+    # Generate accessor with default (reference or instance)
+    __PACKAGE__->attr(x => sub { [] });
+    __PACKAGE__->attr(x => sub { {} });
+    __PACKAGE__->attr(x => sub { SomeClass->new });
+    
+    # Generate accessors at once
+    __PACKAGE__->attr([qw/x y z/]);
+    
+    # Generate accessors with default at once
+    __PACKAGE__->attr([qw/x y z/] => 0);
+    
+    # Generate class accessor
+    __PACKAGE__->class_attr('x');
+    __PACKAGE__->class_attr(x => 0);
+    
+    # Generate inheritable class accessor
+    __PACKAGE__->class_attr('x', default => 0, inherit => 'scalar_copy');
+    __PACKAGE__->class_attr('x', default => sub { [] }, inherit => 'array_copy');
+    __PACKAGE__->class_attr('x', default => sub { {} }, inherit => 'hash_copy');
+    
+    __PACKAGE__->class_attr(
+      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
+    
+    # Generate dual accessor, which work as normal accessor or class accessor
+    __PACKAGE__->dual_attr('x');
+    __PACKAGE__->dual_attr(x => 0);
+    
+    # Generate inheritable dual accessor
+    __PACKAGE__->dual_attr('x', default => 0, inherit => 'scalar_copy');
+    __PACKAGE__->dual_attr('x', default => sub { [] }, inherit => 'array_copy');
+    __PACKAGE__->dual_attr('x', default => sub { {} }, inherit => 'hash_copy');
+    
+    __PACKAGE__->dual_attr(
+      'x', default => sub { SomeClass->new }, inherit => sub { shift->clone });
+    
+    package main;
+    
+    # Constructor new()
+    my $obj = YourClass->new;
+    my $obj = YourClass->new(x => 1, y => 2);
+    my $obj = YourClass->new({x => 1, y => 2});
+    
+    # Set attribute
+    $obj->x(1);
+    
+    # Setter method chain is available
+    $obj->x(1)->y(2);
+    
+    # Get attribute
+    my $x = $obj->x;
+
+DESCRIPTION
+
+Object::Simple is the generator of accessor.
+If you want to create a class, you must write many accessors by yourself,
+so you will be tired of writing accesors.
+
+Object::Simple help you to create accessor.
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2008 Yuki Kimoto
+http://d.hatena.ne.jp/perlcodesample/ ( Japanese )
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+

@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.0622';
+our $VERSION = '3.0621';
 
 use strict;
 use warnings;
