@@ -96,11 +96,7 @@ sub attr {
 $code = sub {
 
     if(@_ > 1) {
-        Carp::croak qq{One argument must be passed to "${class}::$attr" attribute}
-          if @_ > 2;
-        
         $_[0]->{$attr} = $_[1];
-        
         return $_[0];
     }
 
@@ -115,11 +111,7 @@ $code = sub {
 
 $code = sub {
     if(@_ > 1) {
-        Carp::croak qq{One argument must be passed to "${class}::$attr" attribute}
-          if @_ > 2;
-        
         $_[0]->{$attr} = $_[1];
-        
         return $_[0];
     }
     return $_[0]->{$attr} = $default if ! exists $_[0]->{$attr};
@@ -136,12 +128,7 @@ $code = sub {
 $code = sub {
 
     if(@_ > 1) {
-        
-        Carp::croak qq{One argument must be passed to "${class}::$attr" attribute}
-          if @_ > 2;
-        
         $_[0]->{$attr} = $_[1];
-        
         return $_[0];
     }
 

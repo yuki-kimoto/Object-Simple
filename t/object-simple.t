@@ -205,27 +205,17 @@ is_deeply(T1_2->m28, [1, 2], "$test : inherit : hash");
 is(T1->m29, 5, "$test: inherit : sub ref default");
 
 
-test 'Accessor too many argument';
-$o = T1->new;
-eval{$o->m1(1, undef)};
-like($@, qr/\QOne argument must be passed to "T1::m1" attribute/, $test);
-
 test 'Normal accessor';
 $o = T1->new;
 $o->m1(1);
 is($o->m1, 1, "$test : set and get");
 is($o->m1(1), $o, "$test : set return");
-eval {$o->m1(1, 2)};
-like($@, qr/\QOne argument must be passed to "T1::m1" attribute/, "$test : One argument must be passed");
-
 
 test 'Normal accessor with default';
 $o = T1->new;
 $o->m11(2);
 is($o->m11, 2, "$test : set and get");
 is($o->m11(2), $o, "$test : set return");
-eval {$o->m11(1, 2)};
-like($@, qr/\QOne argument must be passed to "T1::m11" attribute/, "$test : One argument must be passed");
 $o = T1->new;
 is($o->m11, 1, "$test : default");
 is($o->m12, 9, "$test : default sub reference");
@@ -236,8 +226,6 @@ $o = T1->new;
 $o->m24(1);
 is($o->m24, 1, "$test : set and get");
 is($o->m24(1), $o, "$test : set return");
-eval {$o->m24(1, 2)};
-like($@, qr/\QOne argument must be passed to "T1::m24()"/, "$test : One argument must be passed");
 
 
 test 'Class accessor';
