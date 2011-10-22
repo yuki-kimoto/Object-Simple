@@ -271,20 +271,6 @@ You can pass array to C<new> method by overridden C<new> method.
 
     my $point = Point->new(4, 5);
 
-=head2 4. Other features
-
-=head3 Strict arguments check
-
-L<Object::Simple> pay attention to the usability.
-If wrong number arguments is passed to C<new> method,
-exception is thrown.
-    
-    my $obj = SomeClass->new(1); # Exception!
-
-as is the attribute method.
-
-    $obj->foo(a => 1); # Execption!
-
 =head3 Import methods
 
 You can import methods of L<Object::Simple>.

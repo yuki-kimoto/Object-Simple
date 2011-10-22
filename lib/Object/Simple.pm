@@ -94,14 +94,12 @@ sub attr {
 
 
 $code = sub {
-
-    if(@_ > 1) {
-        $_[0]->{$attr} = $_[1];
-        return $_[0];
+    if(@_ == 1) {
+        return $_[0]->{$attr} = $default->($_[0]) unless exists $_[0]->{$attr};
+        $_[0]->{$attr};
     }
-
-    return $_[0]->{$attr} = $default->($_[0]) if ! exists $_[0]->{$attr};
-    return $_[0]->{$attr};
+    $_[0]->{$attr} = $_[1];
+    return $_[0];
 }
 
         }
@@ -110,12 +108,12 @@ $code = sub {
 
 
 $code = sub {
-    if(@_ > 1) {
-        $_[0]->{$attr} = $_[1];
-        return $_[0];
+    if(@_ == 1) {
+        return $_[0]->{$attr} = $default unless exists $_[0]->{$attr};
+        return $_[0]->{$attr};
     }
-    return $_[0]->{$attr} = $default if ! exists $_[0]->{$attr};
-    return $_[0]->{$attr};
+    $_[0]->{$attr} = $_[1];
+    $_[0];
 }
 
 
@@ -126,13 +124,9 @@ $code = sub {
 
 
 $code = sub {
-
-    if(@_ > 1) {
-        $_[0]->{$attr} = $_[1];
-        return $_[0];
-    }
-
-    return $_[0]->{$attr};
+    return $_[0]->{$attr} if @_ == 1;
+    $_[0]->{$attr} = $_[1];
+    $_[0];
 }
 
 
@@ -230,7 +224,6 @@ implemented. L<Object::Simple> is similar with L<Mojo::Base>.
 C<new> can receive hash or hash reference as arguments.
 You can specify default value for the attribute.
 Compile speed is fast and used memory is small.
-Debugging is easy.
 
 =head1 GUIDE
 
