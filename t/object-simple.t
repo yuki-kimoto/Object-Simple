@@ -210,11 +210,6 @@ $o = T1->new;
 eval{$o->m1(1, undef)};
 like($@, qr/\QOne argument must be passed to "T1::m1" attribute/, $test);
 
-
-test 'new() Odd number argument';
-eval{$o = T1->new('a')};
-like($@, qr/\QHash reference or even number arguments must be passed to "T1::new" method/, $test);
-
 test 'Normal accessor';
 $o = T1->new;
 $o->m1(1);

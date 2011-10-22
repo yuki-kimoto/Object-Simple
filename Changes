@@ -1,3 +1,15 @@
+3.0623
+  - changed BACKWARDS COMPATIBILITY POLICY
+    If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
+    except for attribute method.
+    You can check all DEPRECATED functionalities by document.
+    DEPRECATED functionality is removed after five years,
+    but if at least one person use the functionality and tell me that thing
+    I extend one year each time he tell me it.
+    EXPERIMENTAL functionality will be changed without warnings.
+  - accessor and new method need more performance than userbility,
+    so argument check logic is removed, sorry
+
 3.0622
   removed -base flag EXPERIMENTAL status
   added -base flag inherit feature.
