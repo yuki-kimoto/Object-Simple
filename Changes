@@ -1,4 +1,8 @@
-3.0623
+3.07
+  - Carp module don't import any functions
+3.0625
+  - fixed a little bug
+3.0624
   - changed BACKWARDS COMPATIBILITY POLICY
     If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
     except for attribute method.
@@ -9,7 +13,6 @@
     EXPERIMENTAL functionality will be changed without warnings.
   - accessor and new method need more performance than userbility,
     so argument check logic is removed, sorry
-
 3.0622
   removed -base flag EXPERIMENTAL status
   added -base flag inherit feature.

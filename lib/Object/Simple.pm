@@ -1,12 +1,12 @@
 package Object::Simple;
 
-our $VERSION = '3.0624';
+our $VERSION = '3.0626';
 
 use strict;
 use warnings;
 no warnings 'redefine';
 
-use Carp ;
+use Carp ();
 
 sub import {
     my ($class, @methods) = @_;
@@ -96,10 +96,10 @@ sub attr {
 $code = sub {
     if(@_ == 1) {
         return $_[0]->{$attr} = $default->($_[0]) unless exists $_[0]->{$attr};
-        $_[0]->{$attr};
+        return $_[0]->{$attr};
     }
     $_[0]->{$attr} = $_[1];
-    return $_[0];
+    $_[0];
 }
 
         }
