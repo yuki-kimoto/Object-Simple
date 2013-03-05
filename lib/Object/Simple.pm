@@ -88,39 +88,35 @@ sub attr {
       # Code
       my $code;
       if (defined $default && ref $default) {
-
-$code = sub {
-  if(@_ == 1) {
-      return $_[0]->{$attr} = $default->($_[0]) unless exists $_[0]->{$attr};
-      return $_[0]->{$attr};
-  }
-  $_[0]->{$attr} = $_[1];
-  $_[0];
-}
-
+        $code = sub {
+          if(@_ == 1) {
+              return $_[0]->{$attr} = $default->($_[0]) unless exists $_[0]->{$attr};
+              return $_[0]->{$attr};
+          }
+          $_[0]->{$attr} = $_[1];
+          $_[0];
+        }
       }
       elsif (defined $default && ! ref $default) {
-
-$code = sub {
-  if(@_ == 1) {
-      return $_[0]->{$attr} = $default unless exists $_[0]->{$attr};
-      return $_[0]->{$attr};
-  }
-  $_[0]->{$attr} = $_[1];
-  $_[0];
-}
-  }
-  else {
-$code = sub {
-  return $_[0]->{$attr} if @_ == 1;
-  $_[0]->{$attr} = $_[1];
-  $_[0];
-}
-  }
-          
-          no strict 'refs';
-          *{"${class}::$attr"} = $code;
+        $code = sub {
+          if(@_ == 1) {
+              return $_[0]->{$attr} = $default unless exists $_[0]->{$attr};
+              return $_[0]->{$attr};
+          }
+          $_[0]->{$attr} = $_[1];
+          $_[0];
+        }
       }
+      else {
+        $code = sub {
+          return $_[0]->{$attr} if @_ == 1;
+          $_[0]->{$attr} = $_[1];
+          $_[0];
+        }
+      }
+        no strict 'refs';
+        *{"${class}::$attr"} = $code;
+    }
   }
 }
 
