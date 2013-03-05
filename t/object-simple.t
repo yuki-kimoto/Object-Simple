@@ -158,7 +158,7 @@ test 'Error';
     use base 'Object::Simple';
 
     eval{__PACKAGE__->attr(m1 => {})};
-    Test::More::like($@, qr/Default value.*T2::m1/,
+    Test::More::like($@, qr/Default has to be a code reference or constant value.*T2::m1/,
          'default is not scalar or code ref');
 
     eval{__PACKAGE__->class_attr('m2', inherit => 'no')};

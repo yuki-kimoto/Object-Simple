@@ -81,45 +81,41 @@ sub attr {
     
     for my $attr (@$attrs) {
 
-      Carp::croak("Default value of attr must be string or number " . 
-                  "or code reference (${class}::$attr)")
-        unless !ref $default || ref $default eq 'CODE';
+      Carp::croak qq{Attribute "$attr" invalid} unless $attr =~ /^[a-zA-Z_]\w*$/;
 
-      # Code
-      my $code;
-      if (defined $default && ref $default) {
-        $code = sub {
-          if(@_ == 1) {
-              return $_[0]->{$attr} = $default->($_[0]) unless exists $_[0]->{$attr};
-              return $_[0]->{$attr};
-          }
-          $_[0]->{$attr} = $_[1];
-          $_[0];
-        }
-      }
-      elsif (defined $default && ! ref $default) {
-        $code = sub {
-          if(@_ == 1) {
-              return $_[0]->{$attr} = $default unless exists $_[0]->{$attr};
-              return $_[0]->{$attr};
-          }
-          $_[0]->{$attr} = $_[1];
-          $_[0];
-        }
-      }
+      # Header (check arguments)
+      my $code = "package $class;\nsub $attr {\n  if (\@_ == 1) {\n";
+
+      # No default value (return value)
+      unless (defined $default) { $code .= "    return \$_[0]{'$attr'};" }
+
+      # Default value
       else {
-        $code = sub {
-          return $_[0]->{$attr} if @_ == 1;
-          $_[0]->{$attr} = $_[1];
-          $_[0];
-        }
+
+        Carp::croak "Default has to be a code reference or constant value (${class}::$attr)"
+          if ref $default && ref $default ne 'CODE';
+
+        # Return value
+        $code .= "    return \$_[0]{'$attr'} if exists \$_[0]{'$attr'};\n";
+
+        # Return default value
+        $code .= "    return \$_[0]{'$attr'} = ";
+        $code .= ref $default eq 'CODE' ? '$default->($_[0]);' : '$default;';
       }
-        no strict 'refs';
-        *{"${class}::$attr"} = $code;
+
+      # Store value
+      $code .= "\n  }\n  \$_[0]{'$attr'} = \$_[1];\n";
+
+      # Footer (return invocant)
+      $code .= "  \$_[0];\n}";
+
+      # We compile custom attribute code for speed
+      no strict 'refs';
+      warn "-- Attribute $attr in $class\n$code\n\n" if $ENV{OBJECT_SIMPLE_DEBUG};
+      Carp::croak "Mojo::Base error: $@" unless eval "$code;1";
     }
   }
 }
-
 
 # DEPRECATED!
 sub class_attr {
@@ -135,7 +131,7 @@ sub dual_attr {
 
 =head1 NAME
 
-Object::Simple - Create attribute method, and provide constructor
+Object::Simple - Mojo::Base porting. very simple class builder.
 
 =head1 SYNOPSIS
 
@@ -157,8 +153,8 @@ Object::Simple - Create attribute method, and provide constructor
   
   # Create all attribute methods at once
   has [qw/foo bar baz/],
-      some => 1,
-      other => sub { 5 };
+    some => 1,
+    other => sub { 5 };
 
 Use the class.
 
@@ -178,12 +174,15 @@ Inheritance
   
   package Bar;
   use Foo -base;
-  # or use Object::Simple -base => 'Foo';
 
 =head1 DESCRIPTION
 
-L<Object::Simple> is a generator of attribute method,
+L<Object::Simple> is L<Mojo::Base> porting.
+you can use almost L<Mojo::Base> features.
+
+L<Object::Simple> is a generator of accessor method,
 such as L<Class::Accessor>, L<Mojo::Base>, or L<Moose>.
+
 L<Class::Accessor> is simple, but lack offten used features.
 C<new> method can't receive hash arguments.
 Default value can't be specified.
@@ -201,10 +200,12 @@ its memory usage can get large.
 
 L<Object::Simple> is the middle way between L<Class::Accessor>
 and complex class builder. Only offten used features is
-implemented. L<Object::Simple> is similar with L<Mojo::Base>.
-C<new> can receive hash or hash reference as arguments.
-You can specify default value for the attribute.
-Compile speed is fast and used memory is small.
+implemented. L<Object::Simple> is almost same as L<Mojo::Base>.
+
+C<new> method can receive hash or hash reference.
+You can specify default value.
+
+If you like L<Mojo::Base>, L<Object::Simple> is very good.
 
 =head1 GUIDE
 
@@ -214,7 +215,7 @@ See L<Object::Simple::Guide> to know L<Object::Simple> details.
 
 If you specify -base flag, you can inherit Object::Simple
 and import C<has> function.
-C<has> function create attribute method.
+C<has> function can create attribute method.
 
   package Foo;
   use Object::Simple -base;
@@ -223,13 +224,12 @@ C<has> function create attribute method.
   has y => 2;
 
 strict and warnings is automatically enabled and 
-Perl 5.10 features is imported.
+Perl 5.10 features(C<say>, C<state>, C<given - when> is imported.
 
-You can use C<-base> flag in sub class for inheritance.
+You can also use C<-base> flag in sub class.
 
   package Bar;
   use Foo -base;
-  # or use Object::Simple -base => 'Foo';
   
   has z => 3;
 
@@ -336,7 +336,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 Yuki Kimoto, all rights reserved.
+Copyright 2008-2013 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

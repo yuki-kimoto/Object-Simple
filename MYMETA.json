@@ -1,5 +1,5 @@
 {
-   "abstract" : "Create attribute method, and provide constructor",
+   "abstract" : "Mojo::Base porting. very simple class builder.",
    "author" : [
       "Yuki Kimoto <kimoto.yuki@gmail.com>"
    ],
@@ -37,5 +37,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "3.0626"
+   "version" : "3.07"
 }
