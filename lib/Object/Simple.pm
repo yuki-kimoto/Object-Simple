@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.0626';
+our $VERSION = '3.07';
 
 use strict;
 use warnings;
@@ -9,54 +9,52 @@ no warnings 'redefine';
 use Carp ();
 
 sub import {
-    my ($class, @methods) = @_;
+  my ($class, @methods) = @_;
 
-    # Caller
-    my $caller = caller;
+  # Caller
+  my $caller = caller;
+  
+  # Base
+  if ((my $flag = $methods[0] || '') eq '-base') {
+
+    # Can haz?
+    no strict 'refs';
+    no warnings 'redefine';
+    *{"${caller}::has"} = sub { attr($caller, @_) };
     
-    # Base
-    if ((my $flag = $methods[0] || '') eq '-base') {
+    # Inheritance
+    if (my $module = $methods[1]) {
+      $module =~ s/::|'/\//g;
+      require "$module.pm" unless $module->can('new');
+      push @{"${caller}::ISA"}, $module;
+    }
+    else { push @{"${caller}::ISA"}, $class }
 
-        # Can haz?
+    # strict!
+    strict->import;
+    warnings->import;
+
+    # Modern!
+    feature->import(':5.10') if $] >= 5.010;
+  }
+  # Method export
+  else {
+  
+    # Exports
+    my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
+    
+    # Export methods
+    for my $method (@methods) {
+        
+        # Can be Exported?
+        Carp::croak("Cannot export '$method'.")
+          unless $exports{$method};
+        
+        # Export
         no strict 'refs';
-        no warnings 'redefine';
-        *{"${caller}::has"} = sub { attr($caller, @_) };
-        
-        # Inheritance
-        if (my $module = $methods[1]) {
-            $module =~ s/::|'/\//g;
-            require "$module.pm" unless $module->can('new');
-            push @{"${caller}::ISA"}, $module;
-        }
-        else {
-            push @{"${caller}::ISA"}, $class;
-        }
-
-        # strict!
-        strict->import;
-        warnings->import;
-
-        # Modern!
-        feature->import(':5.10') if $] >= 5.010;        
+        *{"${caller}::$method"} = \&{"$method"};
     }
-    # Method export
-    else {
-        
-        # Exports
-        my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
-        
-        # Export methods
-        foreach my $method (@methods) {
-            
-            # Can be Exported?
-            Carp::croak("Cannot export '$method'.")
-              unless $exports{$method};
-            
-            # Export
-            no strict 'refs';
-            *{"${caller}::$method"} = \&{"$method"};
-        }
-    }
+  }
 }
 
 sub new {
@@ -65,91 +63,78 @@ sub new {
 }
 
 sub attr {
-    my ($self, @args) = @_;
+  my ($self, @args) = @_;
+  
+  my $class = ref $self || $self;
+  
+  # Fix argument
+  unshift @args, (shift @args, undef) if @args % 2;
+  
+  for (my $i = 0; $i < @args; $i += 2) {
+      
+    # Attribute name
+    my $attrs = $args[$i];
+    $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
     
-    my $class = ref $self || $self;
+    # Default
+    my $default = $args[$i + 1];
     
-    # Fix argument
-    unshift @args, (shift @args, undef) if @args % 2;
-    
-    for (my $i = 0; $i < @args; $i += 2) {
-        
-        # Attribute name
-        my $attrs = $args[$i];
-        $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
-        
-        # Default
-        my $default = $args[$i + 1];
-        
-        foreach my $attr (@$attrs) {
+    for my $attr (@$attrs) {
 
-            Carp::croak("Default value of attr must be string or number " . 
-                        "or code reference (${class}::$attr)")
-              unless !ref $default || ref $default eq 'CODE';
+      Carp::croak("Default value of attr must be string or number " . 
+                  "or code reference (${class}::$attr)")
+        unless !ref $default || ref $default eq 'CODE';
 
-        # Code
-        my $code;
-        if (defined $default && ref $default) {
-
-
+      # Code
+      my $code;
+      if (defined $default && ref $default) {
 
 $code = sub {
-    if(@_ == 1) {
-        return $_[0]->{$attr} = $default->($_[0]) unless exists $_[0]->{$attr};
-        return $_[0]->{$attr};
-    }
-    $_[0]->{$attr} = $_[1];
-    $_[0];
+  if(@_ == 1) {
+      return $_[0]->{$attr} = $default->($_[0]) unless exists $_[0]->{$attr};
+      return $_[0]->{$attr};
+  }
+  $_[0]->{$attr} = $_[1];
+  $_[0];
 }
 
-        }
-        elsif (defined $default && ! ref $default) {
-
-
+      }
+      elsif (defined $default && ! ref $default) {
 
 $code = sub {
-    if(@_ == 1) {
-        return $_[0]->{$attr} = $default unless exists $_[0]->{$attr};
-        return $_[0]->{$attr};
-    }
-    $_[0]->{$attr} = $_[1];
-    $_[0];
+  if(@_ == 1) {
+      return $_[0]->{$attr} = $default unless exists $_[0]->{$attr};
+      return $_[0]->{$attr};
+  }
+  $_[0]->{$attr} = $_[1];
+  $_[0];
 }
-
-
-
-    }
-    else {
-
-
-
+  }
+  else {
 $code = sub {
-    return $_[0]->{$attr} if @_ == 1;
-    $_[0]->{$attr} = $_[1];
-    $_[0];
+  return $_[0]->{$attr} if @_ == 1;
+  $_[0]->{$attr} = $_[1];
+  $_[0];
 }
-
-
-
-    }
-            
-            no strict 'refs';
-            *{"${class}::$attr"} = $code;
-        }
-    }
+  }
+          
+          no strict 'refs';
+          *{"${class}::$attr"} = $code;
+      }
+  }
 }
 
 
 # DEPRECATED!
 sub class_attr {
-    require Object::Simple::Accessor;
-    Object::Simple::Accessor::create_accessors('class_attr', @_)
+  require Object::Simple::Accessor;
+  Object::Simple::Accessor::create_accessors('class_attr', @_)
 }
 
 # DEPRECATED!
 sub dual_attr {
-    require Object::Simple::Accessor;
-    Object::Simple::Accessor::create_accessors('dual_attr',  @_)
+  require Object::Simple::Accessor;
+  Object::Simple::Accessor::create_accessors('dual_attr', @_)
 }
 
 =head1 NAME
@@ -158,46 +143,46 @@ Object::Simple - Create attribute method, and provide constructor
 
 =head1 SYNOPSIS
 
-    package SomeClass;
-    use Object::Simple -base;
-    
-    # Create a attribute method
-    has 'foo';
-    
-    # Create a attribute method having default value
-    has foo => 1;
-    has foo => sub { [] };
-    has foo => sub { {} };
-    has foo => sub { OtherClass->new };
-    
-    # Create attribute methods at once
-    has [qw/foo bar baz/];
-    has [qw/foo bar baz/] => 0;
-    
-    # Create all attribute methods at once
-    has [qw/foo bar baz/],
-        some => 1,
-        other => sub { 5 };
+  package SomeClass;
+  use Object::Simple -base;
+  
+  # Create a attribute method
+  has 'foo';
+  
+  # Create a attribute method having default value
+  has foo => 1;
+  has foo => sub { [] };
+  has foo => sub { {} };
+  has foo => sub { OtherClass->new };
+  
+  # Create attribute methods at once
+  has [qw/foo bar baz/];
+  has [qw/foo bar baz/] => 0;
+  
+  # Create all attribute methods at once
+  has [qw/foo bar baz/],
+      some => 1,
+      other => sub { 5 };
 
 Use the class.
 
-    # Create a new object
-    my $obj = SomeClass->new;
-    my $obj = SomeClass->new(foo => 1, bar => 2);
-    my $obj = SomeClass->new({foo => 1, bar => 2});
-    
-    # Get and set a attribute value
-    my $foo = $obj->foo;
-    $obj->foo(1);
+  # Create a new object
+  my $obj = SomeClass->new;
+  my $obj = SomeClass->new(foo => 1, bar => 2);
+  my $obj = SomeClass->new({foo => 1, bar => 2});
+  
+  # Get and set a attribute value
+  my $foo = $obj->foo;
+  $obj->foo(1);
 
 Inheritance
 
-    package Foo;
-    use Object::Simple -base;
-    
-    package Bar;
-    use Foo -base;
-    # or use Object::Simple -base => 'Foo';
+  package Foo;
+  use Object::Simple -base;
+  
+  package Bar;
+  use Foo -base;
+  # or use Object::Simple -base => 'Foo';
 
 =head1 DESCRIPTION
 
@@ -235,41 +220,41 @@ If you specify -base flag, you can inherit Object::Simple
 and import C<has> function.
 C<has> function create attribute method.
 
-    package Foo;
-    use Object::Simple -base;
-    
-    has x => 1;
-    has y => 2;
+  package Foo;
+  use Object::Simple -base;
+  
+  has x => 1;
+  has y => 2;
 
 strict and warnings is automatically enabled and 
 Perl 5.10 features is imported.
 
 You can use C<-base> flag in sub class for inheritance.
 
-    package Bar;
-    use Foo -base;
-    # or use Object::Simple -base => 'Foo';
-    
-    has z => 3;
+  package Bar;
+  use Foo -base;
+  # or use Object::Simple -base => 'Foo';
+  
+  has z => 3;
 
 This is equal to
 
-    package Bar;
-    
-    use base 'Foo';
-    use strict;
-    use warnings;
-    use feature ':5.10';
-    sub has { __PACKAGE__->attr(@_) }
-    
+  package Bar;
+  
+  use base 'Foo';
+  use strict;
+  use warnings;
+  use feature ':5.10';
+  sub has { __PACKAGE__->attr(@_) }
+  
 =head2 C<has>
 
 Create attribute method.
-    
-    has 'foo';
-    has [qw/foo bar baz/];
-    has foo => 1;
-    has foo => sub { {} };
+  
+  has 'foo';
+  has [qw/foo bar baz/];
+  has foo => 1;
+  has foo => sub { {} };
 
 Create attribute method. C<has> receive
 attribute name and default value.
@@ -283,8 +268,8 @@ not to share the value with other objects.
 
 Get and set a attribute value.
 
-    my $foo = $obj->foo;
-    $obj->foo(1);
+  my $foo = $obj->foo;
+  $obj->foo(1);
 
 If a default value is specified and the value is not exists,
 you can get default value.
@@ -292,44 +277,44 @@ you can get default value.
 If a value is set, the attribute return self object.
 So you can set a value repeatedly.
 
-   $obj->foo(1)->bar(2);
+ $obj->foo(1)->bar(2);
 
 You can create all attribute methods at once.
 
-    has [qw/foo bar baz/],
-        pot => 1,
-        mer => sub { 5 };
+  has [qw/foo bar baz/],
+    pot => 1,
+    mer => sub { 5 };
 
 =head1 METHODS
 
 =head2 C<new>
 
-    my $obj = Object::Simple->new(foo => 1, bar => 2);
-    my $obj = Object::Simple->new({foo => 1, bar => 2});
+  my $obj = Object::Simple->new(foo => 1, bar => 2);
+  my $obj = Object::Simple->new({foo => 1, bar => 2});
 
 Create a new object. C<new> receive
 hash or hash reference as arguments.
 
 =head2 C<attr>
 
-    __PACKAGE__->attr('foo');
-    __PACKAGE__->attr([qw/foo bar baz/]);
-    __PACKAGE__->attr(foo => 1);
-    __PACKAGE__->attr(foo => sub { {} });
+  __PACKAGE__->attr('foo');
+  __PACKAGE__->attr([qw/foo bar baz/]);
+  __PACKAGE__->attr(foo => 1);
+  __PACKAGE__->attr(foo => sub { {} });
 
-    __PACKAGE__->attr(
-        [qw/foo bar baz/],
-        pot => 1,
-        mer => sub { 5 }
-    );
+  __PACKAGE__->attr(
+    [qw/foo bar baz/],
+    pot => 1,
+    mer => sub { 5 }
+  );
 
 Create attribute.
 C<attr> method usage is equal to C<has> method.
 
 =head1 DEPRECATED FUNCTIONALITY
 
-    class_attr method # will be removed 2017/1/1
-    dual_attr method # will be removed 2017/1/1
+  class_attr method # will be removed 2017/1/1
+  dual_attr method # will be removed 2017/1/1
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
@@ -350,17 +335,17 @@ Tell me the bugs
 by mail or github L<http://github.com/yuki-kimoto/Object-Simple>
 
 =head1 AUTHOR
- 
+
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
- 
+
 =head1 COPYRIGHT & LICENSE
- 
+
 Copyright 2008 Yuki Kimoto, all rights reserved.
- 
+
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
- 
+
 =cut
- 
+
 1;
 
