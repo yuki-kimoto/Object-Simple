@@ -138,20 +138,20 @@ Object::Simple - Mojo::Base porting. very simple class builder.
   package SomeClass;
   use Object::Simple -base;
   
-  # Create a attribute method
+  # Create a accessor
   has 'foo';
   
-  # Create a attribute method having default value
+  # Create a accessor having default value
   has foo => 1;
   has foo => sub { [] };
   has foo => sub { {} };
   has foo => sub { OtherClass->new };
   
-  # Create attribute methods at once
+  # Create accessors at once
   has [qw/foo bar baz/];
   has [qw/foo bar baz/] => 0;
   
-  # Create all attribute methods at once
+  # Create all accessors at once
   has [qw/foo bar baz/],
     some => 1,
     other => sub { 5 };
@@ -163,7 +163,7 @@ Use the class.
   my $obj = SomeClass->new(foo => 1, bar => 2);
   my $obj = SomeClass->new({foo => 1, bar => 2});
   
-  # Get and set a attribute value
+  # Set and get value
   my $foo = $obj->foo;
   $obj->foo(1);
 
@@ -186,7 +186,7 @@ such as L<Class::Accessor>, L<Mojo::Base>, or L<Moose>.
 L<Class::Accessor> is simple, but lack offten used features.
 C<new> method can't receive hash arguments.
 Default value can't be specified.
-If multipule values is set through the attribute method,
+If multipule values is set through the accessor,
 its value is converted to array reference without warnings.
 
 Some people find L<Moose> too complex, and dislike that 
@@ -215,7 +215,7 @@ See L<Object::Simple::Guide> to know L<Object::Simple> details.
 
 If you specify -base flag, you can inherit Object::Simple
 and import C<has> function.
-C<has> function can create attribute method.
+C<has> function can create accessor.
 
   package Foo;
   use Object::Simple -base;
@@ -243,20 +243,20 @@ This is equal to
   use feature ':5.10';
   sub has { __PACKAGE__->attr(@_) }
   
-=head2 C<has>
+=head2 has
 
-Create attribute method.
+Create accessor.
   
   has 'foo';
   has [qw/foo bar baz/];
   has foo => 1;
   has foo => sub { {} };
 
-Create attribute method. C<has> receive
-attribute name and default value.
+Create accessor. C<has> receive
+accessor name and default value.
 Default value is optional.
-If you want to create multipule attribute methods at once,
-specify attribute names as array reference at first argument.
+If you want to create multipule accessors at once,
+specify accessor names as array reference at first argument.
 
 If you want to specify reference or object as default value,
 it must be code reference
@@ -270,12 +270,12 @@ Get and set a attribute value.
 If a default value is specified and the value is not exists,
 you can get default value.
 
-If a value is set, the attribute return self object.
+If a value is set, the accessor return self object.
 So you can set a value repeatedly.
 
  $obj->foo(1)->bar(2);
 
-You can create all attribute methods at once.
+You can create all accessors at once.
 
   has [qw/foo bar baz/],
     pot => 1,
@@ -283,7 +283,7 @@ You can create all attribute methods at once.
 
 =head1 METHODS
 
-=head2 C<new>
+=head2 new
 
   my $obj = Object::Simple->new(foo => 1, bar => 2);
   my $obj = Object::Simple->new({foo => 1, bar => 2});
@@ -291,7 +291,7 @@ You can create all attribute methods at once.
 Create a new object. C<new> receive
 hash or hash reference as arguments.
 
-=head2 C<attr>
+=head2 attr
 
   __PACKAGE__->attr('foo');
   __PACKAGE__->attr([qw/foo bar baz/]);
@@ -304,7 +304,7 @@ hash or hash reference as arguments.
     mer => sub { 5 }
   );
 
-Create attribute.
+Create accessor.
 C<attr> method usage is equal to C<has> method.
 
 =head1 DEPRECATED FUNCTIONALITY
@@ -314,8 +314,7 @@ C<attr> method usage is equal to C<has> method.
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
-If a functionality is DEPRECATED, you can know it by DEPRECATED warnings
-except for attribute method.
+If a functionality is DEPRECATED, you can know it by DEPRECATED warnings.
 You can check all DEPRECATED functionalities by document.
 DEPRECATED functionality is removed after five years,
 but if at least one person use the functionality and tell me that thing
