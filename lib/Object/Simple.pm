@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.07';
+our $VERSION = '3.08';
 
 use strict;
 use warnings;
@@ -45,14 +45,14 @@ sub import {
     
     # Export methods
     for my $method (@methods) {
-        
-        # Can be Exported?
-        Carp::croak("Cannot export '$method'.")
-          unless $exports{$method};
-        
-        # Export
-        no strict 'refs';
-        *{"${caller}::$method"} = \&{"$method"};
+      
+      # Can be Exported?
+      Carp::croak("Cannot export '$method'.")
+        unless $exports{$method};
+      
+      # Export
+      no strict 'refs';
+      *{"${caller}::$method"} = \&{"$method"};
     }
   }
 }
@@ -131,7 +131,7 @@ sub dual_attr {
 
 =head1 NAME
 
-Object::Simple - Mojo::Base porting. very simple class builder.
+Object::Simple - Simple class builder(Mojo::Base porting)
 
 =head1 SYNOPSIS
 
@@ -174,11 +174,15 @@ Inheritance
   
   package Bar;
   use Foo -base;
+  
+  # Another way
+  package Bar;
+  use Object::Simple -base => 'Foo';
 
 =head1 DESCRIPTION
 
 L<Object::Simple> is L<Mojo::Base> porting.
-you can use almost L<Mojo::Base> features.
+you can use L<Mojo::Base> features.
 
 L<Object::Simple> is a generator of accessor method,
 such as L<Class::Accessor>, L<Mojo::Base>, or L<Moose>.
@@ -200,22 +204,24 @@ its memory usage can get large.
 
 L<Object::Simple> is the middle way between L<Class::Accessor>
 and complex class builder. Only offten used features is
-implemented. L<Object::Simple> is almost same as L<Mojo::Base>.
+implemented has no dependency.
+L<Object::Simple> is almost same as L<Mojo::Base>.
 
 C<new> method can receive hash or hash reference.
 You can specify default value.
 
-If you like L<Mojo::Base>, L<Object::Simple> is very good.
+If you like L<Mojo::Base>, L<Object::Simple> is good choice.
 
 =head1 GUIDE
 
 See L<Object::Simple::Guide> to know L<Object::Simple> details.
 
-=head1 FUNCTIONS
+=head1 IMPORT OPTIONS
 
-If you specify -base flag, you can inherit Object::Simple
-and import C<has> function.
-C<has> function can create accessor.
+=head2 -base
+
+you can inherit Object::Simple
+and C<has> function is imported by C<-base> option.
 
   package Foo;
   use Object::Simple -base;
@@ -224,25 +230,23 @@ C<has> function can create accessor.
   has y => 2;
 
 strict and warnings is automatically enabled and 
-Perl 5.10 features(C<say>, C<state>, C<given - when> is imported.
+Perl 5.10 features(C<say>, C<state>, C<given> is imported.
 
-You can also use C<-base> flag in sub class.
-
+You can also use C<-base> option in sub class
+to inherit other class.
+  
+  # Bar inherit Foo
   package Bar;
   use Foo -base;
-  
-  has z => 3;
 
-This is equal to
+You can also use the following syntax.
 
+  # Same as above
   package Bar;
-  
-  use base 'Foo';
-  use strict;
-  use warnings;
-  use feature ':5.10';
-  sub has { __PACKAGE__->attr(@_) }
-  
+  use Object::Simple -base => 'Foo';
+
+=head1 FUNCTIONS
+
 =head2 has
 
 Create accessor.
