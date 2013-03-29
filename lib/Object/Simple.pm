@@ -84,7 +84,7 @@ sub attr {
       Carp::croak qq{Attribute "$attr" invalid} unless $attr =~ /^[a-zA-Z_]\w*$/;
 
       # Header (check arguments)
-      my $code = "package $class;\nsub $attr {\n  if (\@_ == 1) {\n";
+      my $code = "*{${class}::$attr} = sub {\n  if (\@_ == 1) {\n";
 
       # No default value (return value)
       unless (defined $default) { $code .= "    return \$_[0]{'$attr'};" }

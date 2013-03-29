@@ -1,3 +1,5 @@
+3.09
+  - use closure for Perl 5.8
 3.08
   - improved document
 3.07
