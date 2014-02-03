@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.08';
+our $VERSION = '3.09';
 
 use strict;
 use warnings;
@@ -84,7 +84,7 @@ sub attr {
       Carp::croak qq{Attribute "$attr" invalid} unless $attr =~ /^[a-zA-Z_]\w*$/;
 
       # Header (check arguments)
-      my $code = "*{${class}::$attr} = sub {\n  if (\@_ == 1) {\n";
+      my $code = "*{\"${class}::$attr\"} = sub {\n  if (\@_ == 1) {\n";
 
       # No default value (return value)
       unless (defined $default) { $code .= "    return \$_[0]{'$attr'};" }
@@ -112,7 +112,7 @@ sub attr {
       # We compile custom attribute code for speed
       no strict 'refs';
       warn "-- Attribute $attr in $class\n$code\n\n" if $ENV{OBJECT_SIMPLE_DEBUG};
-      Carp::croak "Mojo::Base error: $@" unless eval "$code;1";
+      Carp::croak "Object::Simple error: $@" unless eval "$code;1";
     }
   }
 }
