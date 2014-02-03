@@ -1,3 +1,5 @@
+3.10
+  - suppress warnings "Ambiguous use of *{-} resolved to -". after Perl 5.16
 3.09
   - use closure to suppress Perl 5.8 warnings
 3.08
