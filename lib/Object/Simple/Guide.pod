@@ -41,7 +41,7 @@ You can get the default value.
 
 If you want to specify a reference or object as default value,
 it must be sub reference, whose return value is the default value.
-This is requirment not to share the default value with other objects.
+This is requirement not to share the default value with other objects.
 
   has foo => sub { [] };
   has foo => sub { {} };
@@ -81,7 +81,7 @@ and C<clear> method to set C<x> and C<y> to 0.
     $self->y(0);
   }
 
-You can use Point class in the folowing way.
+You can use Point class in the following way.
 
   use Point;
   my $point = Point->new(x => 3, y => 5);
@@ -106,7 +106,7 @@ C<clear> method is overridden to clear C<x>, C<y> and C<z>.
     $self->z(0);
   }
 
-You can use Point3D class in the folowing way.
+You can use Point3D class in the following way.
 
   use Point3D;
   my $point = Point->new(x => 3, y => 5, z => 8);
@@ -168,10 +168,10 @@ use C<can> method
   SomeClass->can('method1');
   $obj->can('method1');
 
-=head3 Capsulation
+=head3 Encapsulation
 
-Second concept of Object-Oriented programing is capsulation.
-Capsulation means that
+Second concept of Object-Oriented programing is encapsulation.
+Encapsulation means that
 you don't touch internal data directory.
 You must use public methods in documentation.
 If you keep this rule, All the things become simple.
@@ -191,7 +191,7 @@ To access the value directory is bad manner.
 =head3 Polymorphism
 
 Third concept Object-Oriented programing is polymorphism.
-Polymorphism is devieded into two concepts,
+Polymorphism is divided into two concepts,
 overloading and overriding.
 
 Perl programer don't have to care overloading.
@@ -239,7 +239,7 @@ If you understand only these three concepts,
 you can do enough powerful Object-Oriented programming.
 and source code is readable for other language users.
 
-=head2 3. Offten used techniques
+=head2 3. Often used techniques
 
 =head3 Override new method
 
@@ -286,4 +286,3 @@ This is useful in case you don't want to use multiple inheritance.
 Note that you can't override C<new> method
 because C<new> method is imported in the class,
 not inherited from base class.
-
