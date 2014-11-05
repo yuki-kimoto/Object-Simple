@@ -9,24 +9,56 @@ no warnings 'redefine';
 use Carp ();
 
 sub import {
-  my ($class, @methods) = @_;
+  my $class = shift;
+  
+  return unless @_;
 
   # Caller
   my $caller = caller;
   
-  # Base
-  if ((my $flag = $methods[0] || '') eq '-base') {
-
-    # Can haz?
+  # No export syntax
+  my $no_export_syntax;
+  unless (grep { $_[0] eq $_ } qw/new attr class_attr dual_attr/) {
+    $no_export_syntax = 1;
+  }
+  
+  # Inheritance and including role
+  if ($no_export_syntax) {
+    
+    # Option
+    my %opt;
+    my $base_opt_name;
+    if (@_ % 2 != 0) {
+      my $base_opt_name = shift;
+      if ($base_opt_name ne '-base') {
+        Carp::croak "'$base_opt_name' is invalid option(Object::Simple::import())";
+      }
+      $opt{-base} = undef;
+    }
+    %opt = (%opt, @_);
+    
+    # Base class
+    my $base_class = delete $opt{-base};
+    
+    # Roles
+    my $roles = delete $opt{with};
+    $roles = [$roles] if defined $roles && !ref $roles;
+    
+    # Check option
+    for my $opt_name (keys %opt) {
+      Carp::croak "'$opt_name' is invalid option(Object::Simple::import())";
+    }
+    
+    # Export has function
     no strict 'refs';
     no warnings 'redefine';
     *{"${caller}::has"} = sub { attr($caller, @_) };
     
     # Inheritance
-    if (my $module = $methods[1]) {
-      $module =~ s/::|'/\//g;
-      require "$module.pm" unless $module->can('new');
-      push @{"${caller}::ISA"}, $module;
+    if ($base_class) {
+      $base_class =~ s/::|'/\//g;
+      require "$base_class.pm" unless $base_class->can('new');
+      push @{"${caller}::ISA"}, $base_class;
     }
     else { push @{"${caller}::ISA"}, $class }
 
@@ -37,8 +69,10 @@ sub import {
     # Modern!
     feature->import(':5.10') if $] >= 5.010;
   }
-  # Method export
+  
+  # Export methods
   else {
+    my @methods = @_;
   
     # Exports
     my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
