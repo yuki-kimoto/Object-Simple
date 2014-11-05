@@ -42,7 +42,12 @@ sub import {
     
     # Roles
     my $roles = delete $opt{with};
-    $roles = [$roles] if defined $roles && !ref $roles;
+    if (defined $roles) {
+      $roles = [$roles] if ref $roles ne 'ARRAY';
+    }
+    else {
+      $roles = [];
+    }
     
     # Check option
     for my $opt_name (keys %opt) {
@@ -61,7 +66,47 @@ sub import {
       push @{"${caller}::ISA"}, $base_class;
     }
     else { push @{"${caller}::ISA"}, $class }
-
+    
+    # Roles
+    for my $role (@$roles) {
+      eval "require $role";
+      Carp::croak $@ if $@;
+      
+      my $role_file = $role;
+      $role_file =~ s/::/\//g;
+      $role_file .= ".pm";
+      
+      my $role_path = $INC{$role_file};
+      open my $fh, '<', $role_path
+        or Carp::croak "Can't open file $role_path: $!";
+      
+      my $role_content = do { local $/; <$fh> };
+      
+      my $role_for_file = "role_for_$class";
+      $role_for_file =~ s/::/__/g;
+      $role_for_file .= "::$role";
+      $INC{$role_for_file} = undef;
+      
+      my $role_for = $role_for_file;
+      $role_for =~ s/\//::/g;
+      $role_for =~ s/\.pm$//;
+      
+      my $role_for_content = $role_content;
+      $role_for_content =~ s/package\s+(.+?);/package $role_for;/;
+      eval $role_for_content;
+      
+      {
+        no strict 'refs';
+        my $parent = ${"${class}::ISA"}[0];
+        @{"${class}::ISA"} = ($role_for);
+        if ($parent) {
+          @{"${role_for}::ISA"} = ($parent);
+        }
+      }
+      
+      Carp::croak $@ if $@;
+    }
+    
     # strict!
     strict->import;
     warnings->import;
