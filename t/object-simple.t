@@ -195,7 +195,7 @@ test 'Method export error';
     package T4;
     eval "use Object::Simple 'none';";
 }
-like($@, qr/Cannot export 'none'/, "$test");
+like($@, qr/'none' is invalid option/, "$test");
 
 test 'Inherit class_attr';
 is_deeply(T1->m27, {a1 => 1}, "$test : no effect : hash");
