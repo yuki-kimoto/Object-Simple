@@ -4,9 +4,13 @@ our $VERSION = '3.10';
 
 use strict;
 use warnings;
+use Scalar::Util ();
+
 no warnings 'redefine';
 
 use Carp ();
+
+my $role_refs = [];
 
 sub import {
   my $class = shift;
@@ -82,9 +86,11 @@ sub import {
       
       my $role_content = do { local $/; <$fh> };
       
-      my $role_for_file = "role_for_$class";
-      $role_for_file =~ s/::/__/g;
-      $role_for_file .= "::$role";
+      my $role_ref = \do {"$role"};
+      push @$role_refs, $role_ref;
+      my $role_id = Scalar::Util::refaddr $role_ref;
+      my $role_for_file = "${role}::role_$role_id";
+      $role_id++;
       $INC{$role_for_file} = undef;
       
       my $role_for = $role_for_file;

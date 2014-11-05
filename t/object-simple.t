@@ -4,6 +4,36 @@ use warnings;
 
 use lib 't/object-simple';
 
+# role
+{
+  # role - include two role
+  {
+    {
+      package T6;
+      use Object::Simple -base, with => ['Role1', 'Role2'];
+    }
+    
+    {
+      my $o = T6->new;
+      is($o->role1_method1, 'role1_method1');
+      is($o->role2_method1, 'role2_method1');
+    }
+  }
+  
+  # role - include one role
+  {
+    {
+      package T5;
+      use Object::Simple -base, with => 'Role1';
+    }
+    
+    {
+      my $o = T5->new;
+      is($o->role1_method1, 'role1_method1');
+    }
+  }
+}
+
 # -base flag
 {
   {
