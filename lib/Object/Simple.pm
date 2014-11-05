@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.10';
+our $VERSION = '3.11';
 
 use strict;
 use warnings;
@@ -86,7 +86,6 @@ sub import {
       
       my $role_content = do { local $/; <$fh> };
       my $role_for_file = "Object::Simple::role_id_${role_id}::$role";
-      warn $role_for_file;
       $role_id++;
       $INC{$role_for_file} = undef;
       
