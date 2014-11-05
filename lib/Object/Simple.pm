@@ -10,7 +10,7 @@ no warnings 'redefine';
 
 use Carp ();
 
-my $role_refs = [];
+my $role_id = 1;
 
 sub import {
   my $class = shift;
@@ -85,11 +85,9 @@ sub import {
         or Carp::croak "Can't open file $role_path: $!";
       
       my $role_content = do { local $/; <$fh> };
-      
-      my $role_ref = \do {"$role"};
-      push @$role_refs, $role_ref;
-      my $role_id = Scalar::Util::refaddr $role_ref;
-      my $role_for_file = "${role}::role_$role_id";
+      my $role_for_file = "Object::Simple::role_id_${role_id}::$role";
+      warn $role_for_file;
+      $role_id++;
       $INC{$role_for_file} = undef;
       
       my $role_for = $role_for_file;

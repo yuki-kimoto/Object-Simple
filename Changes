@@ -1,3 +1,5 @@
+3.11
+  - add with option and role support(EXPERIMENTAL)
 3.10
   - suppress warnings "Ambiguous use of *{-} resolved to -". after Perl 5.16
 3.09
