@@ -96,6 +96,7 @@ sub import {
       my $role_for_content = $role_content;
       $role_for_content =~ s/package\s+(.+?);/package $role_for;/;
       eval $role_for_content;
+      Carp::croak $@ if $@;
       
       {
         no strict 'refs';
@@ -105,8 +106,6 @@ sub import {
           @{"${role_for}::ISA"} = ($parent);
         }
       }
-      
-      Carp::croak $@ if $@;
     }
     
     # strict!
