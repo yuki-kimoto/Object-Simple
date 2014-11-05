@@ -6,6 +6,19 @@ use lib 't/object-simple';
 
 # role
 {
+  # role - after role is high privilage
+  {
+    {
+      package T7;
+      use Object::Simple -base, with => ['Role1', 'Role2'];
+    }
+    
+    {
+      my $o = T7->new;
+      is($o->same_method1, 'role2_same_method1');
+    }
+  }
+  
   # role - include two role
   {
     {

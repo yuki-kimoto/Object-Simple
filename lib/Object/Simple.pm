@@ -103,8 +103,8 @@ sub import {
       
       {
         no strict 'refs';
-        my $parent = ${"${class}::ISA"}[0];
-        @{"${class}::ISA"} = ($role_for);
+        my $parent = ${"${caller}::ISA"}[0];
+        @{"${caller}::ISA"} = ($role_for);
         if ($parent) {
           @{"${role_for}::ISA"} = ($parent);
         }
