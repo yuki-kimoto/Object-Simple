@@ -6,6 +6,25 @@ use lib 't/object-simple';
 
 # role
 {
+  # role - call super class method
+  {
+    {
+      package T8;
+      use Object::Simple -base, with => ['Role1', 'Role2'];
+      
+      sub call_super {
+        my $self = shift;
+        
+        $self->SUPER::role1_method1();
+      }
+    }
+    
+    {
+      my $o = T8->new;
+      is($o->call_super, 'role1_method1');
+    }
+  }
+
   # role - after role is high privilage
   {
     {
