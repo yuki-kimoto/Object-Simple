@@ -12,16 +12,16 @@ use lib 't/object-simple';
       package T8;
       use Object::Simple -base, with => ['Role1', 'Role2'];
       
-      sub call_super {
+      sub role1_method1 {
         my $self = shift;
         
-        $self->SUPER::role1_method1();
+        return 'a ' . $self->SUPER::role1_method1();
       }
     }
     
     {
       my $o = T8->new;
-      is($o->call_super, 'role1_method1');
+      is($o->role1_method1, 'a role1_method1');
     }
   }
 
