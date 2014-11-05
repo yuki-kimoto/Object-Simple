@@ -272,10 +272,10 @@ you can use L<Mojo::Base> features.
 L<Object::Simple> is a generator of accessor method,
 such as L<Class::Accessor>, L<Mojo::Base>, or L<Moose>.
 
-L<Class::Accessor> is simple, but lack offten used features.
+L<Class::Accessor> is simple, but lack often used features.
 C<new> method can't receive hash arguments.
 Default value can't be specified.
-If multipule values is set through the accessor,
+If multiple values is set through the accessor,
 its value is converted to array reference without warnings.
 
 Some people find L<Moose> too complex, and dislike that 
@@ -288,7 +288,7 @@ In addition, L<Moose> can be slow at compile-time and
 its memory usage can get large.
 
 L<Object::Simple> is the middle way between L<Class::Accessor>
-and complex class builder. Only offten used features is
+and complex class builder. Only often used features is
 implemented has no dependency.
 L<Object::Simple> is almost same as L<Mojo::Base>.
 
@@ -344,7 +344,7 @@ Create accessor.
 Create accessor. C<has> receive
 accessor name and default value.
 Default value is optional.
-If you want to create multipule accessors at once,
+If you want to create multiple accessors at once,
 specify accessor names as array reference at first argument.
 
 If you want to specify reference or object as default value,
