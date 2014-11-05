@@ -218,10 +218,10 @@ Object::Simple - Simple class builder(Mojo::Base porting)
   package SomeClass;
   use Object::Simple -base;
   
-  # Create a accessor
+  # Create accessor
   has 'foo';
   
-  # Create a accessor having default value
+  # Create accessor with default value
   has foo => 1;
   has foo => sub { [] };
   has foo => sub { {} };
@@ -231,12 +231,7 @@ Object::Simple - Simple class builder(Mojo::Base porting)
   has [qw/foo bar baz/];
   has [qw/foo bar baz/] => 0;
   
-  # Create all accessors at once
-  has [qw/foo bar baz/],
-    some => 1,
-    other => sub { 5 };
-
-Use the class.
+Create object.
 
   # Create a new object
   my $obj = SomeClass->new;
@@ -246,18 +241,46 @@ Use the class.
   # Set and get value
   my $foo = $obj->foo;
   $obj->foo(1);
+  
+  # set-accessor can be changed
+  $obj->foo(1)->bar(2);
 
 Inheritance
-
+  
+  # Foo.pm
   package Foo;
   use Object::Simple -base;
   
+  # Bar.pm
   package Bar;
   use Foo -base;
   
-  # Another way
+  # Bar.pm (another way to inherit)
   package Bar;
   use Object::Simple -base => 'Foo';
+
+Role(EXPERIMENTAL)
+  
+  # SomeRole1.pm
+  package SomeRole;
+  sub bar {
+    ...
+  }
+
+  # SomeRole2.pm
+  package SomeRole;
+  sub baz {
+    ...
+  }
+  
+  # Foo.pm
+  package Foo;
+  use Object::Simple -base, with => ['SomeRole1', 'SomeRole2'];
+  
+  # main.pl
+  my $foo = Foo->new;
+  $foo->bar;
+  $foo->baz;
 
 =head1 DESCRIPTION
 
@@ -294,14 +317,272 @@ If you like L<Mojo::Base>, L<Object::Simple> is good choice.
 
 =head1 GUIDE
 
-See L<Object::Simple::Guide> to know L<Object::Simple> details.
+=head2 1. Create accessor
+
+At first, you create class.
+
+  package SomeClass;
+  use Object::Simple -base;
+
+By using C<-base> option, SomeClass inherit Object::Simple and import C<has> method.
+
+L<Object::Simple> have C<new> method. C<new> method is constructor.
+C<new> method can receive hash or hash reference.
+  
+  my $obj = SomeClass->new;
+  my $obj = SomeClass->new(foo => 1, bar => 2);
+  my $obj = SomeClass->new({foo => 1, bar => 2});
+
+Create accessor by using C<has> function.
+
+  has 'foo';
+
+If you create accessor, you can set or get attribute value.s
+
+  # Set value
+  $obj->foo(1);
+  
+  # Get value
+  my $foo = $obj->foo;
+
+set-accessor can be changed.
+
+  $obj->foo(1)->bar(2);
+
+You can define default value.
+
+  has foo => 1;
+
+If C<foo> attribute value is not exists, default value is used.
+
+  my $foo_default = $obj->foo;
+
+If you want to use reference or object as default value,
+default value must be surrounded by code reference.
+the return value become default value.
+
+  has foo => sub { [] };
+  has foo => sub { {} };
+  has foo => sub { SomeClass->new };
+
+You can create multiple accessors at once.
+
+  has [qw/foo bar baz/];
+  has [qw/foo bar baz/] => 0;
+
+=head2 Class example
+
+I introduce L<Object::Simple> example.
+
+Point class: two accessor C<x> and C<y>,
+and C<clear> method to set C<x> and C<y> to 0.
+
+  package Point;
+  use Object::Simple -base;
+
+  has x => 0;
+  has y => 0;
+  
+  sub clear {
+    my $self = shift;
+    
+    $self->x(0);
+    $self->y(0);
+  }
+
+Use Point class.
+
+  use Point;
+  my $point = Point->new(x => 3, y => 5);
+  print $point->x;
+  $point->y(9);
+  $point->clear;
+
+Point3D class: Point3D inherit Point class.
+Point3D class has C<z> accessor in addition to C<x> and C<y>.
+C<clear> method is overriden to clear C<x>, C<y> and C<z>.
+
+  package Point3D;
+  use Point -base;
+  
+  has z => 0;
+  
+  sub clear {
+    my $self = shift;
+    
+    $self->SUPER::clear;
+    
+    $self->z(0);
+  }
+
+Use Point3D class.
+
+  use Point3D;
+  my $point = Point->new(x => 3, y => 5, z => 8);
+  print $point->z;
+  $point->z(9);
+  $point->clear;
+
+=head2 2. Concepts of Object-Oriented programing
+
+I introduce concepts of Object-Oriented programing
+
+=head3 Inheritance
+
+I explain the essence of Object-Oriented programing.
+
+First concept is inheritance.
+Inheritance means that
+if Class Q inherit Class P, Class Q use all methods of class P.
+
+  +---+
+  | P | Base class
+  +---+   have method1 and method2
+    |
+  +---+
+  | Q | Sub class
+  +---+   have method3
+
+Class Q inherits Class P,
+Q can use all methods of P in addition to methods of Q.
+
+In other words, Q can use
+C<method1>, C<method2>, and C<method3>
+
+You can use C<-base> option to inherit class.
+  
+  # P.pm
+  package P;
+  use Object::Simple -base;
+  
+  sub method1 { ... }
+  sub method2 { ... }
+  
+  # Q.pm
+  package Q;
+  use P -base;
+  
+  sub method3 { ... }
+
+Perl have useful functions and methods to help Object-Oriented programing.
+
+If you know what class the object is belonged to, use C<ref> function.
+
+  my $class = ref $obj;
+
+If you know what class the object inherits, use C<isa> method.
+
+  $obj->isa('SomeClass');
+
+If you know what method the object(or class) can use, use C<can> method 
+
+  SomeClass->can('method1');
+  $obj->can('method1');
+
+=head3 Encapsulation
+
+Second concept is encapsulation.
+Encapsulation means that
+you don't touch internal data directory.
+You must use public method when you access internal data.
+
+Create accessor and use it to keep thie rule.
+
+  my $value = $obj->foo;
+  $obj->foo(1);
+
+=head3 Polymorphism
+
+Third concept is polymorphism.
+Polymorphism is divided into two concepts,
+overload and override
+
+Perl programer don't need to care overload.
+Perl is dynamic type language.
+Subroutine can receive any value.
+
+Override means that you can change method behavior in sub class.
+  
+  # P.pm
+  package P;
+  use Object::Simple -base;
+  
+  sub method1 { return 1 }
+  
+  # Q.pm
+  package Q;
+  use P -base;
+  
+  sub method1 { return 2 }
+
+P C<method1> return 1. Q C<method1> return 2.
+Q C<method1> override P C<method1>.
+
+  # P method1 return 1
+  my $obj_a = P->new;
+  $obj_p->method1; 
+  
+  # Q method1 return 2
+  my $obj_b = Q->new;
+  $obj_q->method1;
+
+If you want to use super class method from sub class,
+use SUPER pseudo-class.
+
+  package Q;
+  
+  sub method1 {
+    my $self = shift;
+    
+    # Call supper class P method1
+    my $value = $self->SUPER::method1;
+    
+    return 2 + $value;
+  }
+
+If you understand three concepts,
+you have learned Object-Oriented programming primary parts.
+
+=head2 3. Often used techniques
+
+=head3 Override new method
+
+C<new> method can be overridden.
+
+B<Example:>
+
+Initialize the object
+
+  sub new {
+    my $self = shift->SUPER::new(@_);
+    
+    # Initialization
+    
+    return $self;
+  }
+
+B<Example:>
+
+Change arguments of C<new>.
+  
+  sub new {
+    my $self = shift;
+    
+    $self->SUPER::new(x => $_[0], y => $_[1]);
+    
+    return $self;
+  }
+
+You can pass array to C<new> method.
+
+  my $point = Point->new(4, 5);
 
 =head1 IMPORT OPTIONS
 
 =head2 -base
 
-you can inherit Object::Simple
-and C<has> function is imported by C<-base> option.
+By using C<-base> option, the class inherit Object::Simple
+and import C<has> function.
 
   package Foo;
   use Object::Simple -base;
@@ -324,6 +605,41 @@ You can also use the following syntax.
   # Same as above
   package Bar;
   use Object::Simple -base => 'Foo';
+
+=head2 with(EXPERIMENTAL)
+
+  with => 'SomeRole'
+  with => ['SomeRole1', 'SomeRole2']
+
+You can include roles by using C<with> option.
+  
+  # SomeRole1.pm
+  package SomeRole1;
+  sub foo { ... }
+  
+  # SomeRole2.pm
+  package SomeRole2;
+  sub bar { ... }
+  
+  # SomeClass.pm
+  package SomeClass;
+  use Object::Simple -base, with => ['SomeRole1', 'SomeRole2'];
+
+Role is class. Role itself should not inherit other class.
+
+By using C<with> option, You can include roles into your class.
+
+Role classes is cloned, and it is inserted into inheritance structure.
+
+  Object::Simple
+  |
+  SomeRole1(cloned)
+  |
+  SomeRole2(cloned)
+  |
+  SomeClass
+  
+SomeClass use all methods of Object::Simple, SomeRole1, SomeRole2.
 
 =head1 FUNCTIONS
 
@@ -419,7 +735,7 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008-2013 Yuki Kimoto, all rights reserved.
+Copyright 2008-2014 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
