@@ -6,6 +6,34 @@ use lib 't/object-simple';
 
 # role
 {
+  # role - use both -base and with 2
+  {
+    {
+      package T10;
+      use Object::Simple -base => 'T2', with => ['Role1', 'Role2'];
+    }
+    
+    {
+      my $o = T10->new;
+      is($o->x, 1);
+      is($o->role1_method1, 'role1_method1');
+    }
+  }
+  
+  # role - use both -base and with 1
+  {
+    {
+      package T9;
+      use T2 -base, with => ['Role1', 'Role2'];
+    }
+    
+    {
+      my $o = T9->new;
+      is($o->x, 1);
+      is($o->role1_method1, 'role1_method1');
+    }
+  }
+  
   # role - call super class method
   {
     {
