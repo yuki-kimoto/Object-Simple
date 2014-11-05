@@ -21,16 +21,26 @@ sub import {
     $is_new_syntax = 1;
   }
   # Not old keyword
-  elsif (! grep { $_[0] eq $_ } ('-base', 'new', 'attr', 'class_attr', 'dual_attr')) {
+  elsif (! grep { $_[0] eq $_ } ('new', 'attr', 'class_attr', 'dual_attr')) {
     $is_new_syntax = 1;
   }
   
   # New syntax
   if ($is_new_syntax) {
+    
+    if (@_ % 2 != 0) {
+      my $base_opt_name = shift;
+      if ($base_opt_name ne '-base') {
+        Carp::croak "'$base_opt_name' is invalid option(Object::Simple::import())";
+      }
+    }
+    
     my %opt = @_;
     
     # Base class
-    my $base_class = delete $opt{extends};
+    my $extends_opt_value = delete $opt{extends};
+    my $base_opt_value = delete $opt{-base};
+    my $base_class = $extends_opt_value || $base_opt_value;
     
     # Role
     my $roles = delete $opt{with};
@@ -40,52 +50,45 @@ sub import {
     for my $opt_name (keys %opt) {
       Carp::croak "'$opt_name' is invalid option(Object::Simple::import())";
     }
+
+    # Can has?
+    no strict 'refs';
+    no warnings 'redefine';
+    *{"${caller}::has"} = sub { attr($caller, @_) };
+    
+    # Inheritance
+    if ($base_class) {
+      $base_class =~ s/::|'/\//g;
+      require "$base_class.pm" unless $base_class->can('new');
+      push @{"${caller}::ISA"}, $base_class;
+    }
+    else { push @{"${caller}::ISA"}, $class }
+
+    # strict!
+    strict->import;
+    warnings->import;
+
+    # Modern!
+    feature->import(':5.10') if $] >= 5.010;
   }
   
   # Old syntax
   else {
     my @methods = @_;
     
-    # Base
-    if ((my $flag = $methods[0] || '') eq '-base') {
-
-      # Can haz?
-      no strict 'refs';
-      no warnings 'redefine';
-      *{"${caller}::has"} = sub { attr($caller, @_) };
-      
-      # Inheritance
-      if (my $module = $methods[1]) {
-        $module =~ s/::|'/\//g;
-        require "$module.pm" unless $module->can('new');
-        push @{"${caller}::ISA"}, $module;
-      }
-      else { push @{"${caller}::ISA"}, $class }
-
-      # strict!
-      strict->import;
-      warnings->import;
-
-      # Modern!
-      feature->import(':5.10') if $] >= 5.010;
-    }
-    # Method export
-    else {
+    # Exports
+    my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
     
-      # Exports
-      my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
+    # Export methods
+    for my $method (@methods) {
       
-      # Export methods
-      for my $method (@methods) {
-        
-        # Can be Exported?
-        Carp::croak("Cannot export '$method'.")
-          unless $exports{$method};
-        
-        # Export
-        no strict 'refs';
-        *{"${caller}::$method"} = \&{"$method"};
-      }
+      # Can be Exported?
+      Carp::croak("Cannot export '$method'.")
+        unless $exports{$method};
+      
+      # Export
+      no strict 'refs';
+      *{"${caller}::$method"} = \&{"$method"};
     }
   }
 }
