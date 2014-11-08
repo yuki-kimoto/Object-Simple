@@ -67,9 +67,9 @@ sub import {
     if ($base_class) {
       $base_class =~ s/::|'/\//g;
       require "$base_class.pm" unless $base_class->can('new');
-      push @{"${caller}::ISA"}, $base_class;
+      @{"${caller}::ISA"} = ($base_class);
     }
-    else { push @{"${caller}::ISA"}, $class }
+    else { @{"${caller}::ISA"} = ($class) }
     
     # Roles
     for my $role (@$roles) {
