@@ -94,7 +94,7 @@ sub import {
       $role_for =~ s/\.pm$//;
       
       my $role_for_content = $role_content;
-      $role_for_content =~ s/package\s+(.+?);/package $role_for;/;
+      $role_for_content =~ s/package\s+([a-zA-Z0-9:]+?)\b/package $role_for/;
       eval $role_for_content;
       Carp::croak $@ if $@;
       
