@@ -1,4 +1,4 @@
-package T2;
+package Some::T2;
 
 use Object::Simple -base;
 

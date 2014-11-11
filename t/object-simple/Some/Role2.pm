@@ -1,4 +1,4 @@
-package Role2;
+package Some::Role2;
 
 use strict;
 use warnings;

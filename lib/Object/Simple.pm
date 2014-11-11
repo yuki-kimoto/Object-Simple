@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.12';
+our $VERSION = '3.13';
 
 use strict;
 use warnings;
@@ -65,20 +65,20 @@ sub import {
     
     # Inheritance
     if ($base_class) {
-      $base_class =~ s/::|'/\//g;
-      require "$base_class.pm" unless $base_class->can('new');
+      my $base_class_path = $base_class;
+      $base_class_path =~ s/::|'/\//g;
+      require "$base_class_path.pm";
       @{"${caller}::ISA"} = ($base_class);
     }
     else { @{"${caller}::ISA"} = ($class) }
     
     # Roles
     for my $role (@$roles) {
-      eval "require $role";
-      Carp::croak $@ if $@;
       
       my $role_file = $role;
       $role_file =~ s/::/\//g;
       $role_file .= ".pm";
+      require $role_file;
       
       my $role_path = $INC{$role_file};
       open my $fh, '<', $role_path
@@ -94,7 +94,7 @@ sub import {
       $role_for =~ s/\.pm$//;
       
       my $role_for_content = $role_content;
-      $role_for_content =~ s/package\s+([a-zA-Z0-9:]+?)\b/package $role_for/;
+      $role_for_content =~ s/package\s+([a-zA-Z0-9:]+)/package $role_for/;
       eval $role_for_content;
       Carp::croak $@ if $@;
       

@@ -1,6 +1,6 @@
 package T3;
 
-use T2 -base;
+use Some::T2 -base;
 
 has z => 3;
 
