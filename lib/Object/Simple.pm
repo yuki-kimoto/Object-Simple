@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.13';
+our $VERSION = '3.14';
 
 use strict;
 use warnings;
@@ -9,8 +9,6 @@ use Scalar::Util ();
 no warnings 'redefine';
 
 use Carp ();
-
-my $role_id = 1;
 
 sub import {
   my $class = shift;
@@ -44,15 +42,6 @@ sub import {
     # Base class
     my $base_class = delete $opt{-base};
     
-    # Roles
-    my $roles = delete $opt{with};
-    if (defined $roles) {
-      $roles = [$roles] if ref $roles ne 'ARRAY';
-    }
-    else {
-      $roles = [];
-    }
-    
     # Check option
     for my $opt_name (keys %opt) {
       Carp::croak "'$opt_name' is invalid option(Object::Simple::import())";
@@ -72,48 +61,9 @@ sub import {
     }
     else { @{"${caller}::ISA"} = ($class) }
     
-    # Roles
-    for my $role (@$roles) {
-      
-      my $role_file = $role;
-      $role_file =~ s/::/\//g;
-      $role_file .= ".pm";
-      require $role_file;
-      
-      my $role_path = $INC{$role_file};
-      open my $fh, '<', $role_path
-        or Carp::croak "Can't open file $role_path: $!";
-      
-      my $role_content = do { local $/; <$fh> };
-      my $role_for_file = "Object::Simple::role_id_${role_id}::$role";
-      $role_id++;
-      $INC{$role_for_file} = undef;
-      
-      my $role_for = $role_for_file;
-      $role_for =~ s/\//::/g;
-      $role_for =~ s/\.pm$//;
-      
-      my $role_for_content = $role_content;
-      $role_for_content =~ s/package\s+([a-zA-Z0-9:]+)/package $role_for/;
-      eval $role_for_content;
-      Carp::croak $@ if $@;
-      
-      {
-        no strict 'refs';
-        my $parent = ${"${caller}::ISA"}[0];
-        @{"${caller}::ISA"} = ($role_for);
-        if ($parent) {
-          @{"${role_for}::ISA"} = ($parent);
-        }
-      }
-    }
-    
     # strict!
     strict->import;
     warnings->import;
-
-    # Modern!
-    feature->import(':5.10') if $] >= 5.010;
   }
   
   # Export methods
@@ -590,8 +540,7 @@ and import C<has> function.
   has x => 1;
   has y => 2;
 
-strict and warnings is automatically enabled and 
-Perl 5.10 features(C<say>, C<state>, C<given> is imported.
+strict and warnings is automatically enabled.
 
 You can also use C<-base> option in sub class
 to inherit other class.
