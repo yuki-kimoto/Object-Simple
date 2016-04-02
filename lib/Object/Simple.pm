@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.14';
+our $VERSION = '3.15';
 
 use strict;
 use warnings;
@@ -24,7 +24,7 @@ sub import {
     $no_export_syntax = 1;
   }
   
-  # Inheritance and including role
+  # Inheritance
   if ($no_export_syntax) {
     
     # Option
@@ -208,29 +208,6 @@ Inheritance
   # Bar.pm (another way to inherit)
   package Bar;
   use Object::Simple -base => 'Foo';
-
-Role(EXPERIMENTAL)
-  
-  # SomeRole1.pm
-  package SomeRole;
-  sub bar {
-    ...
-  }
-
-  # SomeRole2.pm
-  package SomeRole;
-  sub baz {
-    ...
-  }
-  
-  # Foo.pm
-  package Foo;
-  use Object::Simple -base, with => ['SomeRole1', 'SomeRole2'];
-  
-  # main.pl
-  my $foo = Foo->new;
-  $foo->bar;
-  $foo->baz;
 
 =head1 DESCRIPTION
 
@@ -555,41 +532,6 @@ You can also use the following syntax.
   package Bar;
   use Object::Simple -base => 'Foo';
 
-=head2 with(EXPERIMENTAL)
-
-  with => 'SomeRole'
-  with => ['SomeRole1', 'SomeRole2']
-
-You can include roles by using C<with> option.
-  
-  # SomeRole1.pm
-  package SomeRole1;
-  sub foo { ... }
-  
-  # SomeRole2.pm
-  package SomeRole2;
-  sub bar { ... }
-  
-  # SomeClass.pm
-  package SomeClass;
-  use Object::Simple -base, with => ['SomeRole1', 'SomeRole2'];
-
-Role is class. Role itself should not inherit other class.
-
-By using C<with> option, You can include roles into your class.
-
-Role classes is cloned, and it is inserted into inheritance structure.
-
-  Object::Simple
-  |
-  SomeRole1(cloned)
-  |
-  SomeRole2(cloned)
-  |
-  SomeClass
-  
-SomeClass use all methods of Object::Simple, SomeRole1, SomeRole2.
-
 =head1 FUNCTIONS
 
 =head2 has
@@ -684,10 +626,10 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008-2014 Yuki Kimoto, all rights reserved.
+Copyright 2008-2016 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
+under the same terms as Artistic v2(This is same as L<Mojolicious> licence).
 
 =cut
 
