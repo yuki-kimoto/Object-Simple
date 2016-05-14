@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.15';
+our $VERSION = '3.16';
 
 use strict;
 use warnings;
@@ -103,7 +103,11 @@ sub attr {
   unshift @args, (shift @args, undef) if @args % 2;
   
   for (my $i = 0; $i < @args; $i += 2) {
-      
+    
+    if ($i == 2) {
+      warn "The syntax of multiple key-value arguments is DEPRECATED(Object::Simple::has or Object::Simple::attr)";
+    }
+    
     # Attribute name
     my $attrs = $args[$i];
     $attrs = [$attrs] unless ref $attrs eq 'ARRAY';
@@ -597,7 +601,12 @@ C<attr> method usage is equal to C<has> method.
 =head1 DEPRECATED FUNCTIONALITY
 
   function exporting of C<new> and C<attr> method # Will be removed 2021/6/1
-
+  
+  The syntax of multiple key-value arguments 
+    has x => 1, y => 2;      
+    __PACAKGE__->attr(x => 1, y => 2);
+  # Will be removed 2021/6/1
+  
   class_attr method # will be removed 2017/1/1
   dual_attr method # will be removed 2017/1/1
 

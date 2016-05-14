@@ -1,5 +1,10 @@
-3.15 (2016-05-14)
+3.16 (2016-05-14)
   - function exporintg of new, attr is DEPRECATED!
+  - The syntax of multiple key-value arguments is DEPRECATED!
+      has x => 1, y => 2;      
+      __PACAKGE__->attr(x => 1, y => 2);
+3.16
+  - fix licence(This is same as Mojolicious)
 3.14
   - remove experimental with and role support
     this is buggy.

@@ -4,6 +4,16 @@ use warnings;
 
 use lib 't/object-simple';
 
+BEGIN {
+  $SIG{__WARN__} = sub {
+    my $message = shift;
+    
+    unless ($message =~ /DEPRECATED/ && $message =~ /Object::Simple/) {
+      warn $message;
+    }
+  };
+}
+
 # -base flag
 {
   {
