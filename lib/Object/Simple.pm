@@ -75,10 +75,12 @@ sub import {
     
     # Export methods
     for my $method (@methods) {
-      
+
       # Can be Exported?
       Carp::croak("Cannot export '$method'.")
         unless $exports{$method};
+
+      warn "function exporting of $method is DEPRECATED(Object::Simple)";
       
       # Export
       no strict 'refs';
@@ -564,13 +566,11 @@ you can get default value.
 If a value is set, the accessor return self object.
 So you can set a value repeatedly.
 
- $obj->foo(1)->bar(2);
+  $obj->foo(1)->bar(2);
 
 You can create all accessors at once.
 
-  has [qw/foo bar baz/],
-    pot => 1,
-    mer => sub { 5 };
+  has [qw/foo bar baz/];
 
 =head1 METHODS
 
@@ -589,16 +589,14 @@ hash or hash reference as arguments.
   __PACKAGE__->attr(foo => 1);
   __PACKAGE__->attr(foo => sub { {} });
 
-  __PACKAGE__->attr(
-    [qw/foo bar baz/],
-    pot => 1,
-    mer => sub { 5 }
-  );
+  __PACKAGE__->attr([qw/foo bar baz/]);
 
 Create accessor.
 C<attr> method usage is equal to C<has> method.
 
 =head1 DEPRECATED FUNCTIONALITY
+
+  function exporting of C<new> and C<attr> method # Will be removed 2021/6/1
 
   class_attr method # will be removed 2017/1/1
   dual_attr method # will be removed 2017/1/1

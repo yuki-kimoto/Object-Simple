@@ -1,3 +1,6 @@
+3.15 (2016-05-14)
+  - function exporintg of new, attr is DEPRECATED!
+  
 3.14
   - remove experimental with and role support
     this is buggy.
