@@ -248,9 +248,9 @@ You can specify default value.
 
 If you like L<Mojo::Base>, L<Object::Simple> is good choice.
 
-=head1 GUIDE
+=head1 TUTORIAL
 
-=head2 1. Create accessor
+=head2 1. Define class and create accessor
 
 At first, you create class.
 
@@ -303,7 +303,39 @@ You can create multiple accessors at once.
   has [qw/foo bar baz/];
   has [qw/foo bar baz/] => 0;
 
-=head3 Class example
+=head2 2. Override method
+
+Method can be overridden.
+
+B<Example:>
+
+Initialize the object
+
+  sub new {
+    my $self = shift->SUPER::new(@_);
+    
+    # Initialization
+    
+    return $self;
+  }
+
+B<Example:>
+
+Change arguments of C<new>.
+  
+  sub new {
+    my $self = shift;
+    
+    $self->SUPER::new(x => $_[0], y => $_[1]);
+    
+    return $self;
+  }
+
+You can pass array to C<new> method.
+
+  my $point = Point->new(4, 5);
+
+=head2 3. Class example
 
 I introduce L<Object::Simple> example.
 
@@ -356,9 +388,9 @@ Use Point3D class.
   $point->z(9);
   $point->clear;
 
-=head2 2. Concepts of Object-Oriented programing
+=head2 4. Easy description of Object-Oriented programing
 
-I introduce concepts of Object-Oriented programing
+I introduce concepts of Object-Oriented programing.
 
 =head3 Inheritance
 
@@ -475,40 +507,6 @@ use SUPER pseudo-class.
 
 If you understand three concepts,
 you have learned Object-Oriented programming primary parts.
-
-=head2 3. Often used techniques
-
-=head3 Override new method
-
-C<new> method can be overridden.
-
-B<Example:>
-
-Initialize the object
-
-  sub new {
-    my $self = shift->SUPER::new(@_);
-    
-    # Initialization
-    
-    return $self;
-  }
-
-B<Example:>
-
-Change arguments of C<new>.
-  
-  sub new {
-    my $self = shift;
-    
-    $self->SUPER::new(x => $_[0], y => $_[1]);
-    
-    return $self;
-  }
-
-You can pass array to C<new> method.
-
-  my $point = Point->new(4, 5);
 
 =head1 FUNCTIONS
 
