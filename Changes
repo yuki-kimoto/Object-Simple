@@ -1,6 +1,7 @@
 3.17 (2016-09-01)
   - add Object::Simple used projects
   - add "SEE ALSO" section
+  - add benefits of Object::Simple
 3.16 (2016-05-14)
   - function exporintg of new, attr is DEPRECATED!
   - The syntax of multiple key-value arguments is DEPRECATED!

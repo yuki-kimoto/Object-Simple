@@ -303,7 +303,7 @@ You can create multiple accessors at once.
   has [qw/foo bar baz/];
   has [qw/foo bar baz/] => 0;
 
-=head2 Class example
+=head3 Class example
 
 I introduce L<Object::Simple> example.
 
@@ -510,34 +510,6 @@ You can pass array to C<new> method.
 
   my $point = Point->new(4, 5);
 
-=head1 IMPORT OPTIONS
-
-=head2 -base
-
-By using C<-base> option, the class inherit Object::Simple
-and import C<has> function.
-
-  package Foo;
-  use Object::Simple -base;
-  
-  has x => 1;
-  has y => 2;
-
-strict and warnings is automatically enabled.
-
-You can also use C<-base> option in sub class
-to inherit other class.
-  
-  # Bar inherit Foo
-  package Bar;
-  use Foo -base;
-
-You can also use the following syntax.
-
-  # Same as above
-  package Bar;
-  use Object::Simple -base => 'Foo';
-
 =head1 FUNCTIONS
 
 =head2 has
@@ -598,17 +570,33 @@ hash or hash reference as arguments.
 Create accessor.
 C<attr> method usage is equal to C<has> method.
 
-=head1 DEPRECATED FUNCTIONALITY
+=head1 OPTIONS
 
-  function exporting of C<new> and C<attr> method # Will be removed 2021/6/1
+=head2 -base
+
+By using C<-base> option, the class inherit Object::Simple
+and import C<has> function.
+
+  package Foo;
+  use Object::Simple -base;
   
-  The syntax of multiple key-value arguments 
-    has x => 1, y => 2;      
-    __PACAKGE__->attr(x => 1, y => 2);
-  # Will be removed 2021/6/1
+  has x => 1;
+  has y => 2;
+
+strict and warnings is automatically enabled.
+
+You can also use C<-base> option in sub class
+to inherit other class.
   
-  class_attr method # will be removed 2017/1/1
-  dual_attr method # will be removed 2017/1/1
+  # Bar inherit Foo
+  package Bar;
+  use Foo -base;
+
+You can also use the following syntax.
+
+  # Same as above
+  package Bar;
+  use Object::Simple -base => 'Foo';
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
@@ -621,6 +609,18 @@ I extend one year each time he tell me it.
 EXPERIMENTAL functionality will be changed without warnings.
 
 (This policy was changed at 2011/10/22)
+
+=head1 DEPRECATED
+
+  function exporting of C<new> and C<attr> method # Will be removed 2021/6/1
+  
+  The syntax of multiple key-value arguments 
+    has x => 1, y => 2;      
+    __PACAKGE__->attr(x => 1, y => 2);
+  # Will be removed 2021/6/1
+  
+  class_attr method # will be removed 2017/1/1
+  dual_attr method # will be removed 2017/1/1
 
 =head1 BUGS
 
