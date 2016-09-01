@@ -2,12 +2,14 @@
   - add Object::Simple used projects
   - add "SEE ALSO" section
   - add benefits of Object::Simple
+  - rename GUIDE to TUTORIAL
+  - add benefits of Object::Simple in list style
 3.16 (2016-05-14)
   - function exporintg of new, attr is DEPRECATED!
   - The syntax of multiple key-value arguments is DEPRECATED!
       has x => 1, y => 2;      
       __PACAKGE__->attr(x => 1, y => 2);
-3.16
+3.15
   - fix licence(This is same as Mojolicious)
 3.14
   - remove experimental with and role support
@@ -274,5 +276,5 @@ delete attribute key before pass args to _init
 remove no need files 
 _arrange_args return hash ref, not hash 
 
-0.01_01 first developer release
-
+0.01_01 (2008-01-01)
+  first developer release

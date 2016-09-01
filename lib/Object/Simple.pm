@@ -167,7 +167,23 @@ sub dual_attr {
 
 =head1 NAME
 
-Object::Simple - Simple class builder(Mojo::Base porting)
+Object::Simple - Simplest class builder, Mojo::Base porting
+
+=over
+
+=item 1.
+
+B<Simplest class builder>. All you learn is only C<has> function.
+
+=item 2.
+
+B<Mojo::Base porting>. Do you like L<Mojolicious>? If so, this is good choices!
+
+=item 3.
+
+B<Fast and less memory>. Fast C<new> method, Fast accessor method.
+
+=back
 
 =head1 SYNOPSIS
 
@@ -217,36 +233,33 @@ Inheritance
 
 =head1 DESCRIPTION
 
-L<Object::Simple> is L<Mojo::Base> porting.
-you can use L<Mojo::Base> features.
+B<Simplest class builder>: All you learn is only C<has> function.
+You can learn all features of L<Object::Simple> in one hour 
 
-L<Object::Simple> is a generator of accessor method,
-such as L<Class::Accessor>, L<Mojo::Base>, or L<Moose>.
+B<Mojo::Base porting>: Do you like L<Mojolicious>? If so, this is good choices!
+If you have known L<Mojo::Base>, you don't learn anything.
 
-L<Class::Accessor> is simple, but lack offten used features.
+B<Fast and less memory>: Fast C<new> method, Fast accessor method.
+In pure perl implementation, this module is much fast.
+
+B<Object::Simple vs Class::Accessor::Fast>
+
+L<Class::Accessor::Fast> is simple, but lack offten used features.
 C<new> method can't receive hash arguments.
 Default value can't be specified.
 If multipule values is set through the accessor,
 its value is converted to array reference without warnings.
 
-Some people find L<Moose> too complex, and dislike that 
-it depends on outside modules. Some say that L<Moose> is 
+B<Object::Simple vs Moose>
+
+Some people find L<Moose> too complex, and dislike it because
+it depends on much many modules. Some one say that L<Moose> is 
 almost like another language and does not fit the familiar 
 perl syntax. In some cases, in particular smaller projects, 
 some people feel that L<Moose> will increase complexity
 and therefore decrease programmer efficiency.
 In addition, L<Moose> can be slow at compile-time and 
 its memory usage can get large.
-
-L<Object::Simple> is the middle way between L<Class::Accessor>
-and complex class builder. Only offten used features is
-implemented has no dependency.
-L<Object::Simple> is almost same as L<Mojo::Base>.
-
-C<new> method can receive hash or hash reference.
-You can specify default value.
-
-If you like L<Mojo::Base>, L<Object::Simple> is good choice.
 
 =head1 TUTORIAL
 
