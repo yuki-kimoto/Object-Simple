@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.16';
+our $VERSION = '3.17';
 
 use strict;
 use warnings;
@@ -637,6 +637,30 @@ Copyright 2008-2016 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Artistic v2(This is same as L<Mojolicious> licence).
+
+=head1 Object::Simple used projects
+
+L<Object::Simple> is used in the following projects.
+
+=over 4
+
+=item *
+
+GitPrep - Portable GitHub system into your own server L<https://github.com/yuki-kimoto/gitprep>
+
+=item *
+
+L<DBIx::Custom> - DBI extension to execute insert, update, delete, and select easily
+
+=item *
+
+L<Validator::Custom> - HTML form Validation, simple and good flexibility
+
+=back
+
+=head1 SEE ALSO
+
+L<Mojo::Base>, L<Class::Accessor>, L<Class::Accessor::Fast>, L<Moose>, L<Moo>.
 
 =cut
 
