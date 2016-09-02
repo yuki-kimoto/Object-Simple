@@ -237,17 +237,17 @@ Object::Simple is B<Simplest> class builder. All you learn is only C<has> functi
 You can learn all features of L<Object::Simple> in B<an hour>. There is nothing difficult.
 
 Do you like L<Mojolicious>? In fact, Object::Simple is L<Mojo::Base> porting. Mojo::Base is basic class builder in Mojolicious project.
-If you like Mojolicious, this is good chilce. If you have known Mojo::Base, you learn nothing.
+If you like Mojolicious, this is good choice. If you have known Mojo::Base, you learn nothing.
 
 C<new> and accessor method is fast. Implementaion is pure perl and save instructions as possible.
 Memory is saved. Extra objects is not created at all. Very light-weight object-oriented module.
 
 Comparison with L<Class::Accessor::Fast>
 
-Class::Accessor::Fast is simple, but lack offten used features.
+Class::Accessor::Fast is simple, but lack often used features.
 C<new> method can't receive hash arguments.
 Default value can't be specified.
-If multipule values is set through the accessor,
+If multiple values is set through the accessor,
 its value is converted to array reference without warnings.
 
 Comparison with L<Moose>
@@ -256,7 +256,7 @@ Moose has very complex syntax and depend on much many modules.
 You have to learn many things to do object-oriented programing.
 Understanding source code is difficult.
 Compile-time is very slow and memory usage is very large.
-Executiton speed is not fast.
+Execution speed is not fast.
 For simple OO, Moose is overkill.
 L<Moo> is improved in this point.
 
@@ -347,7 +347,7 @@ You can pass array to C<new> method.
 
   my $point = Point->new(4, 5);
 
-=head2 3. Examples - class, accessor, inheritance and method overidding
+=head2 3. Examples - class, accessor, inheritance and method overriding
 
 I introduce L<Object::Simple> example.
 
@@ -377,7 +377,7 @@ Use Point class.
 
 Point3D class: Point3D inherit Point class.
 Point3D class has C<z> accessor in addition to C<x> and C<y>.
-C<clear> method is overriden to clear C<x>, C<y> and C<z>.
+C<clear> method is overridden to clear C<x>, C<y> and C<z>.
 
   package Point3D;
   use Point -base;
@@ -463,7 +463,7 @@ Encapsulation means that
 you don't touch internal data directory.
 You must use public method when you access internal data.
 
-Create accessor and use it to keep thie rule.
+Create accessor and use it to keep this rule.
 
   my $value = $obj->foo;
   $obj->foo(1);
@@ -474,7 +474,7 @@ Third concept is polymorphism.
 Polymorphism is divided into two concepts,
 overload and override
 
-Perl programer don't need to care overload.
+Perl programmer don't need to care overload.
 Perl is dynamic type language.
 Subroutine can receive any value.
 
@@ -534,7 +534,7 @@ Create accessor.
 Create accessor. C<has> receive
 accessor name and default value.
 Default value is optional.
-If you want to create multipule accessors at once,
+If you want to create multiple accessors at once,
 specify accessor names as array reference at first argument.
 
 If you want to specify reference or object as default value,
@@ -610,26 +610,26 @@ You can also use the following syntax.
 
 =head1 FAQ
 
-=head2 Why do you receive personal atack in cpanratings?
+=head2 Why do you receive personal attack in cpanratings?
 
   I don't always oppose reinventing the wheel, in the case of this module, however, I wonder if it is worthy to be registered at any cost on CPAN.
  
   You already have Moose, Mouse, etc. and otherwise Class::Accessor if you dislike the previous modules. Enough already! Do you need yet another but half-baked module, nonetheless?
 
-  I hear the author says that he is going to enlighten the perl's newbies, to be honest, however, in no case is he qualified to do so. In fact, he seems to be conceited because of the publication of his only book regarding Perl.
+  I hear the author says that he is going to enlighten the perl's newbie, to be honest, however, in no case is he qualified to do so. In fact, he seems to be conceited because of the publication of his only book regarding Perl.
 
-  In any case, I fear that what he says and does would mislead the newbies (especially Japanese) deceived by another handle name of his, "perlcodesample".
+  In any case, I fear that what he says and does would mislead the newbie (especially Japanese) deceived by another handle name of his, "perlcodesample".
 
-Taro Nishino is Moose believer. I wrote criticism about Moose in past in my perl blog. He was very angry and do personal atack to me with very dirty words.
+Taro Nishino is Moose believer. I wrote criticism about Moose in past in my perl blog. He was very angry and do personal attack to me with very dirty words.
 
 =head2 Really enough object-oriented programing with this few features?
 
 Yes, for example, Mojolicious is very big project, but in fact, source code is clean only using single inheritance.
-Generally speaking, readable source code is build by simple cencepts, not complex features.
+Generally speaking, readable source code is build by simple concepts, not complex features.
 
 =head2 Object::Simple is fastest module?
 
-No, Object::Simple is not fastest module, but enough fast. If you realy need perfomance, you can access hash value directory.
+No, Object::Simple is not fastest module, but enough fast. If you really need performance, you can access hash value directory.
 
   # I want performance in some places. Let's access hash value directory!
   $self->{x};
