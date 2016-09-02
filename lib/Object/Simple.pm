@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.17';
+our $VERSION = '3.1701';
 
 use strict;
 use warnings;
@@ -167,21 +167,21 @@ sub dual_attr {
 
 =head1 NAME
 
-Object::Simple - Simplest class builder, Mojo::Base porting
+Object::Simple - Simplest class builder, Mojo::Base porting, fast and less memory
 
 =over
 
-=item 1.
+=item *
 
-B<Simplest class builder>. All you learn is only C<has> function.
+B<Simplest class builder>. All you learn is only C<has> function!
 
-=item 2.
+=item *
 
 B<Mojo::Base porting>. Do you like L<Mojolicious>? If so, this is good choices!
 
-=item 3.
+=item *
 
-B<Fast and less memory>. Fast C<new> method, Fast accessor method.
+B<Fast and less memory>. Fast C<new> and accessor method. Memory saving implementation.
 
 =back
 
@@ -233,37 +233,36 @@ Inheritance
 
 =head1 DESCRIPTION
 
-B<Simplest class builder>: All you learn is only C<has> function.
-You can learn all features of L<Object::Simple> in one hour 
+Object::Simple is B<Simplest> class builder. All you learn is only C<has> function.
+You can learn all features of L<Object::Simple> in B<an hour>. There is nothing difficult.
 
-B<Mojo::Base porting>: Do you like L<Mojolicious>? If so, this is good choices!
-If you have known L<Mojo::Base>, you don't learn anything.
+Do you like L<Mojolicious>? In fact, Object::Simple is L<Mojo::Base> porting. Mojo::Base is basic class builder in Mojolicious project.
+If you like Mojolicious, this is good chilce. If you have known Mojo::Base, you learn nothing.
 
-B<Fast and less memory>: Fast C<new> method, Fast accessor method.
-In pure perl implementation, this module is much fast.
+C<new> and accessor method is fast. Implementaion is pure perl and save instructions as possible.
+Memory is saved. Extra objects is not created at all. Very light-weight object-oriented module.
 
-B<Object::Simple vs Class::Accessor::Fast>
+Comparison with L<Class::Accessor::Fast>
 
-L<Class::Accessor::Fast> is simple, but lack offten used features.
+Class::Accessor::Fast is simple, but lack offten used features.
 C<new> method can't receive hash arguments.
 Default value can't be specified.
 If multipule values is set through the accessor,
 its value is converted to array reference without warnings.
 
-B<Object::Simple vs Moose>
+Comparison with L<Moose>
 
-Some people find L<Moose> too complex, and dislike it because
-it depends on much many modules. Some one say that L<Moose> is 
-almost like another language and does not fit the familiar 
-perl syntax. In some cases, in particular smaller projects, 
-some people feel that L<Moose> will increase complexity
-and therefore decrease programmer efficiency.
-In addition, L<Moose> can be slow at compile-time and 
-its memory usage can get large.
+Moose has very complex syntax and depend on much many modules.
+You have to learn many things to do object-oriented programing.
+Understanding source code is difficult.
+Compile-time is very slow and memory usage is very large.
+Executiton speed is not fast.
+For simple OO, Moose is overkill.
+L<Moo> is improved in this point.
 
 =head1 TUTORIAL
 
-=head2 1. Define class and create accessor
+=head2 1. Create class and accessor
 
 At first, you create class.
 
@@ -348,7 +347,7 @@ You can pass array to C<new> method.
 
   my $point = Point->new(4, 5);
 
-=head2 3. Class example
+=head2 3. Examples - class, accessor, inheritance and method overidding
 
 I introduce L<Object::Simple> example.
 
@@ -401,7 +400,7 @@ Use Point3D class.
   $point->z(9);
   $point->clear;
 
-=head2 4. Easy description of Object-Oriented programing
+=head2 4. What is Object-Oriented programing?
 
 I introduce concepts of Object-Oriented programing.
 
@@ -642,22 +641,26 @@ by mail or github L<http://github.com/yuki-kimoto/Object-Simple>
 
 Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
+I'm pleasure if you send message for cheer. I can get power by only your messages!
+
 =head1 COPYRIGHT & LICENSE
 
 Copyright 2008-2016 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
-under the same terms as Artistic v2(This is same as L<Mojolicious> licence).
+under the same terms as Artistic v2.
 
-=head1 Object::Simple used projects
+This is same as L<Mojolicious> licence.
 
-L<Object::Simple> is used in the following projects.
+=head1 USERS
+
+Projects using L<Object::Simple>.
 
 =over 4
 
 =item *
 
-GitPrep - Portable GitHub system into your own server L<https://github.com/yuki-kimoto/gitprep>
+GitPrep - Portable GitHub system into your own server. L<https://github.com/yuki-kimoto/gitprep>
 
 =item *
 
@@ -676,4 +679,3 @@ L<Mojo::Base>, L<Class::Accessor>, L<Class::Accessor::Fast>, L<Moose>, L<Moo>.
 =cut
 
 1;
-
