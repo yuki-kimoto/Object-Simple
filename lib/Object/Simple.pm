@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.1701';
+our $VERSION = '3.1702';
 
 use strict;
 use warnings;
@@ -610,24 +610,12 @@ You can also use the following syntax.
 
 =head1 FAQ
 
-=head2 Why do you receive personal attack in cpanratings?
-
-  I don't always oppose reinventing the wheel, in the case of this module, however, I wonder if it is worthy to be registered at any cost on CPAN.
- 
-  You already have Moose, Mouse, etc. and otherwise Class::Accessor if you dislike the previous modules. Enough already! Do you need yet another but half-baked module, nonetheless?
-
-  I hear the author says that he is going to enlighten the perl's newbie, to be honest, however, in no case is he qualified to do so. In fact, he seems to be conceited because of the publication of his only book regarding Perl.
-
-  In any case, I fear that what he says and does would mislead the newbie (especially Japanese) deceived by another handle name of his, "perlcodesample".
-
-Taro Nishino is Moose believer. I wrote criticism about Moose in past in my perl blog. He was very angry and do personal attack to me with very dirty words.
-
 =head2 Really enough object-oriented programing with this few features?
 
 Yes, for example, Mojolicious is very big project, but in fact, source code is clean only using single inheritance.
-Generally speaking, readable source code is build by simple concepts, not complex features.
+Generally speaking, readable source code is build on simple concepts, not complex features.
 
-=head2 Object::Simple is fastest module?
+=head2 Object::Simple is fastest OO module?
 
 No, Object::Simple is not fastest module, but enough fast. If you really need performance, you can access hash value directory.
 
