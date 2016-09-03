@@ -4,6 +4,7 @@
 - **Mojo::Base porting**. Do you like Mojolicious? If so, this is good choices!
 - **Fast and less memory**. Fast *new* and accessor method. Memory saving implementation.
 
+```
     package SomeClass;
     use Object::Simple -base;
     
@@ -19,5 +20,6 @@
     # Create accessors at once
     has [qw/foo bar baz/];
     has [qw/foo bar baz/] => 0;
-    
+```
+
 If you learn more, See [public doucumentation on cpan](http://search.cpan.org/~kimoto/Object-Simple/lib/Object/Simple.pm).
