@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.1702';
+our $VERSION = '3.1703';
 
 use strict;
 use warnings;
@@ -239,7 +239,7 @@ You can learn all features of L<Object::Simple> in B<an hour>. There is nothing 
 Do you like L<Mojolicious>? In fact, Object::Simple is L<Mojo::Base> porting. Mojo::Base is basic class builder in Mojolicious project.
 If you like Mojolicious, this is good choice. If you have known Mojo::Base, you learn nothing.
 
-C<new> and accessor method is fast. Implementaion is pure perl and save instructions as possible.
+C<new> and accessor method is B<fast>. Implementation is pure perl and plain old hash-base object.
 Memory is saved. Extra objects is not created at all. Very light-weight object-oriented module.
 
 Comparison with L<Class::Accessor::Fast>
@@ -615,12 +615,56 @@ You can also use the following syntax.
 Yes, for example, Mojolicious is very big project, but in fact, source code is clean only using single inheritance.
 Generally speaking, readable source code is build on simple concepts, not complex features.
 
+C<BUILD>, C<BUILDARGS> and C<DEMOLISH> methods in L<Moo> are needed for good object-oriented programming?
+If you want to use multiple inheritance or role, these methods is needed.
+
+But I strongly recommend you use only single inheritance in object-oriented programming. Single inheritance is clean and readable.
+
+If you use only single inheritance, Perl can call destructor in correct order,
+and if you create custom constructor, you can call constructor in correct order.
+Creating custom constructor is very very easy. There is nothing difficult.
+    
+    # Custom constructor
+    sub new {
+      # Call super class constructor
+      my $self = shift->SUPER::new(@_);
+      
+      # What you want
+      
+      return $self;
+    }
+
 =head2 Object::Simple is fastest OO module?
 
-No, Object::Simple is not fastest module, but enough fast. If you really need performance, you can access hash value directory.
+No, Object::Simple is B<not> fastest module, but enough fast. If you really need performance, you can access hash value directory.
 
   # I want performance in some places. Let's access hash value directory!
+  # Object::Simple is plain old hash-based object
   $self->{x};
+
+=head2 What is benefits comparing with Mojo::Base?
+
+=over
+
+=item *
+
+Support Perl 5.8
+
+=item *
+
+Installation is very fast because there are a few files.
+
+=item *
+
+Some people think that my module want not to depend on whole Mojolicious to use Mojo::Base only. Object::Simple satisfy the demand.
+
+=head2 Why Object::Simple is different from Mojo::Base in some points?
+
+In old days, Object::Simple wasn't Mojo::Base porting. I tried different things.
+
+Now, I want Object::Simple to be same as Mojo::Base completely except supporting Perl 5.8.
+
+=back
 
 =head1 BACKWARDS COMPATIBILITY POLICY
 
@@ -657,15 +701,6 @@ Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
 
 I'm pleasure if you send message for cheer. I can get power by only your messages!
 
-=head1 COPYRIGHT & LICENSE
-
-Copyright 2008-2016 Yuki Kimoto, all rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Artistic v2.
-
-This is same as L<Mojolicious> licence.
-
 =head1 USERS
 
 Projects using L<Object::Simple>.
@@ -688,7 +723,18 @@ L<Validator::Custom> - HTML form Validation, simple and good flexibility
 
 =head1 SEE ALSO
 
-L<Mojo::Base>, L<Class::Accessor>, L<Class::Accessor::Fast>, L<Moose>, L<Moo>.
+CPAN have various class builders. Let's compare it with L<Object::Simple>.
+
+L<Mojo::Base>, L<Class::Accessor>, L<Class::Accessor::Fast>, L<Moose>, L<Moo>, L<Class::Tiny>.
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2008-2016 Yuki Kimoto, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Artistic v2.
+
+This is same as L<Mojolicious> licence.
 
 =cut
 
