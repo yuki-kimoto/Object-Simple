@@ -32,8 +32,8 @@ BEGIN {
   }
   
   {
-      package T4;
-      use Object::Simple -base => 'T3';
+    package T4;
+    use Object::Simple -base => 'T3';
   }
   
   {
@@ -44,12 +44,36 @@ BEGIN {
   }
 
   {
-      package T4_2;
-      use Object::Simple -base => 'T3_2';
+    package T4_2;
+    use Object::Simple -base => 'T3_2';
   }
   
   {
     my $o = T4_2->new;
+    is($o->x, 1);
+    is($o->y, 2);
+    is($o->z, 3);
+  }
+  
+  {
+    package T4_3;
+    use Object::Simple 'T3_2';
+  }
+
+  {
+    my $o = T4_3->new;
+    is($o->x, 1);
+    is($o->y, 2);
+    is($o->z, 3);
+  }
+  
+  {
+    package T3_3;
+    use T3 -base;
+  }
+  
+  {
+    my $o = T3_3->new;
     is($o->x, 1);
     is($o->y, 2);
     is($o->z, 3);
@@ -246,9 +270,9 @@ is($o->m3, 3, "$test : export dual_attr");
 test 'Method export error';
 {
     package T4;
-    eval "use Object::Simple 'none';";
+    eval "use Object::Simple '-none';";
 }
-like($@, qr/'none' is invalid option/, "$test");
+like($@, qr/'-none' is invalid option/, "$test");
 
 test 'Inherit class_attr';
 is_deeply(T1->m27, {a1 => 1}, "$test : no effect : hash");

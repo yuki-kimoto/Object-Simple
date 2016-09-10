@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.1703';
+our $VERSION = '3.18';
 
 use strict;
 use warnings;
@@ -26,25 +26,26 @@ sub import {
   
   # Inheritance
   if ($no_export_syntax) {
+    my $arg1 = shift;
+    my $arg2 = shift;
     
-    # Option
-    my %opt;
-    my $base_opt_name;
-    if (@_ % 2 != 0) {
-      my $base_opt_name = shift;
-      if ($base_opt_name ne '-base') {
-        Carp::croak "'$base_opt_name' is invalid option(Object::Simple::import())";
+    my $base_class;
+    if (defined $arg1) {
+      # Option
+      if ($arg1 =~ /^-/) {
+        if ($arg1 eq '-base') {
+          if (defined $arg2) {
+            $base_class = $arg2;
+          }
+        }
+        else {
+          Carp::croak "'$arg1' is invalid option(Object::Simple::import())";
+        }
       }
-      $opt{-base} = undef;
-    }
-    %opt = (%opt, @_);
-    
-    # Base class
-    my $base_class = delete $opt{-base};
-    
-    # Check option
-    for my $opt_name (keys %opt) {
-      Carp::croak "'$opt_name' is invalid option(Object::Simple::import())";
+      # Base class
+      else {
+        $base_class = $arg1;
+      }
     }
     
     # Export has function
@@ -214,7 +215,7 @@ Create object.
   my $foo = $obj->foo;
   $obj->foo(1);
   
-  # set-accessor can be changed
+  # Setter can be chained
   $obj->foo(1)->bar(2);
 
 Inheritance
@@ -225,11 +226,14 @@ Inheritance
   
   # Bar.pm
   package Bar;
-  use Foo -base;
+  use Object::Simple 'Foo';
   
-  # Bar.pm (another way to inherit)
+  # Bar.pm (another way 1 to inherit, This is Object::Simple original)
   package Bar;
   use Object::Simple -base => 'Foo';
+
+  # Bar.pm (another way 2 to inherit, This is Object::Simple original)
+  use Foo -base;
 
 =head1 DESCRIPTION
 
@@ -282,7 +286,7 @@ Create accessor by using C<has> function.
 
   has 'foo';
 
-If you create accessor, you can set or get attribute value.s
+If you create accessor, you can set or get value
 
   # Set value
   $obj->foo(1);
@@ -290,7 +294,7 @@ If you create accessor, you can set or get attribute value.s
   # Get value
   my $foo = $obj->foo;
 
-set-accessor can be changed.
+Setter can be chained.
 
   $obj->foo(1)->bar(2);
 
@@ -298,7 +302,7 @@ You can define default value.
 
   has foo => 1;
 
-If C<foo> attribute value is not exists, default value is used.
+If C<foo> value is not exists, default value is used.
 
   my $foo_default = $obj->foo;
 
@@ -380,7 +384,7 @@ Point3D class has C<z> accessor in addition to C<x> and C<y>.
 C<clear> method is overridden to clear C<x>, C<y> and C<z>.
 
   package Point3D;
-  use Point -base;
+  use Object::Simple 'Point';
   
   has z => 0;
   
@@ -437,7 +441,7 @@ You can use C<-base> option to inherit class.
   
   # Q.pm
   package Q;
-  use P -base;
+  use Object::Simple 'P';
   
   sub method3 { ... }
 
@@ -488,7 +492,7 @@ Override means that you can change method behavior in sub class.
   
   # Q.pm
   package Q;
-  use P -base;
+  use Object::Simple 'P';
   
   sub method1 { return 2 }
 
@@ -541,7 +545,7 @@ If you want to specify reference or object as default value,
 it must be code reference
 not to share the value with other objects.
 
-Get and set a attribute value.
+Get and set a value.
 
   my $foo = $obj->foo;
   $obj->foo(1);
@@ -595,18 +599,25 @@ and import C<has> function.
 
 strict and warnings is automatically enabled.
 
-You can also use C<-base> option in sub class
-to inherit other class.
+You can inherit class.
   
   # Bar inherit Foo
   package Bar;
-  use Foo -base;
+  use Object::Simple 'Foo';
+  
 
-You can also use the following syntax.
+You can also use the following syntax. This is Object::Simple only.
 
   # Same as above
   package Bar;
   use Object::Simple -base => 'Foo';
+
+You can also use C<-base> option in sub class
+to inherit other class. This is Object::Simple only.
+
+  # Same as above
+  package Bar;
+  use Foo -base;
 
 =head1 FAQ
 
