@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.18';
+our $VERSION = '3.1801';
 
 use strict;
 use warnings;
@@ -201,8 +201,8 @@ B<Fast and less memory>. Fast C<new> and accessor method. Memory saving implemen
   has foo => sub { OtherClass->new };
   
   # Create accessors at once
-  has [qw/foo bar baz/];
-  has [qw/foo bar baz/] => 0;
+  has ['foo', 'bar', 'baz'];
+  has ['foo', 'bar', 'baz'] => 0;
   
 Create object.
 
@@ -316,8 +316,8 @@ the return value become default value.
 
 You can create multiple accessors at once.
 
-  has [qw/foo bar baz/];
-  has [qw/foo bar baz/] => 0;
+  has ['foo', 'bar', 'baz'];
+  has ['foo', 'bar', 'baz'] => 0;
 
 =head2 2. Override method
 
@@ -531,11 +531,14 @@ you have learned Object-Oriented programming primary parts.
 Create accessor.
   
   has 'foo';
-  has [qw/foo bar baz/];
+  has ['foo', 'bar', 'baz'];
   has foo => 1;
   has foo => sub { {} };
 
-Create accessor. C<has> receive
+  has ['foo', 'bar', 'baz'];
+  has ['foo', 'bar', 'baz'] => 0;
+
+C<has> function receive
 accessor name and default value.
 Default value is optional.
 If you want to create multiple accessors at once,
@@ -553,19 +556,15 @@ Get and set a value.
 If a default value is specified and the value is not exists,
 you can get default value.
 
-If a value is set, the accessor return self object.
-So you can set a value repeatedly.
+Setter return invocant. so you can do chained call.
 
   $obj->foo(1)->bar(2);
-
-You can create all accessors at once.
-
-  has [qw/foo bar baz/];
 
 =head1 METHODS
 
 =head2 new
 
+  my $obj = Object::Simple->new;
   my $obj = Object::Simple->new(foo => 1, bar => 2);
   my $obj = Object::Simple->new({foo => 1, bar => 2});
 
@@ -575,14 +574,15 @@ hash or hash reference as arguments.
 =head2 attr
 
   __PACKAGE__->attr('foo');
-  __PACKAGE__->attr([qw/foo bar baz/]);
+  __PACKAGE__->attr(['foo', 'bar', 'baz']);
   __PACKAGE__->attr(foo => 1);
   __PACKAGE__->attr(foo => sub { {} });
 
-  __PACKAGE__->attr([qw/foo bar baz/]);
+  __PACKAGE__->attr(['foo', 'bar', 'baz']);
+  __PACKAGE__->attr(['foo', 'bar', 'baz'] => 0);
 
 Create accessor.
-C<attr> method usage is equal to C<has> method.
+C<attr> method usage is equal to C<has> function.
 
 =head1 OPTIONS
 
@@ -599,12 +599,11 @@ and import C<has> function.
 
 strict and warnings is automatically enabled.
 
-You can inherit class.
+If you want to inherit class, let's write the following way.
   
   # Bar inherit Foo
   package Bar;
   use Object::Simple 'Foo';
-  
 
 You can also use the following syntax. This is Object::Simple only.
 
@@ -704,11 +703,11 @@ EXPERIMENTAL functionality will be changed without warnings.
 =head1 BUGS
 
 Tell me the bugs
-by mail or github L<http://github.com/yuki-kimoto/Object-Simple>
+by mail(C<< <kimoto.yuki at gmail.com> >>) or github L<http://github.com/yuki-kimoto/Object-Simple>
 
 =head1 AUTHOR
 
-Yuki Kimoto, C<< <kimoto.yuki at gmail.com> >>
+Yuki Kimoto(C<< <kimoto.yuki at gmail.com> >>)
 
 I'm pleasure if you send message for cheer. I can get power by only your messages!
 

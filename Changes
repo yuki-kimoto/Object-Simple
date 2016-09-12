@@ -1,7 +1,8 @@
+3.1801
+  - fix and improve document.
 3.18
   - support Mojo::Base compatible inheritance syntax.
     use Object::Simple 'Point';
-    
 3.1703 (2016-09-09)
   - add FAQ "Really enough object-oriented programing with this few features?"
   - add FAQ "What is benefits comparing with Mojo::Base?"
