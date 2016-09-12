@@ -1,6 +1,6 @@
-3.1801
+3.1801 (2016-09-12)
   - fix and improve document.
-3.18
+3.18 (2016-09-10)
   - support Mojo::Base compatible inheritance syntax.
     use Object::Simple 'Point';
 3.1703 (2016-09-09)

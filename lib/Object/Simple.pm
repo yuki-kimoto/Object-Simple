@@ -220,19 +220,18 @@ Create object.
 
 Inheritance
   
-  # Foo.pm
   package Foo;
   use Object::Simple -base;
   
-  # Bar.pm
+  # Bar inherit Foo
   package Bar;
   use Object::Simple 'Foo';
   
-  # Bar.pm (another way 1 to inherit, This is Object::Simple original)
+  # Another way to inherit(This is Object::Simple original)
   package Bar;
   use Object::Simple -base => 'Foo';
 
-  # Bar.pm (another way 2 to inherit, This is Object::Simple original)
+  # Another way to inherit (This is Object::Simple original)
   use Foo -base;
 
 =head1 DESCRIPTION
@@ -404,17 +403,15 @@ Use Point3D class.
   $point->z(9);
   $point->clear;
 
-=head2 4. What is Object-Oriented programing?
+=head1 WHAT IS OBJECT-ORIENTED PROGRAMING?
 
-I introduce concepts of Object-Oriented programing.
+I introduce essence of Object-Oriented programing.
 
-=head3 Inheritance
-
-I explain the essence of Object-Oriented programing.
+=head2 1. Inheritance
 
 First concept is inheritance.
 Inheritance means that
-if Class Q inherit Class P, Class Q use all methods of class P.
+if Class Q inherit Class P, Class Q call all methods of class P.
 
   +---+
   | P | Base class
@@ -425,13 +422,13 @@ if Class Q inherit Class P, Class Q use all methods of class P.
   +---+   have method3
 
 Class Q inherits Class P,
-Q can use all methods of P in addition to methods of Q.
+Q can call all methods of P in addition to methods of Q.
 
-In other words, Q can use
+In other words, Q can call
 C<method1>, C<method2>, and C<method3>
 
-You can use C<-base> option to inherit class.
-  
+You can inherit other class by the following way.
+
   # P.pm
   package P;
   use Object::Simple -base;
@@ -460,7 +457,7 @@ If you know what method the object(or class) can use, use C<can> method
   SomeClass->can('method1');
   $obj->can('method1');
 
-=head3 Encapsulation
+=head2 2. Encapsulation
 
 Second concept is encapsulation.
 Encapsulation means that
@@ -472,7 +469,7 @@ Create accessor and use it to keep this rule.
   my $value = $obj->foo;
   $obj->foo(1);
 
-=head3 Polymorphism
+=head2 3. Polymorphism
 
 Third concept is polymorphism.
 Polymorphism is divided into two concepts,
@@ -507,10 +504,11 @@ Q C<method1> override P C<method1>.
   my $obj_b = Q->new;
   $obj_q->method1;
 
-If you want to use super class method from sub class,
+If you want to call super class method from sub class,
 use SUPER pseudo-class.
 
   package Q;
+  use Object::Simple 'P';
   
   sub method1 {
     my $self = shift;
@@ -630,19 +628,33 @@ If you want to use multiple inheritance or role, these methods is needed.
 
 But I strongly recommend you use only single inheritance in object-oriented programming. Single inheritance is clean and readable.
 
-If you use only single inheritance, Perl can call destructor in correct order,
-and if you create custom constructor, you can call constructor in correct order.
+If you use only single inheritance,
+You can create custom constructor and call constructors in correct order.
+and You can create custom destructor and call destructors in correct order,
+
 Creating custom constructor is very very easy. There is nothing difficult.
     
-    # Custom constructor
-    sub new {
-      # Call super class constructor
-      my $self = shift->SUPER::new(@_);
-      
-      # What you want
-      
-      return $self;
-    }
+  # Custom constructor
+  sub new {
+    # At first Call super class constructor. Next do what you want
+    my $self = shift->SUPER::new(@_);
+    
+    # What you want
+    
+    return $self;
+  }
+  
+  # Custom destructor
+  sub DESTROY {
+    my $self = shift;
+    
+    # What you want
+
+    # At first, do what you want, Next call super class destructor
+    $selft->SUPER::DESTROY;
+    
+    return $self;
+  }
 
 =head2 Object::Simple is fastest OO module?
 
