@@ -214,13 +214,6 @@ Inheritance
   # Bar inherit Foo
   package Bar;
   use Object::Simple 'Foo';
-  
-  # Another way to inherit(This is Object::Simple original)
-  package Bar;
-  use Object::Simple -base => 'Foo';
-
-  # Another way to inherit (This is Object::Simple original)
-  use Foo -base;
 
 =head1 DESCRIPTION
 
