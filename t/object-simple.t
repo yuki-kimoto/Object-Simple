@@ -87,53 +87,83 @@ sub test {$test = shift}
 
 my $o;
 
-test 'new()';
-use T1;
+# new();
+{
+  use T1;
 
-$o = T1->new(m1 => 1, m2 => 2);
-is_deeply($o, {m1 => 1, m2 => 2}, "$test : hash");
-isa_ok($o, 'T1');
+  # Hash
+  {
+    my $o = T1->new(m1 => 1, m2 => 2);
+    is_deeply($o, {m1 => 1, m2 => 2});
+    isa_ok($o, 'T1');
+  }
+  
+  # Hash reference
+  {
+    my $o = T1->new({m1 => 1, m2 => 2});
+    is_deeply($o, {m1 => 1, m2 => 2});
+    isa_ok($o, 'T1');
+  }
+  
+  # No arguments
+  {
+    $o = T1->new;
+    is_deeply($o, {});
+  }
+}
 
-$o = T1->new({m1 => 1, m2 => 2});
-is_deeply($o, {m1 => 1, m2 => 2}, "$test : hash ref");
-isa_ok($o, 'T1');
+# accessor: attr, set and get
+{
+  my $o = T1->new;
+  $o->m1(1);
+  is($o->m1, 1);
+}
 
-$o = T1->new;
-is_deeply($o, {}, "$test : no arguments");
+# accessor array, set and get
+{
+  my $o = T1->new;
+  $o->m4_1(1);
+  is($o->m4_1, 1);
+  $o->m4_2(1);
+  is($o->m4_2, 1);
+}
 
+# Constructor
+{
+  # Hash
+  {
+    $o = T1->new(m1 => 1);
+    is($o->m1, 1);
+  }
+  
+  # Hash reference
+  {
+    $o = T1->new({m1 => 2});
+    is($o->m1, 2);
+  }
+}
 
-test 'accessor';
-$o = T1->new;
-$o->m1(1);
-is($o->m1, 1, "$test : attr : set and get");
+# Default option
+{
+  my $o = T1->new;
+  
+  # Scalar
+  is($o->m11, 1);
+  
+  # code reference
+  is($o->m12, 9);
+}
 
-test 'accessor array';
-$o = T1->new;
-$o->m4_1(1);
-is($o->m4_1, 1, "$test : attr : set and get 1");
-$o->m4_2(1);
-is($o->m4_2, 1, "$test : attr : set and get 2");
+# array and default
+{
+  # attr : first
+  is($o->m18, 5);
+  
+  # attr : second
+  is($o->m19, 5);
+}
 
-test 'constructor';
-$o = T1->new(m1 => 1);
-is($o->m1, 1, "$test : hash");
-
-$o = T1->new({m1 => 2});
-is($o->m1, 2, "$test : hash ref");
-
-
-test 'default option';
-$o = T1->new;
-
-is($o->m11, 1, "$test : shortcut scalar");
-is($o->m12, 9, "$test : shortcut code ref");
-
-test 'array and default';
-is($o->m18, 5, "$test : attr : first");
-is($o->m19, 5, "$test : attr :second");
-
-test 'Error';
-
+# Error
 {
     package Some::T2;
     use base 'Object::Simple';
@@ -143,31 +173,37 @@ test 'Error';
          'default is not scalar or code ref');
 }
 
-
-test 'Method export';
+# Method export
 {
+  {
     package T3;
     use Object::Simple qw/new attr/;
     __PACKAGE__->attr('m1');
+  }
+  
+  {
+    my $o = T3->new;
+    $o->m1(1);
+    is($o->m1, 1);
+  }
 }
-$o = T3->new;
-$o->m1(1);
-is($o->m1, 1, "$test : export attr");
 
-
-test 'Method export error';
+# Method export error
 {
-    package T4;
-    eval "use Object::Simple '-none';";
+  {
+      package T4;
+      eval "use Object::Simple '-none';";
+  }
+  like($@, qr/'-none' is invalid option/);
 }
-like($@, qr/'-none' is invalid option/, "$test");
-
 
 # Normal accessor
-$o = T1->new;
-$o->m1(1);
-is($o->m1, 1, "$test : set and get");
-is($o->m1(1), $o, "$test : set return");
+{
+  $o = T1->new;
+  $o->m1(1);
+  is($o->m1, 1);
+  is($o->m1(1), $o);
+}
 
 # Normal accessor with default
 {
@@ -189,37 +225,37 @@ is($o->m1(1), $o, "$test : set return");
 
 # new()
 {
+  # from class : hash
   {
-    # from class : hash
     my $o = T1->new(m1 => 1);
     isa_ok($o, 'T1');
     is($o->m1, 1);
   }
   
+  # from class : hash ref
   {
-    # from class : hash ref
     my $o = T1->new({m1 => 1});
     isa_ok($o, 'T1');
     is($o->m1, 1);
   }
   
+  # from object : hash
   {
-    # from object : hash
     my $o = $o->new(m1 => 1);
     isa_ok($o, 'T1');
     is($o->m1, 1);
   }
   
+  # from object : hash ref
   {
-    # from object : hash ref
     my $o = $o->new({m1 => 1});
     isa_ok($o, 'T1');
     is($o->m1, 1);
   }
 }
 
+# Easy definition
 {
-  # Easy definition
   my $o = T1->new;
   ok($o->can('m33'), $test);
   ok($o->can('m34'), $test);
@@ -229,8 +265,8 @@ is($o->m1(1), $o, "$test : set return");
   is($o->m38, 5, $test);
 }
 
+# Attr from object
 {
-  # Attr from object
   my $o = T1->new;
   $o->attr('from_object');
   ok($o->can('from_object'));
