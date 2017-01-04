@@ -717,6 +717,11 @@ EXPERIMENTAL functionality will be changed without warnings.
 Tell me the bugs
 by mail(C<< <kimoto.yuki at gmail.com> >>) or github L<http://github.com/yuki-kimoto/Object-Simple>
 
+=head1 SUPPORT
+
+If you have any questions the documentation might not yet answer, don't hesitate to ask on the mailing list or the official IRC channel
+#object-simple on irc.perl.org.
+
 =head1 AUTHOR
 
 Yuki Kimoto(C<< <kimoto.yuki at gmail.com> >>)
@@ -751,7 +756,7 @@ L<Mojo::Base>, L<Class::Accessor>, L<Class::Accessor::Fast>, L<Moose>, L<Moo>, L
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008-2016 Yuki Kimoto, all rights reserved.
+Copyright 2008-2017 Yuki Kimoto, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Artistic v2.
