@@ -1,6 +1,6 @@
 package Object::Simple;
 
-our $VERSION = '3.1801';
+our $VERSION = '3.19';
 
 use strict;
 use warnings;
@@ -20,7 +20,7 @@ sub import {
   
   # No export syntax
   my $no_export_syntax;
-  unless (grep { $_[0] eq $_ } qw/new attr class_attr dual_attr/) {
+  unless (grep { $_[0] eq $_ } qw/new attr/) {
     $no_export_syntax = 1;
   }
   
@@ -72,7 +72,7 @@ sub import {
     my @methods = @_;
   
     # Exports
-    my %exports = map { $_ => 1 } qw/new attr class_attr dual_attr/;
+    my %exports = map { $_ => 1 } qw/new attr/;
     
     # Export methods
     for my $method (@methods) {
@@ -152,18 +152,6 @@ sub attr {
       Carp::croak "Object::Simple error: $@" unless eval "$code;1";
     }
   }
-}
-
-# DEPRECATED!
-sub class_attr {
-  require Object::Simple::Accessor;
-  Object::Simple::Accessor::create_accessors('class_attr', @_)
-}
-
-# DEPRECATED!
-sub dual_attr {
-  require Object::Simple::Accessor;
-  Object::Simple::Accessor::create_accessors('dual_attr', @_)
 }
 
 =head1 NAME
@@ -708,9 +696,6 @@ EXPERIMENTAL functionality will be changed without warnings.
     has x => 1, y => 2;      
     __PACAKGE__->attr(x => 1, y => 2);
   # Will be removed 2021/6/1
-  
-  class_attr method # will be removed 2017/1/1
-  dual_attr method # will be removed 2017/1/1
 
 =head1 BUGS
 
