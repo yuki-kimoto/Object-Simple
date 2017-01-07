@@ -14,6 +14,11 @@ WriteMakefile(
     PREREQ_PM => {
         'Test::More' => 0,
     },
+    META_MERGE          => {
+        resources => {
+            repository => 'https://github.com/yuki-kimoto/Object-Simple',
+        },
+    },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Object-Simple-*' },
 );
